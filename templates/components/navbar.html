@@ -5,19 +5,29 @@
 
     <ul class="flex white">
         <li class="{% if request.endpoint == 'index' %}green{% endif %}">
-            <a href="{{ url_for('index') }}">&lt; Accueil /&gt;</a>
+            <a href="{{ url_for('index') }}">
+                {% if request.endpoint == 'index' %}&lt; Accueil /&gt;{% else %}Accueil{% endif %}
+            </a>
         </li>
         <li class="{% if request.endpoint == 'works' %}green{% endif %}">
-            <a href="{{ url_for('works') }}">Projets.</a>
+            <a href="{{ url_for('works') }}">
+                {% if request.endpoint == 'works' %}&lt; Projets /&gt;{% else %}Projets.{% endif %}
+            </a>
         </li>
         <li class="{% if request.endpoint == 'services' %}green{% endif %}">
-            <a href="{{ url_for('services') }}">Services.</a>
+            <a href="{{ url_for('services') }}">
+                {% if request.endpoint == 'services' %}&lt; Services /&gt;{% else %}Services.{% endif %}
+            </a>
         </li>
         <li class="{% if request.endpoint == 'index' and '#about' in request.url %}green{% endif %}">
-            <a href="{{ url_for('index') }}#about">À propos.</a>
+            <a href="{{ url_for('index') }}#about">
+                {% if request.endpoint == 'index' and '#about' in request.url %}&lt; À propos /&gt;{% else %}À propos.{% endif %}
+            </a>
         </li>
         <li class="{% if request.endpoint == 'admin' %}green{% endif %}">
-            <a href="{{ url_for('admin') }}">Admin.</a>
+            <a href="{{ url_for('admin') }}">
+                {% if request.endpoint == 'admin' %}&lt; Admin /&gt;{% else %}Admin.{% endif %}
+            </a>
         </li>
     </ul>
 </nav>
