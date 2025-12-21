@@ -2,7 +2,7 @@
 
 ![licence](https://img.shields.io/badge/licence-MIT-blue)
 
-Developer Portfolio is a web template made for developers to present themselves based on NextJS.
+Developer Portfolio is a web template made for developers to present themselves based on Flask.
 
 ![Developer Protfolio](https://user-images.githubusercontent.com/32510139/196662875-44970df4-d748-4a76-8a5f-ec2f4f0eb0e9.png)
 
@@ -23,7 +23,8 @@ Developer Portfolio is a web template made for developers to present themselves 
 
 ## Tech Stack
 
-**Frontend:** HTML5 / CSS3 / ReactJS / NextJS
+**Backend:** Python / Flask  
+**Frontend:** HTML5 / CSS3 / Jinja2 Templates
 
 ## Quick start
 
@@ -33,11 +34,11 @@ Clone the repo
   git clone https://github.com/blaiti/Developer-Portfolio.git
 ```
 
-Install Developer Portfolio with npm
+Install Developer Portfolio with pip
 
 ```bash
   cd Developer-Portfolio
-  npm install
+  pip install -r requirements.txt
 ```
 
 ## Run Locally
@@ -45,15 +46,18 @@ Install Developer Portfolio with npm
 To run locally, run the following command
 
 ```bash
-  npm run dev
+  python app.py
 ```
+
+The application will be available at `http://localhost:5000`
 
 ## Deployment
 
-To create a production build
+For production deployment, use a WSGI server like Gunicorn:
 
 ```bash
-  npm run build
+  pip install gunicorn
+  gunicorn app:app
 ```
 
 ## File Structure
@@ -63,21 +67,22 @@ Within the download you'll find the following directories and files:
 ```bash
 Developer-Portfolio
 .
-├── package.json
-├── package_lock.json
-├── tsconfig.json
-├── next-env.d.ts
-├── next.config.js
-├── components
-│   ├── About.tsx
-│   ├── Footer.tsx
-│   ├── Header.tsx
-│   └── NavBar.tsx
-├── pages
-│   ├── _app.tsx
-│   └── index.tsx
-├── public
+├── app.py
+├── requirements.txt
+├── .gitignore
+├── templates
+│   ├── base.html
+│   ├── index.html
+│   └── components
+│       ├── navbar.html
+│       ├── header.html
+│       ├── about.html
+│       ├── about_card.html
+│       └── footer.html
+├── static
 │   ├── favicon.ico
+│   ├── css
+│   │   └── globals.css
 │   ├── icons
 │   │   ├── code.svg
 │   │   ├── design.svg
@@ -95,8 +100,7 @@ Developer-Portfolio
 │           ├── khedma-lik.png
 │           ├── wallety.png
 │           └── telefy.png
-└── styles
-    └── global.css
+└── README.md
 ```
 
 ## Author
