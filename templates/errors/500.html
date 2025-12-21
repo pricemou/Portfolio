@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Erreur serveur{% endblock %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem;">
+    <div>
+        <h1 style="font-size: 8rem; color: #dc3545; margin: 0; font-weight: 700;">500</h1>
+        <h2 style="color: var(--white, #FFFFFF); margin: 1rem 0; font-size: 2rem;">Erreur serveur</h2>
+        <p style="color: var(--gray, #8B8B8B); margin: 1rem 0 2rem; font-size: 1.1rem; max-width: 600px;">
+            Une erreur interne s'est produite. Notre équipe a été notifiée et travaille à résoudre le problème.
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('index') }}" style="
+                display: inline-block;
+                padding: 0.75rem 2rem;
+                background: var(--green, #4DBA87);
+                color: var(--white, #FFFFFF);
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(77, 186, 135, 0.3)';" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                Retour à l'accueil
+            </a>
+            <a href="javascript:location.reload()" style="
+                display: inline-block;
+                padding: 0.75rem 2rem;
+                background: transparent;
+                color: var(--gray, #8B8B8B);
+                text-decoration: none;
+                border: 1px solid var(--gray, #8B8B8B);
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.borderColor='var(--green, #4DBA87)'; this.style.color='var(--green, #4DBA87)';" 
+               onmouseout="this.style.borderColor='var(--gray, #8B8B8B)'; this.style.color='var(--gray, #8B8B8B)';">
+                Réessayer
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -3,27 +3,46 @@
 <section id="about" class="dark-bg">
     <div class="flex">
         <div class="flex-full">
-            {{ about_card('Full-Stack Development', 'icons/code.svg', 'Développement d\'applications web complètes, du frontend au backend, avec les dernières technologies.', 15) }}
-            {{ about_card('Data Science', 'icons/design.svg', 'Analyse de données, machine learning et visualisation pour extraire des insights précieux.', 12) }}
-            {{ about_card('Architecture & DevOps', 'icons/phone.svg', 'Conception d\'architectures scalables et déploiement avec les meilleures pratiques DevOps.', 8) }}
+            {% if skills %}
+                {% for skill in skills %}
+                    {{ about_card(skill.title, skill.icon, skill.description, skill.projects_count) }}
+                {% endfor %}
+            {% else %}
+                {{ about_card('Full-Stack Development', 'icons/code.svg', 'Développement d\'applications web complètes, du frontend au backend, avec les dernières technologies.', 15) }}
+                {{ about_card('Data Science', 'icons/design.svg', 'Analyse de données, machine learning et visualisation pour extraire des insights précieux.', 12) }}
+                {{ about_card('Architecture & DevOps', 'icons/phone.svg', 'Conception d\'architectures scalables et déploiement avec les meilleures pratiques DevOps.', 8) }}
+            {% endif %}
         </div>
         
         <div class="flex-full about-text">
-            <h5 class="gray">Présentation</h5>
-            <h1 class="white">Bonjour, je suis Pricemou claude</h1>
-            <h3 class="white">Développeur Full-Stack & Data Science passionné par l'innovation et l'excellence technique.</h3>
-            <p class="gray">Je suis un développeur Full-Stack et Data Scientist avec une passion pour créer des solutions technologiques complètes et performantes. Mon expertise couvre tout le spectre du développement web, du frontend interactif aux APIs backend robustes, en passant par l'analyse de données et le machine learning.<br/><br/>
-            Fort de plusieurs années d'expérience, j'ai développé des applications web modernes, conçu des architectures scalables et transformé des données complexes en insights actionnables. Je maîtrise les technologies modernes comme React, Node.js, Python, SQL, ainsi que les outils de data science comme Pandas, NumPy, Scikit-learn et les visualisations avec Matplotlib et D3.js.<br/><br/>
-            Je suis constamment en veille technologique, curieux des nouvelles tendances et toujours prêt à relever de nouveaux défis. Mon approche combine rigueur technique, créativité et attention aux détails pour livrer des solutions qui font la différence.</p>
+            {% if homepage_data %}
+                <h5 class="gray">{{ homepage_data.about_title }}</h5>
+                <h1 class="white">Bonjour, je suis {{ homepage_data.about_name }}</h1>
+                <h3 class="white">{{ homepage_data.about_subtitle }}</h3>
+                <p class="gray">{{ homepage_data.about_description | replace('\n', '<br/>') | safe }}</p>
+            {% else %}
+                <h5 class="gray">Présentation</h5>
+                <h1 class="white">Bonjour, je suis Pricemou claude</h1>
+                <h3 class="white">Développeur Full-Stack & Data Science passionné par l'innovation et l'excellence technique.</h3>
+                <p class="gray">Je suis un développeur Full-Stack et Data Scientist avec une passion pour créer des solutions technologiques complètes et performantes. Mon expertise couvre tout le spectre du développement web, du frontend interactif aux APIs backend robustes, en passant par l'analyse de données et le machine learning.<br/><br/>
+                Fort de plusieurs années d'expérience, j'ai développé des applications web modernes, conçu des architectures scalables et transformé des données complexes en insights actionnables. Je maîtrise les technologies modernes comme React, Node.js, Python, SQL, ainsi que les outils de data science comme Pandas, NumPy, Scikit-learn et les visualisations avec Matplotlib et D3.js.<br/><br/>
+                Je suis constamment en veille technologique, curieux des nouvelles tendances et toujours prêt à relever de nouveaux défis. Mon approche combine rigueur technique, créativité et attention aux détails pour livrer des solutions qui font la différence.</p>
+            {% endif %}
         </div>
     </div>
 
     <div class="flex partners justify-space">
-        <img src="{{ url_for('static', filename='images/partners/wallety.png') }}" height="45" width="180" alt="wallety" />
-        <img src="{{ url_for('static', filename='images/partners/artisty.png') }}" height="45" width="180" alt="artisty" />
-        <img src="{{ url_for('static', filename='images/partners/khedma-lik.png') }}" height="45" width="180" alt="khedma-lik" />
-        <img src="{{ url_for('static', filename='images/partners/directy.png') }}" height="45" width="180" alt="directy" />
-        <img src="{{ url_for('static', filename='images/partners/telefy.png') }}" height="45" width="180" alt="telefy" />
+        {% if partners %}
+            {% for partner in partners %}
+                <img src="{{ url_for('static', filename=partner.image) }}" height="45" width="180" alt="{{ partner.name }}" />
+            {% endfor %}
+        {% else %}
+            <img src="{{ url_for('static', filename='images/partners/wallety.png') }}" height="45" width="180" alt="wallety" />
+            <img src="{{ url_for('static', filename='images/partners/artisty.png') }}" height="45" width="180" alt="artisty" />
+            <img src="{{ url_for('static', filename='images/partners/khedma-lik.png') }}" height="45" width="180" alt="khedma-lik" />
+            <img src="{{ url_for('static', filename='images/partners/directy.png') }}" height="45" width="180" alt="directy" />
+            <img src="{{ url_for('static', filename='images/partners/telefy.png') }}" height="45" width="180" alt="telefy" />
+        {% endif %}
     </div>
 </section>
 

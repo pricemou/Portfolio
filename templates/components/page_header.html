@@ -11,11 +11,19 @@
                 <h1 class="white">Solutions Full-Stack & Data Science</h1>
                 <p class="gray">Des applications web complètes aux analyses de données avancées, je transforme vos idées en solutions technologiques performantes.</p>
             {% else %}
-                <button>Développeur Full-Stack & Data Science</button>
-                <h1 class="white">De l'idée à la donnée.</h1>
-                <h1 class="white">Du code à l'insight !</h1>
-                <p class="gray">Je développe des applications web complètes et transforme les données en décisions stratégiques. Passionné par l'innovation technologique et l'analyse de données.</p>
-                <a class="green" href="mailto:contact@blaiti.com">Discutons !</a>
+                {% if homepage_data %}
+                    <button>{{ homepage_data.badge }}</button>
+                    <h1 class="white">{{ homepage_data.title_line1 }}</h1>
+                    <h1 class="white">{{ homepage_data.title_line2 }}</h1>
+                    <p class="gray">{{ homepage_data.description }}</p>
+                    <a class="green" href="mailto:{{ homepage_data.email }}">{{ homepage_data.cta_text }}</a>
+                {% else %}
+                    <button>Développeur Full-Stack & Data Science</button>
+                    <h1 class="white">De l'idée à la donnée.</h1>
+                    <h1 class="white">Du code à l'insight !</h1>
+                    <p class="gray">Je développe des applications web complètes et transforme les données en décisions stratégiques. Passionné par l'innovation technologique et l'analyse de données.</p>
+                    <a class="green" href="mailto:contact@example.com">Discutons !</a>
+                {% endif %}
             {% endif %}
         </div>
         {% if request.endpoint == 'index' %}

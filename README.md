@@ -24,7 +24,10 @@ Developer Portfolio is a web template made for developers to present themselves 
 ## Tech Stack
 
 **Backend:** Python / Flask  
-**Frontend:** HTML5 / CSS3 / Jinja2 Templates
+**Frontend:** HTML5 / CSS3 / Jinja2 Templates  
+**Base de données:** MongoDB (local ou Atlas)  
+**Validation:** Utils personnalisés  
+**Tests:** unittest (Python)
 
 ## Quick start
 
@@ -72,6 +75,26 @@ Une fois l'environnement virtuel activé, installez les dépendances :
   pip install -r requirements.txt
 ```
 
+### Configurer les variables d'environnement
+
+Le projet utilise des variables d'environnement pour la configuration. Créez un fichier `.env` à partir du modèle :
+
+**Sur Windows (PowerShell):**
+```bash
+  Copy-Item .env.example .env
+```
+
+**Sur Linux/Mac/Git Bash:**
+```bash
+  cp .env.example .env
+```
+
+Puis éditez le fichier `.env` avec vos propres valeurs :
+- `PORTFOLIO_NAME` : Votre nom
+- `PORTFOLIO_EMAIL` : Votre email de contact
+- `SECRET_KEY` : Clé secrète pour Flask (changez-la en production)
+- `DEBUG` : `True` pour le développement, `False` pour la production
+
 ## Run Locally
 
 Pour exécuter l'application localement, assurez-vous que l'environnement virtuel est activé, puis exécutez :
@@ -80,18 +103,101 @@ Pour exécuter l'application localement, assurez-vous que l'environnement virtue
   python app.py
 ```
 
-L'application sera disponible sur `http://localhost:5000`
+L'application sera disponible sur `http://localhost:5000` (ou l'adresse configurée dans `.env`)
 
 **Note:** Pour désactiver l'environnement virtuel, tapez simplement `deactivate` dans le terminal.
 
+## Configuration des Variables d'Environnement
+
+Le projet utilise un fichier `.env` pour la configuration. Les variables principales sont :
+
+### Configuration Flask
+- `FLASK_ENV` : Environnement Flask (development/production)
+- `DEBUG` : Mode debug (True/False)
+- `SECRET_KEY` : Clé secrète Flask (à changer en production)
+- `HOST` : Adresse IP du serveur (défaut: 127.0.0.1)
+- `PORT` : Port du serveur (défaut: 5000)
+
+### Informations Portfolio
+- `PORTFOLIO_NAME` : Nom affiché dans le portfolio
+- `PORTFOLIO_TITLE` : Titre professionnel
+- `PORTFOLIO_EMAIL` : Email de contact
+- `PORTFOLIO_DESCRIPTION` : Description du portfolio
+
+### Configuration MongoDB
+- `MONGO_URI` : URI de connexion MongoDB
+  - Local : `mongodb://localhost:27017/`
+  - Atlas : `mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority`
+- `MONGO_DB_NAME` : Nom de la base de données (défaut: portfolio_db)
+
+### Configuration Admin
+- `ADMIN_USERNAME` : Nom d'utilisateur pour se connecter à l'interface admin (défaut: admin)
+- `ADMIN_PASSWORD` : Mot de passe pour se connecter à l'interface admin (défaut: admin123)
+- `ADMIN_KEY` : Clé secrète pour l'API (optionnel, pour compatibilité avec l'ancien système)
+
+**Important :** Changez le mot de passe par défaut en production !
+
+**Important :** Le fichier `.env` est ignoré par Git pour des raisons de sécurité. Ne commitez jamais vos clés secrètes !
+
+### Installation de MongoDB
+
+**Option 1 : MongoDB Local**
+1. Téléchargez et installez MongoDB depuis [mongodb.com](https://www.mongodb.com/try/download/community)
+2. Démarrez le service MongoDB
+3. Utilisez dans `.env` : `MONGO_URI=mongodb://localhost:27017/`
+
+**Option 2 : MongoDB Atlas (Cloud)**
+1. Créez un compte sur [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Créez un cluster gratuit
+3. Obtenez votre URI de connexion
+4. Utilisez dans `.env` : `MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/...`
+
+**Note :** Si `MONGO_URI` n'est pas défini, l'application fonctionnera sans base de données MongoDB.
+
 ## Deployment
 
-For production deployment, use a WSGI server like Gunicorn:
+Pour le déploiement en production :
+
+1. Configurez les variables d'environnement sur votre serveur
+2. Définissez `DEBUG=False` et `FLASK_ENV=production`
+3. Changez `SECRET_KEY` par une clé sécurisée
+4. Utilisez un serveur WSGI comme Gunicorn :
 
 ```bash
   pip install gunicorn
   gunicorn app:app
 ```
+
+Ou avec des variables d'environnement :
+```bash
+  gunicorn --bind 0.0.0.0:8000 app:app
+```
+
+## Tests
+
+Pour exécuter les tests unitaires :
+
+```bash
+python -m pytest tests/
+```
+
+Ou avec unittest :
+
+```bash
+python -m unittest tests/test_basic.py
+```
+
+## Documentation API
+
+La documentation complète de l'API est disponible dans [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
+
+## Gestion des erreurs
+
+L'application inclut :
+- Pages d'erreur personnalisées (404, 500)
+- Handlers d'erreur pour toutes les routes
+- Validation des données côté serveur
+- Messages d'erreur clairs pour l'utilisateur
 
 ## File Structure
 

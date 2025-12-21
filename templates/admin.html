@@ -6,7 +6,39 @@
     <title>Admin - Pricemou</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Font Awesome - Utilisation locale ou alternative -->
+    <style>
+        /* Icônes de base pour l'admin si Font Awesome n'est pas disponible */
+        .fas, .fa {
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", Arial, sans-serif;
+            font-weight: 900;
+            display: inline-block;
+        }
+        .fa-house::before { content: "🏠"; }
+        .fa-home::before { content: "🏡"; }
+        .fa-code::before { content: "💻"; }
+        .fa-handshake::before { content: "🤝"; }
+        .fa-folder::before { content: "📁"; }
+        .fa-user::before { content: "👤"; }
+        .fa-times::before { content: "✕"; }
+        .fa-search::before { content: "🔍"; }
+        .fa-globe::before { content: "🌐"; }
+        .fa-headset::before { content: "🎧"; }
+        .fa-chart-line::before { content: "📈"; }
+        .fa-chart-bar::before { content: "📊"; }
+        .fa-sync-alt::before { content: "🔄"; }
+        .fa-eye::before { content: "👁️"; }
+        .fa-users::before { content: "👥"; }
+        .fa-heart::before { content: "❤️"; }
+        .fa-clock::before { content: "⏰"; }
+        .fa-chevron-down::before { content: "▼"; }
+        .fa-chevron-left::before { content: "◄"; }
+        .fa-sign-out-alt::before { content: "🚪"; }
+        .fa-book::before { content: "📖"; }
+        .fa-info-circle::before { content: "ℹ️"; }
+    </style>
+    <!-- Tentative de chargement Font Awesome depuis CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" onerror="this.onerror=null; console.log('Font Awesome non chargé, utilisation des icônes de base');">
 </head>
 <body>
     <div class="app-container">
@@ -17,17 +49,23 @@
             </div>
 
             <div class="sidebar-nav primary-nav">
-                <a href="#dashboard" class="nav-btn menu-item active" aria-label="Tableau de bord">
+                <a href="#dashboard" class="nav-btn menu-item active" data-section="dashboard" aria-label="Tableau de bord">
                     <i class="fas fa-house"></i>
                 </a>
-                <a href="#projects" class="nav-btn menu-item" aria-label="Projets">
+                <a href="#homepage" class="nav-btn menu-item" data-section="homepage" aria-label="Page d'accueil">
+                    <i class="fas fa-home"></i>
+                </a>
+                <a href="#skills" class="nav-btn menu-item" data-section="skills" aria-label="Compétences">
+                    <i class="fas fa-code"></i>
+                </a>
+                <a href="#partners" class="nav-btn menu-item" data-section="partners" aria-label="Partenaires">
+                    <i class="fas fa-handshake"></i>
+                </a>
+                <a href="#projects" class="nav-btn menu-item" data-section="projects" aria-label="Projets">
                     <i class="fas fa-folder"></i>
                 </a>
-                <a href="#analytics" class="nav-btn menu-item" aria-label="Analytiques">
-                    <i class="fas fa-chart-line"></i>
-                </a>
-                <a href="#settings" class="nav-btn menu-item" aria-label="Paramètres">
-                    <i class="fas fa-cog"></i>
+                <a href="#services" class="nav-btn menu-item" data-section="services" aria-label="Services">
+                    <i class="fas fa-code"></i>
                 </a>
                 <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
                     <i class="fas fa-globe"></i>
@@ -63,7 +101,7 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div>
-                                <p class="chip-label" id="currentUsername">Admin</p>
+                                <p class="chip-label" id="currentUsername">{{ admin_username or 'Admin' }}</p>
                                 <span class="chip-role" id="currentUserRole">Administrateur</span>
                             </div>
                             <i class="fas fa-chevron-down"></i>
@@ -72,7 +110,7 @@
                             <a href="#" class="user-dropdown-item">
                                 <i class="fas fa-user"></i> Profil
                             </a>
-                            <a href="#" class="user-dropdown-item">
+                            <a href="{{ url_for('admin_logout') }}" class="user-dropdown-item">
                                 <i class="fas fa-sign-out-alt"></i> Déconnexion
                             </a>
                         </div>
@@ -123,9 +161,95 @@
                         </div>
                     </div>
 
-                    <div class="content-section">
+                    <!-- Section Dashboard -->
+                    <div id="section-dashboard" class="content-section active-section">
                         <h2>Gestion du Portfolio</h2>
                         <p>Interface d'administration pour gérer les projets, services et contenus du portfolio.</p>
+                    </div>
+
+                    <!-- Section Homepage -->
+                    <div id="section-homepage" class="content-section" style="display: none;">
+                        <h2>Page d'accueil</h2>
+                        <form id="homepage-form" class="admin-form">
+                            <div class="form-group">
+                                <label>Badge professionnel</label>
+                                <input type="text" id="homepage-badge" name="badge" placeholder="Développeur Full-Stack & Data Science">
+                            </div>
+                            <div class="form-group">
+                                <label>Titre ligne 1</label>
+                                <input type="text" id="homepage-title1" name="title_line1" placeholder="De l'idée à la donnée.">
+                            </div>
+                            <div class="form-group">
+                                <label>Titre ligne 2</label>
+                                <input type="text" id="homepage-title2" name="title_line2" placeholder="Du code à l'insight !">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="homepage-description" name="description" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Email de contact</label>
+                                <input type="email" id="homepage-email" name="email" placeholder="contact@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Texte du bouton CTA</label>
+                                <input type="text" id="homepage-cta" name="cta_text" placeholder="Discutons !">
+                            </div>
+                            <h3 style="margin-top: 2rem;">Section À propos</h3>
+                            <div class="form-group">
+                                <label>Titre de section</label>
+                                <input type="text" id="homepage-about-title" name="about_title" placeholder="Présentation">
+                            </div>
+                            <div class="form-group">
+                                <label>Nom</label>
+                                <input type="text" id="homepage-about-name" name="about_name" placeholder="Pricemou claude">
+                            </div>
+                            <div class="form-group">
+                                <label>Sous-titre</label>
+                                <input type="text" id="homepage-about-subtitle" name="about_subtitle">
+                            </div>
+                            <div class="form-group">
+                                <label>Description complète</label>
+                                <textarea id="homepage-about-description" name="about_description" rows="6"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </form>
+                    </div>
+
+                    <!-- Section Skills -->
+                    <div id="section-skills" class="content-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Compétences</h2>
+                            <button class="btn btn-primary" onclick="openSkillModal()">+ Ajouter une compétence</button>
+                        </div>
+                        <div id="skills-list" class="admin-list"></div>
+                    </div>
+
+                    <!-- Section Partners -->
+                    <div id="section-partners" class="content-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Partenaires</h2>
+                            <button class="btn btn-primary" onclick="openPartnerModal()">+ Ajouter un partenaire</button>
+                        </div>
+                        <div id="partners-list" class="admin-list"></div>
+                    </div>
+
+                    <!-- Section Projects -->
+                    <div id="section-projects" class="content-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Projets</h2>
+                            <button class="btn btn-primary" onclick="openProjectModal()">+ Ajouter un projet</button>
+                        </div>
+                        <div id="projects-list" class="admin-list"></div>
+                    </div>
+
+                    <!-- Section Services -->
+                    <div id="section-services" class="content-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Services</h2>
+                            <button class="btn btn-primary" onclick="openServiceModal()">+ Ajouter un service</button>
+                        </div>
+                        <div id="services-list" class="admin-list"></div>
                     </div>
                 </div>
             </div>
@@ -252,7 +376,170 @@
         </div>
     </div>
 
+    <!-- Modals pour Skills et Partners -->
+    <div id="skillModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="skillModalTitle">Nouvelle compétence</h3>
+                <button class="modal-close" onclick="closeSkillModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="skill-form" class="admin-form">
+                <input type="hidden" id="skill-id">
+                <div class="form-group">
+                    <label>Titre</label>
+                    <input type="text" id="skill-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Icône (chemin)</label>
+                    <input type="text" id="skill-icon" placeholder="icons/code.svg" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="skill-description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Nombre de projets</label>
+                    <input type="number" id="skill-projects" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Ordre d'affichage</label>
+                    <input type="number" id="skill-order" min="1" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSkillModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="partnerModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="partnerModalTitle">Nouveau partenaire</h3>
+                <button class="modal-close" onclick="closePartnerModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="partner-form" class="admin-form">
+                <input type="hidden" id="partner-id">
+                <div class="form-group">
+                    <label>Nom</label>
+                    <input type="text" id="partner-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Image (chemin)</label>
+                    <input type="text" id="partner-image" placeholder="images/partners/logo.png" required>
+                </div>
+                <div class="form-group">
+                    <label>Ordre d'affichage</label>
+                    <input type="number" id="partner-order" min="1" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closePartnerModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Projects -->
+    <div id="projectModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="projectModalTitle">Nouveau projet</h3>
+                <button class="modal-close" onclick="closeProjectModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="project-form" class="admin-form">
+                <input type="hidden" id="project-id">
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" id="project-title" required maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label>Technologies *</label>
+                    <input type="text" id="project-technologies" placeholder="React + Node.js" required maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="project-description" rows="4" required maxlength="1000"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Lien du projet (URL)</label>
+                    <input type="url" id="project-link" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label>Lien GitHub (URL)</label>
+                    <input type="url" id="project-github" placeholder="https://github.com/user/repo">
+                </div>
+                <div class="form-group">
+                    <label>Image (chemin ou URL)</label>
+                    <input type="text" id="project-image" placeholder="images/projects/project.png">
+                </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select id="project-status">
+                        <option value="published">Publié</option>
+                        <option value="draft">Brouillon</option>
+                        <option value="archived">Archivé</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ordre d'affichage</label>
+                    <input type="number" id="project-order" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="project-featured"> Projet en vedette
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeProjectModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Services -->
+    <div id="serviceModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="serviceModalTitle">Nouveau service</h3>
+                <button class="modal-close" onclick="closeServiceModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="service-form" class="admin-form">
+                <input type="hidden" id="service-id">
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" id="service-title" required maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="service-description" rows="4" required maxlength="1000"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Icône (chemin)</label>
+                    <input type="text" id="service-icon" placeholder="icons/code.svg" maxlength="500">
+                    <small style="color: var(--gray); font-size: 0.85rem;">Exemples: icons/code.svg, icons/design.svg, icons/phone.svg</small>
+                </div>
+                <div class="form-group">
+                    <label>Ordre d'affichage</label>
+                    <input type="number" id="service-order" min="0" value="0">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeServiceModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // La session Flask gère maintenant l'authentification
+        // Plus besoin de clé dans localStorage
+        console.log('Interface admin chargée');
+    </script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin-data.js') }}"></script>
 </body>
 </html>
 

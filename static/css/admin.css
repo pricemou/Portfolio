@@ -578,36 +578,76 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
     z-index: 2000;
     align-items: center;
     justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
+.modal[style*="display: block"],
 .modal.open {
-    display: flex;
+    display: flex !important;
+    opacity: 1;
 }
 
 .modal-content {
     background: var(--light-bg);
     border-radius: var(--radius-lg);
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: var(--shadow-lg);
+    overflow-x: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    transform: scale(0.9) translateY(-20px);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    opacity: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal[style*="display: flex"] .modal-content,
+.modal.open .modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* Scrollbar personnalisée pour modal-content */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: var(--dark-bg);
+    border-radius: var(--radius-sm);
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--gray);
+    border-radius: var(--radius-sm);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--green);
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-4);
-    border-bottom: 1px solid var(--dark-bg);
+    padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--light-bg) 0%, var(--dark-bg) 100%);
 }
 
 .modal-header h3 {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--white);
     display: flex;
@@ -617,23 +657,37 @@ body {
 }
 
 .modal-close {
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--gray);
     font-size: 1.25rem;
     cursor: pointer;
-    padding: var(--spacing-2);
-    border-radius: var(--radius-sm);
-    transition: color 0.2s ease, background 0.2s ease;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-close:hover {
     color: var(--white);
-    background: var(--dark-bg);
+    background: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.5);
+    transform: rotate(90deg);
 }
 
 .modal-body {
-    padding: var(--spacing-4);
+    padding: var(--spacing-6);
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Le body du modal contient le formulaire */
+.modal-body .admin-form {
+    height: 100%;
 }
 
 .support-section {
@@ -679,10 +733,14 @@ body {
 }
 
 .modal-actions {
-    padding: var(--spacing-4);
-    border-top: 1px solid var(--dark-bg);
+    padding: var(--spacing-4) var(--spacing-6) var(--spacing-6);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: flex-end;
+    gap: var(--spacing-3);
+    background: var(--dark-bg);
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
 }
 
 .btn {
@@ -791,5 +849,188 @@ body {
     .stats-grid {
         grid-template-columns: 1fr;
     }
+    
+    /* Modals responsive */
+    .modal-content {
+        width: 95%;
+        max-width: 100%;
+        max-height: 95vh;
+        margin: var(--spacing-2);
+    }
+    
+    .modal-header {
+        padding: var(--spacing-4);
+    }
+    
+    .modal-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: var(--spacing-4);
+    }
+    
+    .modal-actions {
+        padding: var(--spacing-4);
+        flex-direction: column;
+        gap: var(--spacing-2);
+    }
+    
+    .modal-actions .btn {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+/* ============================================
+   ADMIN FORMS & CARDS
+   ============================================ */
+.admin-form {
+    max-width: 100%;
+    margin-top: 0;
+}
+
+/* Formulaires dans les modals */
+.modal-content .admin-form {
+    padding: 17px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.modal-content .admin-form .form-group:last-of-type {
+    margin-bottom: 0;
+}
+
+.form-group {
+    margin-bottom: var(--spacing-6);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-2);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="number"],
+.form-group textarea {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    background: var(--dark-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--white);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:hover,
+.form-group textarea:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(77, 186, 135, 0.15);
+    background: var(--light-bg);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.btn-secondary {
+    background: var(--gray);
+    color: var(--white);
+    margin-right: var(--spacing-2);
+}
+
+.btn-secondary:hover {
+    background: #666;
+}
+
+.btn-sm {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.85rem;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: var(--white);
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.admin-card {
+    background: var(--light-bg);
+    padding: var(--spacing-6);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.admin-card:hover {
+    border-color: var(--green);
+    box-shadow: var(--shadow-md);
+}
+
+.admin-card h3 {
+    color: var(--white);
+    margin-bottom: var(--spacing-2);
+}
+
+.admin-card p {
+    color: var(--gray);
+    margin-bottom: var(--spacing-2);
+}
+
+.active-section {
+    display: block !important;
+}
+
+.toast {
+    background: var(--light-bg);
+    color: var(--white);
+    padding: var(--spacing-4) var(--spacing-6);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    border-left: 4px solid var(--green);
+    min-width: 300px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-success {
+    border-left-color: var(--green);
+}
+
+.toast-error {
+    border-left-color: #dc3545;
+}
+
+.toast-info {
+    border-left-color: #17a2b8;
 }
 

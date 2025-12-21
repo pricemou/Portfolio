@@ -1,40 +1,21 @@
 <section id="services" class="dark-bg">
     <div class="services-grid">
-        <div class="service-card light-bg">
-            <img src="{{ url_for('static', filename='icons/code.svg') }}" width="48" height="48" alt="Développement Full-Stack" class="service-icon" />
-            <h3 class="white">Développement Full-Stack</h3>
-            <p class="gray">Applications web complètes du frontend au backend. React, Node.js, Python, bases de données SQL/NoSQL. Architecture scalable et performante.</p>
-        </div>
-
-        <div class="service-card light-bg">
-            <img src="{{ url_for('static', filename='icons/design.svg') }}" width="48" height="48" alt="Data Science" class="service-icon" />
-            <h3 class="white">Data Science & Analytics</h3>
-            <p class="gray">Analyse de données, machine learning, visualisation et dashboards interactifs. Pandas, Scikit-learn, TensorFlow. Transformation de données en insights.</p>
-        </div>
-
-        <div class="service-card light-bg">
-            <img src="{{ url_for('static', filename='icons/code.svg') }}" width="48" height="48" alt="APIs & Backend" class="service-icon" />
-            <h3 class="white">APIs & Backend</h3>
-            <p class="gray">Création d'APIs RESTful et GraphQL robustes avec Node.js, Python Flask/Django. Authentification, sécurité, optimisation et documentation complète.</p>
-        </div>
-
-        <div class="service-card light-bg">
-            <img src="{{ url_for('static', filename='icons/design.svg') }}" width="48" height="48" alt="Visualisation de données" class="service-icon" />
-            <h3 class="white">Visualisation de Données</h3>
-            <p class="gray">Dashboards interactifs et visualisations de données avec D3.js, Plotly, Matplotlib. Tableaux de bord métier et rapports automatisés.</p>
-        </div>
-
-        <div class="service-card light-bg">
-            <img src="{{ url_for('static', filename='icons/phone.svg') }}" width="48" height="48" alt="Machine Learning" class="service-icon" />
-            <h3 class="white">Machine Learning</h3>
-            <p class="gray">Modèles prédictifs, classification, clustering et deep learning. Développement et déploiement de modèles ML pour applications réelles.</p>
-        </div>
-
-        <div class="service-card light-bg">
-            <img src="{{ url_for('static', filename='icons/code.svg') }}" width="48" height="48" alt="DevOps & Architecture" class="service-icon" />
-            <h3 class="white">DevOps & Architecture</h3>
-            <p class="gray">CI/CD, Docker, Kubernetes, cloud (AWS, Azure, GCP). Architecture microservices, monitoring et optimisation de performances.</p>
-        </div>
+        {% if services and services|length > 0 %}
+            {% for service in services %}
+            <div class="service-card light-bg">
+                {% if service.icon %}
+                <img src="{{ url_for('static', filename=service.icon) }}" width="48" height="48" alt="{{ service.title }}" class="service-icon" />
+                {% else %}
+                <img src="{{ url_for('static', filename='icons/code.svg') }}" width="48" height="48" alt="{{ service.title }}" class="service-icon" />
+                {% endif %}
+                <h3 class="white">{{ service.title }}</h3>
+                <p class="gray">{{ service.description }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="service-card light-bg" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                <p class="gray">Aucun service disponible pour le moment.</p>
+            </div>
+        {% endif %}
     </div>
 </section>
-
