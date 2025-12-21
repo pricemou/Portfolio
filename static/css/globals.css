@@ -1,9 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;600;700&display=swap');
 
+/* Variables CSS pour le thème sombre (par défaut) */
+:root[data-theme="dark"],
+:root:not([data-theme]) {
+  --bg-dark: #25262A;
+  --bg-light: #2D2E32;
+  --text-white: #FFFFFF;
+  --text-gray: #777777;
+  --text-green: #4dba87;
+  --bg-body: #1a1b1e;
+}
+
+/* Variables CSS pour le thème clair */
+:root[data-theme="light"] {
+  --bg-dark: #f5f5f5;
+  --bg-light: #ffffff;
+  --text-white: #1a1b1e;
+  --text-gray: #666666;
+  --text-green: #2d8659;
+  --bg-body: #fafafa;
+}
+
 body {
   padding: 0;
   margin: 0;
   font-family: 'Roboto Mono';
+  background-color: var(--bg-body);
+  color: var(--text-white);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 * {
   box-sizing: border-box;
@@ -16,19 +40,24 @@ h1, h2, h3, h4, h5, h6, p {
   margin: 0;
 }
 .dark-bg {
-  background-color: #25262A;
+  background-color: var(--bg-dark);
+  transition: background-color 0.3s ease;
 }
 .light-bg {
-  background-color: #2D2E32;
+  background-color: var(--bg-light);
+  transition: background-color 0.3s ease;
 }
 .white {
-  color: #FFFFFF;
+  color: var(--text-white);
+  transition: color 0.3s ease;
 }
 .gray {
-  color: #777777;
+  color: var(--text-gray);
+  transition: color 0.3s ease;
 }
 .green {
-  color: #4dba87;
+  color: var(--text-green);
+  transition: color 0.3s ease;
 }
 .flex {
   display: flex;
@@ -48,11 +77,40 @@ button {
   border: none;
   border-radius: 0.2rem;
   padding: 0.5rem 1rem;
-  color: #2D2E32;
+  color: var(--bg-light);
   font-size: 0.8rem;
   font-weight: 600;
-  background-color: #4dba87;
+  background-color: var(--text-green);
   cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Bouton toggle du thème */
+.theme-toggle {
+  background: transparent;
+  border: 2px solid var(--text-white);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  margin-left: 1rem;
+}
+
+.theme-toggle:hover {
+  background-color: var(--text-green);
+  border-color: var(--text-green);
+  transform: scale(1.1);
+}
+
+.theme-toggle:focus {
+  outline: 2px solid var(--text-green);
+  outline-offset: 2px;
 }
 
 /* Header */
@@ -159,7 +217,7 @@ nav ul li {
 }
 .work-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 .work-card-header {
   display: flex;
@@ -191,7 +249,8 @@ nav ul li {
   transition: color 0.3s ease;
 }
 .work-link:hover {
-  color: #6dd4a8;
+  color: var(--text-green);
+  opacity: 0.8;
 }
 
 /* Services */
@@ -207,7 +266,7 @@ nav ul li {
 }
 .service-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 .service-icon {
   margin-bottom: 1.5rem;
