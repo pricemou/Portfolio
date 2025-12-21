@@ -69,26 +69,31 @@ nav ul li {
   font-size: 0.9rem;
   font-weight: 600;
 }
-.header {
+.header,
+.page-header {
   justify-content: space-between;
   padding: 1.1rem 5rem 0rem 5rem;
 }
-.header h1 {
+.header h1,
+.page-header h1 {
   margin: auto;
   font-size: 3rem;
   font-weight: 500;
 }
-.header p {
+.header p,
+.page-header p {
   font-size: 0.8rem;
   font-weight: 500;
   margin-top: 1rem;
   margin-bottom: 2rem;
 }
-.header button {
+.header button,
+.page-header button {
   cursor: text;
   margin-bottom: 1.5rem;
 }
-.header a {
+.header a,
+.page-header a {
   font-size: 1.2rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -141,6 +146,83 @@ nav ul li {
   padding-top: 5rem;
 }
 
+/* Works */
+.works-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+.work-card {
+  padding: 2rem;
+  border-radius: 0.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.work-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.work-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.work-card-header h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+.work-card-header span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.work-card p {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+.work-link {
+  text-decoration: underline;
+  margin-top: 1rem;
+  display: inline-block;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+.work-link:hover {
+  color: #6dd4a8;
+}
+
+/* Services */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+.service-card {
+  padding: 2.5rem;
+  border-radius: 0.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.service-icon {
+  margin-bottom: 1.5rem;
+}
+.service-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.service-card p {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
 /* Footer */
 footer {
   padding: 2rem 5rem;
@@ -172,8 +254,12 @@ footer ul li {
   nav ul, nav ul li, .active {
     display: none;
   }
-  .header {
+  .header,
+  .page-header {
     padding: 2rem 2rem 0rem 2rem;
+  }
+  .page-header img {
+    display: none;
   }
   section {
     padding: 1rem 2rem;
@@ -185,6 +271,11 @@ footer ul li {
   .about-card div {
     flex-direction: row !important;
     justify-content: space-between !important;
+  }
+  /* Works & Services */
+  .works-grid,
+  .services-grid {
+    grid-template-columns: 1fr;
   }
   /* Footer */
   footer ul {

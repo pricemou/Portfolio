@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Header -->
+    {% include 'components/page_header.html' %}
+
+    <main>
+        <!-- About -->
+        {% include 'components/about.html' %}
+    </main>
+
+    <!-- Footer -->
+    {% set year = current_year %}
+    {% include 'components/footer.html' %}
+{% endblock %}
+
+

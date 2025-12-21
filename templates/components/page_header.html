@@ -1,0 +1,26 @@
+<header>
+    {% include 'components/navbar.html' %}
+    <div class="page-header flex light-bg">
+        <div>
+            {% if request.endpoint == 'works' %}
+                <button>Portfolio</button>
+                <h1 class="white">Mes Projets</h1>
+                <p class="gray">Découvrez mes réalisations et projets développés avec passion.</p>
+            {% elif request.endpoint == 'services' %}
+                <button>Services</button>
+                <h1 class="white">Ce que je peux faire pour vous</h1>
+                <p class="gray">Des solutions complètes pour transformer vos idées en produits numériques.</p>
+            {% else %}
+                <button>Développeur Front-End</button>
+                <h1 class="white">Les paroles sont vaines.</h1>
+                <h1 class="white">Montrez-moi le code !</h1>
+                <p class="gray">Je conçois et code de belles choses simples, et j'adore ce que je fais.</p>
+                <a class="green" href="mailto:contact@blaiti.com">Discutons !</a>
+            {% endif %}
+        </div>
+        {% if request.endpoint == 'index' %}
+            <img src="{{ url_for('static', filename='images/blaiti.png') }}" width="463" height="513" alt="blaiti" />
+        {% endif %}
+    </div>
+</header>
+

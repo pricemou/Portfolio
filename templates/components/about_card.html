@@ -1,0 +1,11 @@
+{% macro about_card(title, icon, description, projects) %}
+<div class="light-bg about-card">
+    <div class="flex justify-space">
+        <h3 class="green">{{ title }}</h3>
+        <img src="{{ url_for('static', filename=icon) }}" width="28" height="28" alt="{{ title }}" />
+    </div>
+    <p class="white">{{ description }}</p>
+    <span class="gray">{{ projects }} projets</span>
+</div>
+{% endmacro %}
+

@@ -1,0 +1,28 @@
+{% from 'components/about_card.html' import about_card %}
+
+<section id="about" class="dark-bg">
+    <div class="flex">
+        <div class="flex-full">
+            {{ about_card('Design UX/UI', 'icons/design.svg', 'Je crée des produits de design avec des idées uniques.', 7) }}
+            {{ about_card('Design Web', 'icons/code.svg', 'Je développe le Front-End avec un codage super fluide.', 10) }}
+            {{ about_card('Mobile', 'icons/phone.svg', 'Je développe des applications mobiles multiplateformes.', 7) }}
+        </div>
+        
+        <div class="flex-full about-text">
+            <h5 class="gray">Présentation</h5>
+            <h1 class="white">Bonjour, je suis Pricemou claude</h1>
+            <h3 class="white">Le design n'est pas seulement ce à quoi ça ressemble. Le design, c'est comment ça fonctionne !</h3>
+            <p class="gray">J'ai réalisé mon rêve de devenir développeur, ce qui a toujours été mon ambition de toute une vie. Je suis un développeur Front-End talentueux avec une formation en design UI/UX. Au cours de mes 4 années de travail en tant que freelance, j'ai eu l'opportunité d'améliorer mon expertise en collaborant avec différentes entreprises et en créant du contenu utile à la fois pour les entreprises et les clients.<br/><br/>
+            Je suis naturellement persévérant, sûr de moi, discrètement curieux, innovant et je remets constamment mes compétences au défi.</p>
+        </div>
+    </div>
+
+    <div class="flex partners justify-space">
+        <img src="{{ url_for('static', filename='images/partners/wallety.png') }}" height="45" width="180" alt="wallety" />
+        <img src="{{ url_for('static', filename='images/partners/artisty.png') }}" height="45" width="180" alt="artisty" />
+        <img src="{{ url_for('static', filename='images/partners/khedma-lik.png') }}" height="45" width="180" alt="khedma-lik" />
+        <img src="{{ url_for('static', filename='images/partners/directy.png') }}" height="45" width="180" alt="directy" />
+        <img src="{{ url_for('static', filename='images/partners/telefy.png') }}" height="45" width="180" alt="telefy" />
+    </div>
+</section>
+

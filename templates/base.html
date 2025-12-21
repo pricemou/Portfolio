@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Pricemou claude">
+    <meta name="keywords" content="ReactJS, NextJS">
+    <meta name="description" content="Je suis un développeur Front-End talentueux avec une formation en design UI/UX.">
+    <meta name="theme-color" content="#2D2E32">
+    
+    <meta property="og:site_name" content="Pricemou - Développeur Frontend">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="Pricemou - Développeur Frontend"/>
+    <meta property="og:image" content="{{ url_for('static', filename='images/blaiti.png') }}"/>
+    
+    <title>{% block title %}Pricemou - Développeur Frontend{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/globals.css') }}">
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+</html>
+

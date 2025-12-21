@@ -1,0 +1,24 @@
+<nav class="flex light-bg justify-space">
+    <div class="logo white">
+        <a href="{{ url_for('index') }}">Pricemou claude</a>
+    </div>
+
+    <ul class="flex white">
+        <li class="{% if request.endpoint == 'index' %}green{% endif %}">
+            <a href="{{ url_for('index') }}">&lt; Accueil /&gt;</a>
+        </li>
+        <li class="{% if request.endpoint == 'works' %}green{% endif %}">
+            <a href="{{ url_for('works') }}">Projets.</a>
+        </li>
+        <li class="{% if request.endpoint == 'services' %}green{% endif %}">
+            <a href="{{ url_for('services') }}">Services.</a>
+        </li>
+        <li class="{% if request.endpoint == 'index' and '#about' in request.url %}green{% endif %}">
+            <a href="{{ url_for('index') }}#about">À propos.</a>
+        </li>
+        <li class="{% if request.endpoint == 'admin' %}green{% endif %}">
+            <a href="{{ url_for('admin') }}">Admin.</a>
+        </li>
+    </ul>
+</nav>
+

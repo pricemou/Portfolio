@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Pricemou</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-code"></i>
+            </div>
+
+            <div class="sidebar-nav primary-nav">
+                <a href="#dashboard" class="nav-btn menu-item active" aria-label="Tableau de bord">
+                    <i class="fas fa-house"></i>
+                </a>
+                <a href="#projects" class="nav-btn menu-item" aria-label="Projets">
+                    <i class="fas fa-folder"></i>
+                </a>
+                <a href="#analytics" class="nav-btn menu-item" aria-label="Analytiques">
+                    <i class="fas fa-chart-line"></i>
+                </a>
+                <a href="#settings" class="nav-btn menu-item" aria-label="Paramètres">
+                    <i class="fas fa-cog"></i>
+                </a>
+                <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
+                    <i class="fas fa-globe"></i>
+                </a>
+            </div>
+
+            <div class="sidebar-nav secondary-nav">
+                <button class="nav-btn" id="supportBtn" aria-label="Support" title="Support">
+                    <i class="fas fa-headset"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <span class="logo-text">Admin Panel</span>
+                </div>
+                <div class="search-box large">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Rechercher un projet, un service...">
+                </div>
+                
+                <div class="top-bar-actions">
+                    <div class="user-menu">
+                        <div class="user-menu-trigger" id="userMenuTrigger">
+                            <div class="top-user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <p class="chip-label" id="currentUsername">Admin</p>
+                                <span class="chip-role" id="currentUserRole">Administrateur</span>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="user-dropdown" id="userDropdown">
+                            <a href="#" class="user-dropdown-item">
+                                <i class="fas fa-user"></i> Profil
+                            </a>
+                            <a href="#" class="user-dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Déconnexion
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <h1 class="page-title" id="current-page">Dashboard</h1>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="dashboard-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Total Projets</p>
+                                <p class="stat-value" id="total-projects">12</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Vues Total</p>
+                                <p class="stat-value" id="total-views">1,234</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Visiteurs</p>
+                                <p class="stat-value" id="total-visitors">456</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Taux Engagement</p>
+                                <p class="stat-value" id="engagement-rate">87%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-section">
+                        <h2>Gestion du Portfolio</h2>
+                        <p>Interface d'administration pour gérer les projets, services et contenus du portfolio.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <aside class="right-panel" id="right-panel">
+                <button class="right-panel-close" onclick="toggleRightPanel()" aria-label="Fermer le panneau">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <!-- Panel Header -->
+                <div class="panel-header">
+                    <div class="panel-header-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3>Vue d'ensemble</h3>
+                        <p class="panel-subtitle" id="panel-last-update">Dernière mise à jour</p>
+                    </div>
+                </div>
+
+                <!-- Statistiques Rapides -->
+                <div class="panel-stats-section">
+                    <div class="panel-stats-header">
+                        <h4>
+                            <i class="fas fa-chart-bar"></i>
+                            Statistiques Rapides
+                        </h4>
+                        <button class="panel-refresh-btn" onclick="loadPanelStats()" title="Rafraîchir">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="quick-stats-grid">
+                        <div class="panel-stat-card">
+                            <div class="panel-stat-icon">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <div class="panel-stat-info">
+                                <p class="panel-stat-label">Projets Actifs</p>
+                                <p class="panel-stat-value" id="panel-active-projects">8</p>
+                            </div>
+                        </div>
+                        <div class="panel-stat-card">
+                            <div class="panel-stat-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="panel-stat-info">
+                                <p class="panel-stat-label">Services</p>
+                                <p class="panel-stat-value" id="panel-services">6</p>
+                            </div>
+                        </div>
+                        <div class="panel-stat-card">
+                            <div class="panel-stat-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="panel-stat-info">
+                                <p class="panel-stat-label">Taux Satisfaction</p>
+                                <p class="panel-stat-value" id="panel-satisfaction">95%</p>
+                            </div>
+                        </div>
+                        <div class="panel-stat-card">
+                            <div class="panel-stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="panel-stat-info">
+                                <p class="panel-stat-label">Temps Réponse</p>
+                                <p class="panel-stat-value" id="panel-response-time">2h</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Panel Toggle Button (visible when panel is hidden) -->
+            <button class="right-panel-toggle" id="right-panel-toggle" onclick="toggleRightPanel()" aria-label="Afficher le panneau">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner"></i>
+                <p>Chargement en cours...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- Modal Support -->
+    <div id="supportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-headset"></i> Support & Aide</h3>
+                <button class="modal-close" onclick="closeSupportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="support-section">
+                    <h4><i class="fas fa-book"></i> Documentation</h4>
+                    <p>Consultez la documentation pour plus d'informations sur l'utilisation du panel d'administration.</p>
+                </div>
+                
+                <div class="support-section">
+                    <h4><i class="fas fa-info-circle"></i> Informations</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Version:</span>
+                            <span class="info-value">1.0.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Type:</span>
+                            <span class="info-value">Panel Admin</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeSupportModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>
+
