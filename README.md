@@ -34,22 +34,55 @@ Clone the repo
   git clone https://github.com/blaiti/Developer-Portfolio.git
 ```
 
-Install Developer Portfolio with pip
+### Créer et activer l'environnement virtuel
 
+**Sur Windows (PowerShell):**
 ```bash
   cd Developer-Portfolio
+  python -m venv venv
+  .\venv\Scripts\Activate.ps1
+```
+
+**Sur Windows (CMD):**
+```bash
+  cd Developer-Portfolio
+  python -m venv venv
+  venv\Scripts\activate.bat
+```
+
+**Sur Linux/Mac:**
+```bash
+  cd Developer-Portfolio
+  python3 -m venv venv
+  source venv/bin/activate
+```
+
+**Sur Git Bash (Windows):**
+```bash
+  cd Developer-Portfolio
+  python -m venv venv
+  source venv/Scripts/activate
+```
+
+### Installer les dépendances
+
+Une fois l'environnement virtuel activé, installez les dépendances :
+
+```bash
   pip install -r requirements.txt
 ```
 
 ## Run Locally
 
-To run locally, run the following command
+Pour exécuter l'application localement, assurez-vous que l'environnement virtuel est activé, puis exécutez :
 
 ```bash
   python app.py
 ```
 
-The application will be available at `http://localhost:5000`
+L'application sera disponible sur `http://localhost:5000`
+
+**Note:** Pour désactiver l'environnement virtuel, tapez simplement `deactivate` dans le terminal.
 
 ## Deployment
 
