@@ -105,8 +105,6 @@ Developer-Portfolio
 
 ## Author
 
-[@blaiti](https://github.com/blaiti)
+[@blaiti](https://github.com/)
 
-## License
-
-[MIT](https://github.com/blaiti/Chaty/blob/main/LICENSE)
+## License>
