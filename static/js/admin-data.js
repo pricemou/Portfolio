@@ -53,6 +53,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Vérifier l'état de MongoDB au démarrage
+    checkMongoDBStatus();
+    
     // Charger les données au démarrage
     loadHomepageData();
     loadSkills();
@@ -133,6 +136,74 @@ function showSection(sectionName) {
         } else if (sectionName === 'admins') {
             loadAdminUsers();
         }
+    }
+}
+
+// ========== Vérification de l'état MongoDB ==========
+async function checkMongoDBStatus() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/mongo-status`, {
+            headers: getHeaders()
+        });
+        
+        if (!response.ok) {
+            // Si la route n'existe pas ou erreur, on continue quand même
+            return;
+        }
+        
+        const status = await response.json();
+        
+        if (status.connection_status === 'disconnected' || status.connection_status === 'error') {
+            // Afficher un message d'alerte en haut de la page
+            showMongoDBWarning(status);
+        }
+    } catch (error) {
+        // Ignorer les erreurs silencieusement (la route peut ne pas exister)
+        console.debug('Vérification MongoDB non disponible:', error);
+    }
+}
+
+function showMongoDBWarning(status) {
+    // Créer un bandeau d'alerte en haut de la page
+    const warningBanner = document.createElement('div');
+    warningBanner.id = 'mongodb-warning-banner';
+    warningBanner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        color: white;
+        padding: 1rem 2rem;
+        z-index: 10000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: 'Roboto Mono', monospace;
+    `;
+    
+    const message = status.error || 'La connexion à MongoDB n\'est pas disponible. Les données ne peuvent pas être chargées.';
+    warningBanner.innerHTML = `
+        <div style="flex: 1;">
+            <strong>⚠️ Base de données non disponible</strong>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">${message}</p>
+            ${status.mongo_uri_configured ? '' : '<p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; opacity: 0.8;">💡 Configurez la variable MONGO_URI dans les variables d\'environnement.</p>'}
+        </div>
+        <button onclick="document.getElementById('mongodb-warning-banner').remove()" 
+                style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); 
+                       color: white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; 
+                       margin-left: 1rem; font-size: 0.9rem;">
+            ✕ Fermer
+        </button>
+    `;
+    
+    document.body.insertBefore(warningBanner, document.body.firstChild);
+    
+    // Ajuster le padding du contenu principal pour éviter que le bandeau ne masque le contenu
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.paddingTop = '80px';
     }
 }
 
@@ -228,14 +299,28 @@ document.getElementById('homepage-form').addEventListener('submit', async functi
 async function loadSkills() {
     try {
         const response = await fetch(`${API_BASE}/skills`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        
+        // Vérifier si c'est une erreur MongoDB
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+            const skillsList = document.getElementById('skills-list');
+            if (skillsList) {
+                skillsList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">Consultez les logs du serveur pour plus de détails.</p>
+                    </div>
+                `;
+            }
+            showToast('Impossible de charger les compétences : MongoDB non disponible', 'error');
+            return;
         }
-        const skills = await response.json();
         
         // Vérifier que skills est un tableau
+        const skills = Array.isArray(data) ? data : (data.data || []);
         if (!Array.isArray(skills)) {
-            console.error('Les compétences ne sont pas un tableau:', skills);
+            console.error('Les compétences ne sont pas un tableau:', data);
             const skillsList = document.getElementById('skills-list');
             if (skillsList) {
                 skillsList.innerHTML = '<p>Erreur: Format de données invalide.</p>';
@@ -439,14 +524,28 @@ async function performDeleteSkill(skillId) {
 async function loadPartners() {
     try {
         const response = await fetch(`${API_BASE}/partners`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        
+        // Vérifier si c'est une erreur MongoDB
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+            const partnersList = document.getElementById('partners-list');
+            if (partnersList) {
+                partnersList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">Consultez les logs du serveur pour plus de détails.</p>
+                    </div>
+                `;
+            }
+            showToast('Impossible de charger les partenaires : MongoDB non disponible', 'error');
+            return;
         }
-        const partners = await response.json();
         
         // Vérifier que partners est un tableau
+        const partners = Array.isArray(data) ? data : (data.data || []);
         if (!Array.isArray(partners)) {
-            console.error('Les partenaires ne sont pas un tableau:', partners);
+            console.error('Les partenaires ne sont pas un tableau:', data);
             const partnersList = document.getElementById('partners-list');
             if (partnersList) {
                 partnersList.innerHTML = '<p>Erreur: Format de données invalide.</p>';
@@ -646,14 +745,28 @@ async function performDeletePartner(partnerId) {
 async function loadProjects() {
     try {
         const response = await fetch(`${API_BASE}/projects`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        
+        // Vérifier si c'est une erreur MongoDB
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+            const projectsList = document.getElementById('projects-list');
+            if (projectsList) {
+                projectsList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">Consultez les logs du serveur pour plus de détails.</p>
+                    </div>
+                `;
+            }
+            showToast('Impossible de charger les projets : MongoDB non disponible', 'error');
+            return;
         }
-        const projects = await response.json();
         
         // Vérifier que projects est un tableau
+        const projects = Array.isArray(data) ? data : (data.data || []);
         if (!Array.isArray(projects)) {
-            console.error('Les projets ne sont pas un tableau:', projects);
+            console.error('Les projets ne sont pas un tableau:', data);
             const projectsList = document.getElementById('projects-list');
             if (projectsList) {
                 projectsList.innerHTML = '<p>Erreur: Format de données invalide.</p>';
@@ -869,14 +982,28 @@ function performDeleteProject(projectId) {
 async function loadServices() {
     try {
         const response = await fetch(`${API_BASE}/services`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        
+        // Vérifier si c'est une erreur MongoDB
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+            const servicesList = document.getElementById('services-list');
+            if (servicesList) {
+                servicesList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">Consultez les logs du serveur pour plus de détails.</p>
+                    </div>
+                `;
+            }
+            showToast('Impossible de charger les services : MongoDB non disponible', 'error');
+            return;
         }
-        const services = await response.json();
         
         // Vérifier que services est un tableau
+        const services = Array.isArray(data) ? data : (data.data || []);
         if (!Array.isArray(services)) {
-            console.error('Les services ne sont pas un tableau:', services);
+            console.error('Les services ne sont pas un tableau:', data);
             const servicesList = document.getElementById('services-list');
             if (servicesList) {
                 servicesList.innerHTML = '<p>Erreur: Format de données invalide.</p>';
@@ -1081,17 +1208,28 @@ async function loadContacts() {
         const response = await fetch(`${API_BASE}/contacts`, {
             headers: getHeaders()
         });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const contacts = await response.json();
+        const data = await response.json();
         
         const contactsList = document.getElementById('contacts-list');
         if (!contactsList) return;
         
+        // Vérifier si c'est une erreur MongoDB
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+            contactsList.innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                    <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                    <p>${data.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem;">Consultez les logs du serveur pour plus de détails.</p>
+                </div>
+            `;
+            showToast('Impossible de charger les contacts : MongoDB non disponible', 'error');
+            return;
+        }
+        
         // Vérifier que contacts est un tableau
+        const contacts = Array.isArray(data) ? data : (data.data || []);
         if (!Array.isArray(contacts)) {
-            console.error('Les contacts ne sont pas un tableau:', contacts);
+            console.error('Les contacts ne sont pas un tableau:', data);
             contactsList.innerHTML = '<p>Erreur: Format de données invalide.</p>';
             return;
         }

@@ -714,9 +714,13 @@ def get_skills_api():
     try:
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
-            # Retourner un tableau vide si MongoDB n'est pas disponible
+            # Retourner une erreur explicite si MongoDB n'est pas disponible
             app.logger.warning("MongoDB non disponible pour get_skills_api")
-            return jsonify([])
+            return jsonify({
+                'error': 'MongoDB non disponible',
+                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
+                'data': []
+            }), 503
         
         skills = get_skills_data(mongo_db)
         if not isinstance(skills, list):
@@ -815,9 +819,13 @@ def get_partners_api():
     try:
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
-            # Retourner un tableau vide si MongoDB n'est pas disponible
+            # Retourner une erreur explicite si MongoDB n'est pas disponible
             app.logger.warning("MongoDB non disponible pour get_partners_api")
-            return jsonify([])
+            return jsonify({
+                'error': 'MongoDB non disponible',
+                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
+                'data': []
+            }), 503
         
         partners = get_partners_data(mongo_db)
         if not isinstance(partners, list):
@@ -919,7 +927,11 @@ def get_projects_api():
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
             app.logger.warning("MongoDB non disponible pour get_projects_api")
-            return jsonify([])
+            return jsonify({
+                'error': 'MongoDB non disponible',
+                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
+                'data': []
+            }), 503
         
         projects = list(mongo_db.projects.find().sort("created_at", -1))
         # Convertir ObjectId en string
@@ -1085,7 +1097,11 @@ def get_services_api():
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
             app.logger.warning("MongoDB non disponible pour get_services_api")
-            return jsonify([])
+            return jsonify({
+                'error': 'MongoDB non disponible',
+                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
+                'data': []
+            }), 503
         
         services = list(mongo_db.services.find().sort("order", 1).sort("created_at", -1))
         # Convertir ObjectId en string
@@ -1217,7 +1233,11 @@ def get_contacts_api():
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
             app.logger.warning("MongoDB non disponible pour get_contacts_api")
-            return jsonify([])
+            return jsonify({
+                'error': 'MongoDB non disponible',
+                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
+                'data': []
+            }), 503
         
         # Récupérer les paramètres de filtrage
         read_filter = request.args.get('read')
