@@ -144,20 +144,41 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========== Fonctions utilitaires ==========
-function showToast(message, type = 'info') {
-    // Utiliser la fonction showToast de admin.js si disponible
-    if (typeof window.showToast === 'function') {
-        window.showToast(message, type);
-        return;
-    }
-    
-    // Fallback si showToast n'est pas disponible
-    console.log(`[${type.toUpperCase()}] ${message}`);
+// Ne pas redéfinir showToast - utiliser celle de admin.js
+// Si showToast n'existe pas encore, créer une version simple
+if (typeof window.showToast !== 'function') {
+    window.showToast = function(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            return;
+        }
+        
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    };
 }
 
 // Fonction pour gérer les erreurs 401 (session expirée)
 async function handle401Error() {
-    showToast('Session expirée. Veuillez vous reconnecter.', 'error');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Session expirée. Veuillez vous reconnecter.', 'error');
+    } else {
+        console.error('Session expirée. Veuillez vous reconnecter.');
+    }
     setTimeout(() => {
         window.location.href = '/admin/login';
     }, 2000);
@@ -198,7 +219,11 @@ async function loadHomepageData() {
         }
     } catch (error) {
         console.error('Erreur lors du chargement des données homepage:', error);
-        showToast('Erreur lors du chargement des données. MongoDB est peut-être indisponible.', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Erreur lors du chargement des données. MongoDB est peut-être indisponible.', 'error');
+        } else {
+            console.error('Erreur lors du chargement des données homepage');
+        }
     }
 }
 
@@ -236,19 +261,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         await handle401Error();
                         return;
                     }
-                    showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+                    }
                     return;
                 }
                 
                 const result = await response.json();
                 if (result.success) {
-                    showToast('Données enregistrées avec succès !', 'success');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('Données enregistrées avec succès !', 'success');
+                    }
                 } else {
-                    showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+                    }
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                showToast('Erreur lors de l\'enregistrement', 'error');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('Erreur lors de l\'enregistrement', 'error');
+                    }
             }
         });
     }
@@ -261,10 +294,34 @@ async function loadSkills() {
     try {
         console.log('🔄 Chargement des compétences...');
         const response = await fetch(`${API_BASE}/skills`);
+        
+        // Vérifier le statut de la réponse avant de parser le JSON
+        if (!response.ok) {
+            let errorData = {};
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                // Si le JSON ne peut pas être parsé, utiliser un message par défaut
+                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
+            }
+            
+            const skillsList = document.getElementById('skills-list');
+            if (skillsList) {
+                skillsList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${errorData.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
+                    </div>
+                `;
+            }
+            console.error('❌ Erreur lors du chargement des compétences:', errorData.message || errorData.error);
+            return;
+        }
+        
         const data = await response.json();
         
-        // Vérifier si c'est une erreur MongoDB
-        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+        // Vérifier si c'est une erreur MongoDB dans les données
+        if (data.error && data.error === 'MongoDB non disponible') {
             const skillsList = document.getElementById('skills-list');
             if (skillsList) {
                 skillsList.innerHTML = `
@@ -274,7 +331,7 @@ async function loadSkills() {
                     </div>
                 `;
             }
-            showToast('Impossible de charger les compétences : MongoDB non disponible', 'error');
+            console.error('❌ MongoDB non disponible pour les compétences');
             return;
         }
         
@@ -285,7 +342,11 @@ async function loadSkills() {
         displaySkills(skills);
     } catch (error) {
         console.error('❌ Erreur lors du chargement des compétences:', error);
-        showToast('Erreur lors du chargement des compétences', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Erreur lors du chargement des compétences', 'error');
+        } else {
+            console.error('Erreur lors du chargement des compétences');
+        }
         const skillsList = document.getElementById('skills-list');
         if (skillsList) {
             skillsList.innerHTML = '<p>Aucune compétence disponible.</p>';
@@ -332,7 +393,9 @@ function initSkillsSection() {
 
 function editSkill(skillId) {
     console.log('Modifier compétence:', skillId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 function deleteSkill(skillId) {
@@ -340,7 +403,9 @@ function deleteSkill(skillId) {
         return;
     }
     console.log('Supprimer compétence:', skillId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 // ========== Partners Management ==========
@@ -350,9 +415,31 @@ async function loadPartners() {
     try {
         console.log('🔄 Chargement des partenaires...');
         const response = await fetch(`${API_BASE}/partners`);
+        
+        if (!response.ok) {
+            let errorData = {};
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
+            }
+            
+            const partnersList = document.getElementById('partners-list');
+            if (partnersList) {
+                partnersList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                    </div>
+                `;
+            }
+            console.error('❌ Erreur lors du chargement des partenaires:', errorData.message || errorData.error);
+            return;
+        }
+        
         const data = await response.json();
         
-        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+        if (data.error && data.error === 'MongoDB non disponible') {
             const partnersList = document.getElementById('partners-list');
             if (partnersList) {
                 partnersList.innerHTML = `
@@ -362,7 +449,11 @@ async function loadPartners() {
                     </div>
                 `;
             }
-            showToast('Impossible de charger les partenaires : MongoDB non disponible', 'error');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Impossible de charger les partenaires : MongoDB non disponible', 'error');
+            } else {
+                console.error('MongoDB non disponible pour les partenaires');
+            }
             return;
         }
         
@@ -373,7 +464,11 @@ async function loadPartners() {
         displayPartners(partners);
     } catch (error) {
         console.error('❌ Erreur lors du chargement des partenaires:', error);
-        showToast('Erreur lors du chargement des partenaires', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Erreur lors du chargement des partenaires', 'error');
+        } else {
+            console.error('Erreur lors du chargement des partenaires');
+        }
         const partnersList = document.getElementById('partners-list');
         if (partnersList) {
             partnersList.innerHTML = '<p>Aucun partenaire disponible.</p>';
@@ -419,7 +514,9 @@ function initPartnersSection() {
 
 function editPartner(partnerId) {
     console.log('Modifier partenaire:', partnerId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 function deletePartner(partnerId) {
@@ -427,7 +524,9 @@ function deletePartner(partnerId) {
         return;
     }
     console.log('Supprimer partenaire:', partnerId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 // ========== Projects Management ==========
@@ -437,9 +536,31 @@ async function loadProjects() {
     try {
         console.log('🔄 Chargement des projets...');
         const response = await fetch(`${API_BASE}/projects`);
+        
+        if (!response.ok) {
+            let errorData = {};
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
+            }
+            
+            const projectsList = document.getElementById('projects-list');
+            if (projectsList) {
+                projectsList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                    </div>
+                `;
+            }
+            console.error('❌ Erreur lors du chargement des projets:', errorData.message || errorData.error);
+            return;
+        }
+        
         const data = await response.json();
         
-        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+        if (data.error && data.error === 'MongoDB non disponible') {
             const projectsList = document.getElementById('projects-list');
             if (projectsList) {
                 projectsList.innerHTML = `
@@ -449,7 +570,11 @@ async function loadProjects() {
                     </div>
                 `;
             }
-            showToast('Impossible de charger les projets : MongoDB non disponible', 'error');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Impossible de charger les projets : MongoDB non disponible', 'error');
+            } else {
+                console.error('MongoDB non disponible pour les projets');
+            }
             return;
         }
         
@@ -460,7 +585,11 @@ async function loadProjects() {
         displayProjects(projects);
     } catch (error) {
         console.error('❌ Erreur lors du chargement des projets:', error);
-        showToast('Erreur lors du chargement des projets', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Erreur lors du chargement des projets', 'error');
+        } else {
+            console.error('Erreur lors du chargement des projets');
+        }
         const projectsList = document.getElementById('projects-list');
         if (projectsList) {
             projectsList.innerHTML = '<p>Aucun projet disponible.</p>';
@@ -512,7 +641,9 @@ function initProjectsSection() {
 
 function editProject(projectId) {
     console.log('Modifier projet:', projectId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 function deleteProject(projectId) {
@@ -520,7 +651,9 @@ function deleteProject(projectId) {
         return;
     }
     console.log('Supprimer projet:', projectId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 // ========== Services Management ==========
@@ -530,9 +663,31 @@ async function loadServices() {
     try {
         console.log('🔄 Chargement des services...');
         const response = await fetch(`${API_BASE}/services`);
+        
+        if (!response.ok) {
+            let errorData = {};
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
+            }
+            
+            const servicesList = document.getElementById('services-list');
+            if (servicesList) {
+                servicesList.innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                    </div>
+                `;
+            }
+            console.error('❌ Erreur lors du chargement des services:', errorData.message || errorData.error);
+            return;
+        }
+        
         const data = await response.json();
         
-        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+        if (data.error && data.error === 'MongoDB non disponible') {
             const servicesList = document.getElementById('services-list');
             if (servicesList) {
                 servicesList.innerHTML = `
@@ -542,7 +697,11 @@ async function loadServices() {
                     </div>
                 `;
             }
-            showToast('Impossible de charger les services : MongoDB non disponible', 'error');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Impossible de charger les services : MongoDB non disponible', 'error');
+            } else {
+                console.error('MongoDB non disponible pour les services');
+            }
             return;
         }
         
@@ -553,7 +712,11 @@ async function loadServices() {
         displayServices(services);
     } catch (error) {
         console.error('❌ Erreur lors du chargement des services:', error);
-        showToast('Erreur lors du chargement des services', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Erreur lors du chargement des services', 'error');
+        } else {
+            console.error('Erreur lors du chargement des services');
+        }
         const servicesList = document.getElementById('services-list');
         if (servicesList) {
             servicesList.innerHTML = '<p>Aucun service disponible.</p>';
@@ -600,7 +763,9 @@ function initServicesSection() {
 
 function editService(serviceId) {
     console.log('Modifier service:', serviceId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 function deleteService(serviceId) {
@@ -608,7 +773,9 @@ function deleteService(serviceId) {
         return;
     }
     console.log('Supprimer service:', serviceId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 // ========== Contacts Management ==========
@@ -620,19 +787,42 @@ async function loadContacts() {
         const response = await fetch(`${API_BASE}/contacts`, {
             headers: getHeaders()
         });
-        const data = await response.json();
         
         const contactsList = document.getElementById('contacts-list');
         if (!contactsList) return;
         
-        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
+        if (!response.ok) {
+            let errorData = {};
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
+            }
+            
+            contactsList.innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                    <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                    <p>${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                </div>
+            `;
+            console.error('❌ Erreur lors du chargement des contacts:', errorData.message || errorData.error);
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.error && data.error === 'MongoDB non disponible') {
             contactsList.innerHTML = `
                 <div style="padding: 2rem; text-align: center; color: var(--gray);">
                     <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
                     <p>${data.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
                 </div>
             `;
-            showToast('Impossible de charger les contacts : MongoDB non disponible', 'error');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Impossible de charger les contacts : MongoDB non disponible', 'error');
+            } else {
+                console.error('MongoDB non disponible pour les contacts');
+            }
             return;
         }
         
@@ -643,7 +833,11 @@ async function loadContacts() {
         displayContacts(contacts);
     } catch (error) {
         console.error('❌ Erreur lors du chargement des contacts:', error);
-        showToast('Erreur lors du chargement des contacts', 'error');
+        if (typeof window.showToast === 'function') {
+            window.showToast('Erreur lors du chargement des contacts', 'error');
+        } else {
+            console.error('Erreur lors du chargement des contacts');
+        }
         const contactsList = document.getElementById('contacts-list');
         if (contactsList) {
             contactsList.innerHTML = '<p>Aucun message disponible.</p>';
@@ -701,22 +895,30 @@ function deleteContact(contactId) {
         return;
     }
     console.log('Supprimer contact:', contactId);
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 // ========== Profile Management ==========
 function loadProfile() {
     console.log('Chargement du profil');
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 function loadLoginHistory() {
     console.log('Chargement de l\'historique de connexion');
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
 
 // ========== Admin Users Management ==========
 function loadAdminUsers() {
     console.log('Chargement des administrateurs');
-    showToast('Fonctionnalité à implémenter', 'info');
+    if (typeof window.showToast === 'function') {
+        window.showToast('Fonctionnalité à implémenter', 'info');
+    }
 }
