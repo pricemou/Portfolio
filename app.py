@@ -14,9 +14,9 @@ if sys.platform == 'win32':
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime
 from dotenv import load_dotenv
-from database import get_mongo_client, init_database
+from database import get_db, init_database, row_to_dict, rows_to_list
 from functools import wraps
-from bson import ObjectId
+# ObjectId n'est plus nécessaire avec SQLite
 import json
 import hashlib
 import re
@@ -110,111 +110,91 @@ def hash_password(password):
     """Hash un mot de passe avec SHA256"""
     return hashlib.sha256(password.encode()).hexdigest()
 
-def init_admin_user(db):
+def init_admin_user():
     """Initialise l'utilisateur admin par défaut si nécessaire"""
-    if db is None:
-        return
-    
     try:
-        admin_collection = db.admin_users
-        default_username = os.getenv('ADMIN_USERNAME', 'admin')
-        default_password = os.getenv('ADMIN_PASSWORD', 'admin123')
-        
-        # Vérifier si un admin existe déjà
-        existing_admin = admin_collection.find_one({"username": default_username})
-        
-        if not existing_admin:
-            admin_collection.insert_one({
-                "username": default_username,
-                "password": hash_password(default_password),
-                "created_at": datetime.now(),
-                "last_login": None
-            })
-            print(f"✅ Utilisateur admin créé - Username: {default_username}, Password: {default_password}")
-            print("⚠️  Changez le mot de passe par défaut en production !")
+        with get_db() as conn:
+            if conn is None:
+                return
+            
+            cursor = conn.cursor()
+            default_username = os.getenv('ADMIN_USERNAME', 'admin')
+            default_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+            
+            # Vérifier si un admin existe déjà
+            cursor.execute('SELECT * FROM admin_users WHERE username = ?', (default_username,))
+            existing_admin = cursor.fetchone()
+            
+            if not existing_admin:
+                cursor.execute('''
+                    INSERT INTO admin_users (username, password, created_at)
+                    VALUES (?, ?, ?)
+                ''', (default_username, hash_password(default_password), datetime.now()))
+                conn.commit()
+                print(f"✅ Utilisateur admin créé - Username: {default_username}, Password: {default_password}")
+                print("⚠️  Changez le mot de passe par défaut en production !")
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation de l'utilisateur admin: {e}")
 
-# Connexion MongoDB
-mongo_client, mongo_db = get_mongo_client()
-
-# Initialiser la base de données si la connexion est réussie
-if mongo_db is not None:
-    init_database(mongo_db)
-    init_admin_user(mongo_db)
-    app.config['MONGO_DB'] = mongo_db
-    app.config['MONGO_CLIENT'] = mongo_client
+# Initialiser la base de données SQLite d'abord
+if init_database():
+    print("✅ Base de données SQLite initialisée")
+    # Ensuite initialiser l'utilisateur admin
+    init_admin_user()
 else:
-    app.config['MONGO_DB'] = None
-    app.config['MONGO_CLIENT'] = None
-    print("⚠️  L'application fonctionnera sans base de données MongoDB")
+    print("⚠️  Erreur lors de l'initialisation de la base de données SQLite")
 
-def ensure_mongo_connection():
+def ensure_db_connection():
     """
-    Vérifie et réinitialise la connexion MongoDB si nécessaire
-    Retourne la base de données MongoDB ou None
+    Retourne une connexion à la base de données SQLite
     """
-    mongo_db = app.config.get('MONGO_DB')
-    mongo_client = app.config.get('MONGO_CLIENT')
-    
-    # Si on a déjà une connexion, tester si elle fonctionne encore
-    if mongo_db is not None and mongo_client is not None:
-        try:
-            # Tester la connexion
-            mongo_client.admin.command('ping')
-            return mongo_db
-        except Exception as e:
-            app.logger.warning(f"Connexion MongoDB perdue, tentative de reconnexion: {e}")
-            # La connexion est perdue, essayer de se reconnecter
-            pass
-    
-    # Essayer de se reconnecter
     try:
-        new_client, new_db = get_mongo_client()
-        if new_db is not None:
-            app.config['MONGO_DB'] = new_db
-            app.config['MONGO_CLIENT'] = new_client
-            app.logger.info("✅ Reconnexion MongoDB réussie")
-            return new_db
-        else:
-            app.logger.error("❌ Impossible de se reconnecter à MongoDB")
-            return None
+        return get_db()
     except Exception as e:
-        app.logger.error(f"❌ Erreur lors de la reconnexion MongoDB: {e}")
+        app.logger.error(f"❌ Erreur lors de la connexion SQLite: {e}")
         return None
 
-def get_homepage_data(db):
-    """Récupère les données de la page d'accueil depuis MongoDB"""
-    if db is None:
-        return None
-    
+def get_homepage_data():
+    """Récupère les données de la page d'accueil depuis SQLite"""
     try:
-        homepage_data = db.homepage.find_one({"type": "header"})
-        return homepage_data
+        with get_db() as conn:
+            if conn is None:
+                return None
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM homepage WHERE type = ? LIMIT 1', ('header',))
+            row = cursor.fetchone()
+            return row_to_dict(row)
     except Exception as e:
         print(f"Erreur lors de la récupération des données homepage: {e}")
         return None
 
-def get_skills_data(db):
-    """Récupère les compétences depuis MongoDB"""
-    if db is None:
-        return []
-    
+def get_skills_data():
+    """Récupère les compétences depuis SQLite"""
     try:
-        skills = list(db.skills.find().sort("order", 1))
-        return skills
+        with get_db() as conn:
+            if conn is None:
+                return []
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM skills ORDER BY order_index ASC')
+            rows = cursor.fetchall()
+            return rows_to_list(rows)
     except Exception as e:
         print(f"Erreur lors de la récupération des compétences: {e}")
         return []
 
-def get_partners_data(db):
-    """Récupère les partenaires depuis MongoDB"""
-    if db is None:
-        return []
-    
+def get_partners_data():
+    """Récupère les partenaires depuis SQLite"""
     try:
-        partners = list(db.partners.find().sort("order", 1))
-        return partners
+        with get_db() as conn:
+            if conn is None:
+                return []
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM partners ORDER BY order_index ASC')
+            rows = cursor.fetchall()
+            return rows_to_list(rows)
     except Exception as e:
         print(f"Erreur lors de la récupération des partenaires: {e}")
         return []
@@ -222,12 +202,11 @@ def get_partners_data(db):
 @app.route('/')
 def index():
     current_year = datetime.now().year
-    mongo_db = app.config.get('MONGO_DB')
     
-    # Récupérer les données dynamiques depuis MongoDB
-    homepage_data = get_homepage_data(mongo_db) if mongo_db is not None else None
-    skills = get_skills_data(mongo_db) if mongo_db is not None else []
-    partners = get_partners_data(mongo_db) if mongo_db is not None else []
+    # Récupérer les données dynamiques depuis SQLite
+    homepage_data = get_homepage_data()
+    skills = get_skills_data()
+    partners = get_partners_data()
     
     # Valeurs par défaut si MongoDB n'est pas disponible
     if not homepage_data:
@@ -271,20 +250,24 @@ def works():
     """Page des réalisations"""
     current_year = datetime.now().year
     
-    # Récupérer les projets depuis MongoDB (si disponible)
+    # Récupérer les projets depuis SQLite
     projects = []
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is not None:
-        try:
-            projects_collection = mongo_db.projects
-            # Récupérer uniquement les projets publiés, triés par ordre puis par date
-            projects = list(projects_collection.find({"status": "published"}).sort("order", 1).sort("created_at", -1))
-            # Convertir ObjectId en string pour le template
-            for project in projects:
-                if '_id' in project:
-                    project['_id'] = str(project['_id'])
-        except Exception as e:
-            print(f"Erreur lors de la récupération des projets: {e}")
+    try:
+        with get_db() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT * FROM projects 
+                    WHERE status = ? 
+                    ORDER BY order_index ASC, created_at DESC
+                ''', ('published',))
+                rows = cursor.fetchall()
+                projects = rows_to_list(rows)
+                # Convertir id en string pour compatibilité
+                for project in projects:
+                    project['_id'] = str(project['id'])
+    except Exception as e:
+        print(f"Erreur lors de la récupération des projets: {e}")
     
     return render_template('works.html', 
                          current_year=current_year,
@@ -295,20 +278,20 @@ def services():
     """Page des services"""
     current_year = datetime.now().year
     
-    # Récupérer les services depuis MongoDB (si disponible)
+    # Récupérer les services depuis SQLite
     services_list = []
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is not None:
-        try:
-            services_collection = mongo_db.services
-            # Récupérer les services triés par ordre puis par date
-            services_list = list(services_collection.find().sort("order", 1).sort("created_at", -1))
-            # Convertir ObjectId en string pour le template
-            for service in services_list:
-                if '_id' in service:
-                    service['_id'] = str(service['_id'])
-        except Exception as e:
-            app.logger.error(f"Erreur lors de la récupération des services: {e}")
+    try:
+        with get_db() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM services ORDER BY order_index ASC, created_at DESC')
+                rows = cursor.fetchall()
+                services_list = rows_to_list(rows)
+                # Convertir id en string pour compatibilité
+                for service in services_list:
+                    service['_id'] = str(service['id'])
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la récupération des services: {e}")
     
     return render_template('services.html', current_year=current_year, services=services_list)
 
@@ -371,39 +354,50 @@ def contact_submit():
             'user_agent': request.headers.get('User-Agent', '')[:500]
         }
         
-        # Stocker dans MongoDB
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is not None:
-            try:
-                contacts_collection = mongo_db.contacts
-                result = contacts_collection.insert_one(cleaned_data)
-                app.logger.info(f"Nouveau message de contact reçu de {email} (ID: {result.inserted_id})")
-                
-                # Optionnel: Envoyer un email de notification
-                send_contact_notification_email(cleaned_data)
-                
-                response_data = {
-                    'success': True,
-                    'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.'
-                }
-                app.logger.info(f"Contact sauvegardé avec succès: {email}")
-                response = jsonify(response_data)
-                response.headers['Content-Type'] = 'application/json; charset=utf-8'
-                return response, 200
-            except Exception as e:
-                app.logger.error(f"Erreur lors du stockage du contact: {e}")
-                return jsonify({
-                    'success': False,
-                    'error': 'Erreur lors de l\'enregistrement du message. Veuillez réessayer.'
-                }), 500
-        else:
-            # Mode sans MongoDB - juste logger
-            app.logger.info(f"Message de contact reçu (MongoDB non disponible): {email} - {subject}")
-            response_data = {
-                'success': True,
-                'message': 'Votre message a été reçu. Je vous répondrai dans les plus brefs délais.'
-            }
-            return jsonify(response_data), 200
+        # Stocker dans SQLite
+        try:
+            with get_db() as conn:
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO contacts (name, email, subject, message, ip_address, user_agent)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (
+                        cleaned_data['name'],
+                        cleaned_data['email'],
+                        cleaned_data['subject'],
+                        cleaned_data['message'],
+                        cleaned_data.get('ip_address', ''),
+                        cleaned_data.get('user_agent', '')
+                    ))
+                    contact_id = cursor.lastrowid
+                    conn.commit()
+                    app.logger.info(f"Nouveau message de contact reçu de {email} (ID: {contact_id})")
+                    
+                    # Optionnel: Envoyer un email de notification
+                    send_contact_notification_email(cleaned_data)
+                    
+                    response_data = {
+                        'success': True,
+                        'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.'
+                    }
+                    app.logger.info(f"Contact sauvegardé avec succès: {email}")
+                    response = jsonify(response_data)
+                    response.headers['Content-Type'] = 'application/json; charset=utf-8'
+                    return response, 200
+                else:
+                    app.logger.info(f"Message de contact reçu (SQLite non disponible): {email} - {subject}")
+                    response_data = {
+                        'success': True,
+                        'message': 'Votre message a été reçu. Je vous répondrai dans les plus brefs délais.'
+                    }
+                    return jsonify(response_data), 200
+        except Exception as e:
+            app.logger.error(f"Erreur lors du stockage du contact: {e}")
+            return jsonify({
+                'success': False,
+                'error': 'Erreur lors de l\'enregistrement du message. Veuillez réessayer.'
+            }), 500
             
     except Exception as e:
         app.logger.error(f"Erreur contact_submit: {e}")
@@ -519,9 +513,9 @@ def admin_required(f):
     return decorated_function
 
 def json_serial(obj):
-    """Sérialise les ObjectId MongoDB en string"""
-    if isinstance(obj, ObjectId):
-        return str(obj)
+    """Sérialise les objets pour JSON (compatibilité)"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
 
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -531,7 +525,6 @@ def admin_login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # Validation des champs
         # Validation des champs
         if not username or not password:
             flash('Veuillez remplir tous les champs', 'error')
@@ -550,56 +543,57 @@ def admin_login():
             flash('Le mot de passe doit contenir au moins 6 caractères', 'error')
             return render_template('admin_login.html')
         
-        # Nettoyer et valider les entrées
-        username = sanitize_input(username, max_length=50)
-        password = password.strip() if password else ''
-        
-        # Validation basique
-        if len(username) < 3:
-            flash('Le nom d\'utilisateur doit contenir au moins 3 caractères', 'error')
-            return render_template('admin_login.html')
-        
-        if len(password) < 6:
-            flash('Le mot de passe doit contenir au moins 6 caractères', 'error')
-            return render_template('admin_login.html')
-        
-        mongo_db = app.config.get('MONGO_DB')
-        
-        if mongo_db is None:
-            # Mode sans MongoDB - utiliser les variables d'environnement
-            expected_username = os.getenv('ADMIN_USERNAME', 'admin')
-            expected_password = os.getenv('ADMIN_PASSWORD', 'admin123')
-            
-            if username == expected_username and password == expected_password:
-                session['admin_logged_in'] = True
-                session['admin_username'] = username
-                return redirect(url_for('admin'))
-            else:
+        # Vérifier les identifiants dans SQLite
+        try:
+            with get_db() as conn:
+                if conn is None:
+                    flash('Erreur de connexion à la base de données', 'error')
+                    return render_template('admin_login.html')
+                
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM admin_users WHERE username = ?', (username,))
+                admin_user = cursor.fetchone()
+                
+                if admin_user:
+                    admin_user_dict = row_to_dict(admin_user)
+                    if admin_user_dict['password'] == hash_password(password):
+                        # Mettre à jour la dernière connexion
+                        cursor.execute('''
+                            UPDATE admin_users 
+                            SET last_login = ? 
+                            WHERE username = ?
+                        ''', (datetime.now(), username))
+                        conn.commit()
+                        
+                        # Enregistrer dans l'historique
+                        cursor.execute('''
+                            INSERT INTO login_history (username, success, ip_address, user_agent)
+                            VALUES (?, ?, ?, ?)
+                        ''', (username, 1, request.remote_addr, request.headers.get('User-Agent', '')[:500]))
+                        conn.commit()
+                        
+                        session['admin_logged_in'] = True
+                        session['admin_username'] = username
+                        session['admin_id'] = str(admin_user_dict['id'])
+                        return redirect(url_for('admin'))
+                
+                # Si on arrive ici, les identifiants sont incorrects
+                # Enregistrer la tentative échouée dans l'historique
+                try:
+                    cursor.execute('''
+                        INSERT INTO login_history (username, success, ip_address, user_agent)
+                        VALUES (?, ?, ?, ?)
+                    ''', (username, 0, request.remote_addr, request.headers.get('User-Agent', '')[:500]))
+                    conn.commit()
+                except:
+                    pass  # Ignorer les erreurs d'historique
+                
                 flash('Nom d\'utilisateur ou mot de passe incorrect', 'error')
                 return render_template('admin_login.html')
-        else:
-            # Mode avec MongoDB
-            try:
-                admin_collection = mongo_db.admin_users
-                admin_user = admin_collection.find_one({"username": username})
-                
-                if admin_user and admin_user['password'] == hash_password(password):
-                    # Mettre à jour la dernière connexion
-                    admin_collection.update_one(
-                        {"username": username},
-                        {"$set": {"last_login": datetime.now()}}
-                    )
-                    session['admin_logged_in'] = True
-                    session['admin_username'] = username
-                    session['admin_id'] = str(admin_user['_id'])
-                    return redirect(url_for('admin'))
-                else:
-                    flash('Nom d\'utilisateur ou mot de passe incorrect', 'error')
-                    return render_template('admin_login.html')
-            except Exception as e:
-                app.logger.error(f"Erreur lors de la connexion: {e}")
-                flash('Erreur lors de la connexion. Veuillez réessayer.', 'error')
-                return render_template('admin_login.html')
+        except Exception as e:
+            app.logger.error(f"Erreur lors de la connexion: {e}")
+            flash('Erreur lors de la connexion. Veuillez réessayer.', 'error')
+            return render_template('admin_login.html')
     
     # Si déjà connecté, rediriger vers admin
     if 'admin_logged_in' in session and session.get('admin_logged_in'):
@@ -625,11 +619,15 @@ def admin():
 def get_homepage_api():
     """Récupère les données de la page d'accueil"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            # Retourner des données par défaut si MongoDB n'est pas disponible
-            app.logger.warning("MongoDB non disponible pour get_homepage_api")
-            return jsonify({
+        data = get_homepage_data()
+        if data:
+            # Convertir id en _id pour compatibilité
+            if 'id' in data:
+                data['_id'] = str(data['id'])
+                del data['id']
+        else:
+            # Retourner des données par défaut si aucune donnée
+            data = {
                 "badge": app.config['PORTFOLIO_TITLE'],
                 "title_line1": "De l'idée à la donnée.",
                 "title_line2": "Du code à l'insight !",
@@ -640,11 +638,7 @@ def get_homepage_api():
                 "about_name": app.config['PORTFOLIO_NAME'],
                 "about_subtitle": "Développeur Full-Stack & Data Science passionné par l'innovation et l'excellence technique.",
                 "about_description": "Je suis un développeur Full-Stack et Data Scientist avec une passion pour créer des solutions technologiques complètes et performantes."
-            })
-        
-        data = get_homepage_data(mongo_db)
-        if data and '_id' in data:
-            data['_id'] = str(data['_id'])
+            }
         return jsonify(data or {})
     except Exception as e:
         app.logger.error(f"Erreur get_homepage_api: {e}")
@@ -688,19 +682,52 @@ def update_homepage_api():
             if not validate_email(cleaned_data['email']):
                 return jsonify({'error': 'Format d\'email invalide'}), 400
         
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        # Ajouter le type pour la recherche
-        cleaned_data['type'] = 'header'
-        
-        result = mongo_db.homepage.update_one(
-            {"type": "header"},
-            {"$set": cleaned_data},
-            upsert=True
-        )
-        return jsonify({'success': True, 'message': 'Données mises à jour'})
+        # Mettre à jour dans SQLite
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            # Vérifier si une entrée existe
+            cursor.execute('SELECT id FROM homepage WHERE type = ?', ('header',))
+            existing = cursor.fetchone()
+            
+            cleaned_data['type'] = 'header'
+            cleaned_data['updated_at'] = datetime.now()
+            
+            if existing:
+                # Mettre à jour
+                cursor.execute('''
+                    UPDATE homepage SET 
+                        badge = ?, title_line1 = ?, title_line2 = ?, description = ?,
+                        email = ?, cta_text = ?, about_title = ?, about_name = ?,
+                        about_subtitle = ?, about_description = ?, updated_at = ?
+                    WHERE type = ?
+                ''', (
+                    cleaned_data.get('badge'), cleaned_data.get('title_line1'),
+                    cleaned_data.get('title_line2'), cleaned_data.get('description'),
+                    cleaned_data.get('email'), cleaned_data.get('cta_text'),
+                    cleaned_data.get('about_title'), cleaned_data.get('about_name'),
+                    cleaned_data.get('about_subtitle'), cleaned_data.get('about_description'),
+                    cleaned_data['updated_at'], 'header'
+                ))
+            else:
+                # Insérer
+                cursor.execute('''
+                    INSERT INTO homepage (type, badge, title_line1, title_line2, description,
+                                         email, cta_text, about_title, about_name,
+                                         about_subtitle, about_description, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    'header', cleaned_data.get('badge'), cleaned_data.get('title_line1'),
+                    cleaned_data.get('title_line2'), cleaned_data.get('description'),
+                    cleaned_data.get('email'), cleaned_data.get('cta_text'),
+                    cleaned_data.get('about_title'), cleaned_data.get('about_name'),
+                    cleaned_data.get('about_subtitle'), cleaned_data.get('about_description'),
+                    cleaned_data['updated_at']
+                ))
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Données mises à jour'})
     except BadRequest as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
@@ -712,22 +739,17 @@ def update_homepage_api():
 def get_skills_api():
     """Récupère toutes les compétences"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            # Retourner une erreur explicite si MongoDB n'est pas disponible
-            app.logger.warning("MongoDB non disponible pour get_skills_api")
-            return jsonify({
-                'error': 'MongoDB non disponible',
-                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
-                'data': []
-            }), 503
-        
-        skills = get_skills_data(mongo_db)
+        skills = get_skills_data()
         if not isinstance(skills, list):
             skills = []
+        # Convertir id en _id pour compatibilité
         for skill in skills:
-            if '_id' in skill:
-                skill['_id'] = str(skill['_id'])
+            if 'id' in skill:
+                skill['_id'] = str(skill['id'])
+                skill['order'] = skill.get('order_index', 0)
+                del skill['id']
+                if 'order_index' in skill:
+                    del skill['order_index']
         return jsonify(skills)
     except Exception as e:
         app.logger.error(f"Erreur get_skills_api: {e}")
@@ -765,15 +787,27 @@ def create_skill_api():
         if cleaned_data['icon'] and not validate_url(cleaned_data['icon']) and not cleaned_data['icon'].startswith('icons/'):
             return jsonify({'error': 'Format d\'URL d\'icône invalide'}), 400
         
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        # Ajouter la date de création
-        cleaned_data['created_at'] = datetime.now()
-        
-        result = mongo_db.skills.insert_one(cleaned_data)
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Compétence créée'})
+        # Insérer dans SQLite
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO skills (title, description, icon, projects_count, order_index, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                cleaned_data['title'],
+                cleaned_data['description'],
+                cleaned_data.get('icon', ''),
+                cleaned_data['projects_count'],
+                cleaned_data.get('order', 0),
+                datetime.now(),
+                datetime.now()
+            ))
+            skill_id = cursor.lastrowid
+            conn.commit()
+            return jsonify({'success': True, 'id': str(skill_id), 'message': 'Compétence créée'})
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -785,19 +819,46 @@ def create_skill_api():
 def update_skill_api(skill_id):
     """Met à jour une compétence"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour update_skill_api")
-            return jsonify({'error': 'MongoDB non disponible'}), 500
         data = request.get_json()
-        result = mongo_db.skills.update_one(
-            {"_id": ObjectId(skill_id)},
-            {"$set": data}
-        )
-        if result.modified_count > 0:
-            return jsonify({'success': True, 'message': 'Compétence mise à jour'})
-        return jsonify({'error': 'Compétence non trouvée'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            # Construire la requête UPDATE dynamiquement
+            updates = []
+            values = []
+            if 'title' in data:
+                updates.append('title = ?')
+                values.append(sanitize_input(data['title'], max_length=100))
+            if 'description' in data:
+                updates.append('description = ?')
+                values.append(sanitize_input(data['description'], max_length=500))
+            if 'icon' in data:
+                updates.append('icon = ?')
+                values.append(sanitize_input(data['icon'], max_length=200))
+            if 'projects_count' in data:
+                updates.append('projects_count = ?')
+                values.append(int(data['projects_count']) if str(data['projects_count']).isdigit() else 0)
+            if 'order' in data:
+                updates.append('order_index = ?')
+                values.append(int(data['order']) if str(data['order']).isdigit() else 0)
+            
+            updates.append('updated_at = ?')
+            values.append(datetime.now())
+            values.append(int(skill_id))
+            
+            cursor.execute(f'''
+                UPDATE skills SET {', '.join(updates)}
+                WHERE id = ?
+            ''', values)
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Compétence mise à jour'})
+            return jsonify({'error': 'Compétence non trouvée'}), 404
     except Exception as e:
+        app.logger.error(f"Erreur update_skill_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/skills/<skill_id>', methods=['DELETE'])
@@ -805,15 +866,19 @@ def update_skill_api(skill_id):
 def delete_skill_api(skill_id):
     """Supprime une compétence"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour delete_skill_api")
-            return jsonify({'error': 'MongoDB non disponible'}), 500
-        result = mongo_db.skills.delete_one({"_id": ObjectId(skill_id)})
-        if result.deleted_count > 0:
-            return jsonify({'success': True, 'message': 'Compétence supprimée'})
-        return jsonify({'error': 'Compétence non trouvée'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM skills WHERE id = ?', (int(skill_id),))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Compétence supprimée'})
+            return jsonify({'error': 'Compétence non trouvée'}), 404
     except Exception as e:
+        app.logger.error(f"Erreur delete_skill_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ========== API Routes pour Partners ==========
@@ -821,22 +886,18 @@ def delete_skill_api(skill_id):
 def get_partners_api():
     """Récupère tous les partenaires"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            # Retourner une erreur explicite si MongoDB n'est pas disponible
-            app.logger.warning("MongoDB non disponible pour get_partners_api")
-            return jsonify({
-                'error': 'MongoDB non disponible',
-                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
-                'data': []
-            }), 503
-        
-        partners = get_partners_data(mongo_db)
+        partners = get_partners_data()
         if not isinstance(partners, list):
             partners = []
+        # Convertir id en _id pour compatibilité
         for partner in partners:
-            if '_id' in partner:
-                partner['_id'] = str(partner['_id'])
+            if 'id' in partner:
+                partner['_id'] = str(partner['id'])
+                partner['order'] = partner.get('order_index', 0)
+                partner['image'] = partner.get('image', '')
+                del partner['id']
+                if 'order_index' in partner:
+                    del partner['order_index']
         return jsonify(partners)
     except Exception as e:
         app.logger.error(f"Erreur get_partners_api: {e}")
@@ -876,15 +937,25 @@ def create_partner_api():
         if cleaned_data['logo'] and not validate_url(cleaned_data['logo']) and not cleaned_data['logo'].startswith('images/'):
             return jsonify({'error': 'Format d\'URL de logo invalide'}), 400
         
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        # Ajouter la date de création
-        cleaned_data['created_at'] = datetime.now()
-        
-        result = mongo_db.partners.insert_one(cleaned_data)
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Partenaire créé'})
+        # Insérer dans SQLite
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO partners (name, image, order_index, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                cleaned_data['name'],
+                cleaned_data.get('logo', '') or cleaned_data.get('image', ''),
+                cleaned_data.get('order', 0),
+                datetime.now(),
+                datetime.now()
+            ))
+            partner_id = cursor.lastrowid
+            conn.commit()
+            return jsonify({'success': True, 'id': str(partner_id), 'message': 'Partenaire créé'})
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -896,19 +967,39 @@ def create_partner_api():
 def update_partner_api(partner_id):
     """Met à jour un partenaire"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour update_partner_api")
-            return jsonify({'error': 'MongoDB non disponible'}), 500
         data = request.get_json()
-        result = mongo_db.partners.update_one(
-            {"_id": ObjectId(partner_id)},
-            {"$set": data}
-        )
-        if result.modified_count > 0:
-            return jsonify({'success': True, 'message': 'Partenaire mis à jour'})
-        return jsonify({'error': 'Partenaire non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            updates = []
+            values = []
+            if 'name' in data:
+                updates.append('name = ?')
+                values.append(sanitize_input(data['name'], max_length=100))
+            if 'logo' in data or 'image' in data:
+                updates.append('image = ?')
+                values.append(sanitize_input(data.get('logo') or data.get('image', ''), max_length=500))
+            if 'order' in data:
+                updates.append('order_index = ?')
+                values.append(int(data['order']) if str(data['order']).isdigit() else 0)
+            
+            updates.append('updated_at = ?')
+            values.append(datetime.now())
+            values.append(int(partner_id))
+            
+            cursor.execute(f'''
+                UPDATE partners SET {', '.join(updates)}
+                WHERE id = ?
+            ''', values)
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Partenaire mis à jour'})
+            return jsonify({'error': 'Partenaire non trouvé'}), 404
     except Exception as e:
+        app.logger.error(f"Erreur update_partner_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/partners/<partner_id>', methods=['DELETE'])
@@ -916,15 +1007,19 @@ def update_partner_api(partner_id):
 def delete_partner_api(partner_id):
     """Supprime un partenaire"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour delete_partner_api")
-            return jsonify({'error': 'MongoDB non disponible'}), 500
-        result = mongo_db.partners.delete_one({"_id": ObjectId(partner_id)})
-        if result.deleted_count > 0:
-            return jsonify({'success': True, 'message': 'Partenaire supprimé'})
-        return jsonify({'error': 'Partenaire non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM partners WHERE id = ?', (int(partner_id),))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Partenaire supprimé'})
+            return jsonify({'error': 'Partenaire non trouvé'}), 404
     except Exception as e:
+        app.logger.error(f"Erreur delete_partner_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 # ========== API Routes pour Projects ==========
@@ -932,22 +1027,27 @@ def delete_partner_api(partner_id):
 def get_projects_api():
     """Récupère la liste des projets"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.warning("MongoDB non disponible pour get_projects_api")
-            return jsonify({
-                'error': 'MongoDB non disponible',
-                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
-                'data': []
-            }), 503
-        
-        projects = list(mongo_db.projects.find().sort("created_at", -1))
-        # Convertir ObjectId en string
-        for project in projects:
-            if '_id' in project:
-                project['_id'] = str(project['_id'])
-        
-        return jsonify(projects)
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({
+                    'error': 'Base de données non disponible',
+                    'message': 'La connexion à la base de données n\'est pas disponible.',
+                    'data': []
+                }), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM projects ORDER BY created_at DESC')
+            rows = cursor.fetchall()
+            projects = rows_to_list(rows)
+            # Convertir id en _id pour compatibilité
+            for project in projects:
+                project['_id'] = str(project['id'])
+                project['order'] = project.get('order_index', 0)
+                del project['id']
+                if 'order_index' in project:
+                    del project['order_index']
+            
+            return jsonify(projects)
     except Exception as e:
         app.logger.error(f"Erreur get_projects_api: {e}")
         return jsonify({
@@ -999,16 +1099,33 @@ def create_project_api():
         if cleaned_data['status'] not in valid_statuses:
             cleaned_data['status'] = 'published'
         
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        # Ajouter la date de création
-        cleaned_data['created_at'] = datetime.now()
-        cleaned_data['updated_at'] = datetime.now()
-        
-        result = mongo_db.projects.insert_one(cleaned_data)
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Projet créé'})
+        # Insérer dans SQLite
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO projects (title, description, technologies, image, link, github_link,
+                                     status, order_index, featured, views, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                cleaned_data['title'],
+                cleaned_data['description'],
+                cleaned_data['technologies'],
+                cleaned_data.get('image', ''),
+                cleaned_data.get('link', ''),
+                cleaned_data.get('github_link', ''),
+                cleaned_data['status'],
+                cleaned_data.get('order', 0),
+                1 if cleaned_data.get('featured', False) else 0,
+                0,  # views
+                datetime.now(),
+                datetime.now()
+            ))
+            project_id = cursor.lastrowid
+            conn.commit()
+            return jsonify({'success': True, 'id': str(project_id), 'message': 'Projet créé'})
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -1019,65 +1136,63 @@ def create_project_api():
 @admin_required
 def update_project_api(project_id):
     """Met à jour un projet"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'Base de données non disponible'}), 503
-    
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Données JSON manquantes'}), 400
         
-        # Nettoyer et valider les données (même logique que create)
-        cleaned_data = {}
-        max_lengths = {
-            'title': 200,
-            'description': 1000,
-            'technologies': 200,
-            'image': 500,
-            'link': 500,
-            'github_link': 500,
-            'status': 50
-        }
-        
-        for key, value in data.items():
-            if key in max_lengths:
-                if isinstance(value, str):
-                    cleaned_data[key] = sanitize_input(value, max_length=max_lengths[key])
-                else:
-                    cleaned_data[key] = value
-            elif key in ['order', 'featured']:
-                if key == 'order':
-                    cleaned_data[key] = int(value) if str(value).isdigit() else 0
-                else:
-                    cleaned_data[key] = bool(value)
-        
-        # Valider les URLs
-        if 'link' in cleaned_data and cleaned_data['link'] and not validate_url(cleaned_data['link']):
-            return jsonify({'error': 'Format d\'URL de lien invalide'}), 400
-        
-        if 'github_link' in cleaned_data and cleaned_data['github_link'] and not validate_url(cleaned_data['github_link']):
-            return jsonify({'error': 'Format d\'URL GitHub invalide'}), 400
-        
-        if 'image' in cleaned_data and cleaned_data['image'] and not validate_url(cleaned_data['image']) and not cleaned_data['image'].startswith('images/'):
-            return jsonify({'error': 'Format d\'URL d\'image invalide'}), 400
-        
-        # Valider le statut
-        if 'status' in cleaned_data:
-            valid_statuses = ['draft', 'published', 'archived']
-            if cleaned_data['status'] not in valid_statuses:
-                cleaned_data['status'] = 'published'
-        
-        # Ajouter la date de mise à jour
-        cleaned_data['updated_at'] = datetime.now()
-        
-        result = mongo_db.projects.update_one(
-            {"_id": ObjectId(project_id)},
-            {"$set": cleaned_data}
-        )
-        if result.modified_count > 0 or result.matched_count > 0:
-            return jsonify({'success': True, 'message': 'Projet mis à jour'})
-        return jsonify({'error': 'Projet non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            updates = []
+            values = []
+            
+            max_lengths = {
+                'title': 200, 'description': 1000, 'technologies': 200,
+                'image': 500, 'link': 500, 'github_link': 500, 'status': 50
+            }
+            
+            for key, value in data.items():
+                if key in max_lengths:
+                    if isinstance(value, str):
+                        updates.append(f'{key} = ?')
+                        values.append(sanitize_input(value, max_length=max_lengths[key]))
+                    else:
+                        updates.append(f'{key} = ?')
+                        values.append(value)
+                elif key == 'order':
+                    updates.append('order_index = ?')
+                    values.append(int(value) if str(value).isdigit() else 0)
+                elif key == 'featured':
+                    updates.append('featured = ?')
+                    values.append(1 if bool(value) else 0)
+            
+            # Valider les URLs
+            if 'link' in data and data['link'] and not validate_url(data['link']):
+                return jsonify({'error': 'Format d\'URL de lien invalide'}), 400
+            if 'github_link' in data and data['github_link'] and not validate_url(data['github_link']):
+                return jsonify({'error': 'Format d\'URL GitHub invalide'}), 400
+            if 'status' in data:
+                valid_statuses = ['draft', 'published', 'archived']
+                if data['status'] not in valid_statuses:
+                    updates.append('status = ?')
+                    values.append('published')
+            
+            updates.append('updated_at = ?')
+            values.append(datetime.now())
+            values.append(int(project_id))
+            
+            cursor.execute(f'''
+                UPDATE projects SET {', '.join(updates)}
+                WHERE id = ?
+            ''', values)
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Projet mis à jour'})
+            return jsonify({'error': 'Projet non trouvé'}), 404
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -1088,15 +1203,18 @@ def update_project_api(project_id):
 @admin_required
 def delete_project_api(project_id):
     """Supprime un projet"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'Base de données non disponible'}), 503
-    
     try:
-        result = mongo_db.projects.delete_one({"_id": ObjectId(project_id)})
-        if result.deleted_count > 0:
-            return jsonify({'success': True, 'message': 'Projet supprimé'})
-        return jsonify({'error': 'Projet non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM projects WHERE id = ?', (int(project_id),))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Projet supprimé'})
+            return jsonify({'error': 'Projet non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_project_api: {e}")
         return jsonify({'error': str(e)}), 500
@@ -1106,22 +1224,27 @@ def delete_project_api(project_id):
 def get_services_api():
     """Récupère la liste des services"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.warning("MongoDB non disponible pour get_services_api")
-            return jsonify({
-                'error': 'MongoDB non disponible',
-                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
-                'data': []
-            }), 503
-        
-        services = list(mongo_db.services.find().sort("order", 1).sort("created_at", -1))
-        # Convertir ObjectId en string
-        for service in services:
-            if '_id' in service:
-                service['_id'] = str(service['_id'])
-        
-        return jsonify(services)
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({
+                    'error': 'Base de données non disponible',
+                    'message': 'La connexion à la base de données n\'est pas disponible.',
+                    'data': []
+                }), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM services ORDER BY order_index ASC, created_at DESC')
+            rows = cursor.fetchall()
+            services = rows_to_list(rows)
+            # Convertir id en _id pour compatibilité
+            for service in services:
+                service['_id'] = str(service['id'])
+                service['order'] = service.get('order_index', 0)
+                del service['id']
+                if 'order_index' in service:
+                    del service['order_index']
+            
+            return jsonify(services)
     except Exception as e:
         app.logger.error(f"Erreur get_services_api: {e}")
         return jsonify({
@@ -1157,16 +1280,26 @@ def create_service_api():
         if cleaned_data['icon'] and not validate_url(cleaned_data['icon']) and not cleaned_data['icon'].startswith('icons/'):
             return jsonify({'error': 'Format d\'URL d\'icône invalide'}), 400
         
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        # Ajouter la date de création
-        cleaned_data['created_at'] = datetime.now()
-        cleaned_data['updated_at'] = datetime.now()
-        
-        result = mongo_db.services.insert_one(cleaned_data)
-        return jsonify({'success': True, 'id': str(result.inserted_id), 'message': 'Service créé'})
+        # Insérer dans SQLite
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO services (title, description, icon, order_index, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                cleaned_data['title'],
+                cleaned_data['description'],
+                cleaned_data.get('icon', ''),
+                cleaned_data.get('order', 0),
+                datetime.now(),
+                datetime.now()
+            ))
+            service_id = cursor.lastrowid
+            conn.commit()
+            return jsonify({'success': True, 'id': str(service_id), 'message': 'Service créé'})
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -1177,46 +1310,49 @@ def create_service_api():
 @admin_required
 def update_service_api(service_id):
     """Met à jour un service"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'Base de données non disponible'}), 503
-    
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Données JSON manquantes'}), 400
         
-        # Nettoyer et valider les données
-        cleaned_data = {}
-        max_lengths = {
-            'title': 200,
-            'description': 1000,
-            'icon': 500
-        }
-        
-        for key, value in data.items():
-            if key in max_lengths:
-                if isinstance(value, str):
-                    cleaned_data[key] = sanitize_input(value, max_length=max_lengths[key])
-                else:
-                    cleaned_data[key] = value
-            elif key == 'order':
-                cleaned_data[key] = int(value) if str(value).isdigit() else 0
-        
-        # Valider l'URL de l'icône si présente
-        if 'icon' in cleaned_data and cleaned_data['icon'] and not validate_url(cleaned_data['icon']) and not cleaned_data['icon'].startswith('icons/'):
-            return jsonify({'error': 'Format d\'URL d\'icône invalide'}), 400
-        
-        # Ajouter la date de mise à jour
-        cleaned_data['updated_at'] = datetime.now()
-        
-        result = mongo_db.services.update_one(
-            {"_id": ObjectId(service_id)},
-            {"$set": cleaned_data}
-        )
-        if result.modified_count > 0 or result.matched_count > 0:
-            return jsonify({'success': True, 'message': 'Service mis à jour'})
-        return jsonify({'error': 'Service non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            updates = []
+            values = []
+            
+            max_lengths = {'title': 200, 'description': 1000, 'icon': 500}
+            
+            for key, value in data.items():
+                if key in max_lengths:
+                    updates.append(f'{key} = ?')
+                    if isinstance(value, str):
+                        values.append(sanitize_input(value, max_length=max_lengths[key]))
+                    else:
+                        values.append(value)
+                elif key == 'order':
+                    updates.append('order_index = ?')
+                    values.append(int(value) if str(value).isdigit() else 0)
+            
+            # Valider l'URL de l'icône si présente
+            if 'icon' in data and data['icon'] and not validate_url(data['icon']) and not data['icon'].startswith('icons/'):
+                return jsonify({'error': 'Format d\'URL d\'icône invalide'}), 400
+            
+            updates.append('updated_at = ?')
+            values.append(datetime.now())
+            values.append(int(service_id))
+            
+            cursor.execute(f'''
+                UPDATE services SET {', '.join(updates)}
+                WHERE id = ?
+            ''', values)
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Service mis à jour'})
+            return jsonify({'error': 'Service non trouvé'}), 404
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -1227,15 +1363,18 @@ def update_service_api(service_id):
 @admin_required
 def delete_service_api(service_id):
     """Supprime un service"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'Base de données non disponible'}), 503
-    
     try:
-        result = mongo_db.services.delete_one({"_id": ObjectId(service_id)})
-        if result.deleted_count > 0:
-            return jsonify({'success': True, 'message': 'Service supprimé'})
-        return jsonify({'error': 'Service non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM services WHERE id = ?', (int(service_id),))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Service supprimé'})
+            return jsonify({'error': 'Service non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_service_api: {e}")
         return jsonify({'error': str(e)}), 500
@@ -1246,38 +1385,43 @@ def delete_service_api(service_id):
 def get_contacts_api():
     """Récupère la liste des messages de contact"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.warning("MongoDB non disponible pour get_contacts_api")
-            return jsonify({
-                'error': 'MongoDB non disponible',
-                'message': 'La connexion à la base de données n\'est pas disponible. Vérifiez la configuration MONGO_URI.',
-                'data': []
-            }), 503
-        
-        # Récupérer les paramètres de filtrage
-        read_filter = request.args.get('read')
-        limit = request.args.get('limit', type=int)
-        
-        query = {}
-        if read_filter is not None:
-            query['read'] = read_filter.lower() == 'true'
-        
-        # Récupérer les contacts
-        contacts = list(mongo_db.contacts.find(query).sort("created_at", -1))
-        
-        # Limiter le nombre de résultats si spécifié
-        if limit:
-            contacts = contacts[:limit]
-        
-        # Convertir ObjectId en string
-        for contact in contacts:
-            if '_id' in contact:
-                contact['_id'] = str(contact['_id'])
-            if 'created_at' in contact and isinstance(contact['created_at'], datetime):
-                contact['created_at'] = contact['created_at'].isoformat()
-        
-        return jsonify(contacts)
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({
+                    'error': 'Base de données non disponible',
+                    'message': 'La connexion à la base de données n\'est pas disponible.',
+                    'data': []
+                }), 503
+            
+            cursor = conn.cursor()
+            read_filter = request.args.get('read')
+            limit = request.args.get('limit', type=int)
+            
+            if read_filter is not None:
+                read_value = 1 if read_filter.lower() == 'true' else 0
+                cursor.execute('SELECT * FROM contacts WHERE read = ? ORDER BY created_at DESC', (read_value,))
+            else:
+                cursor.execute('SELECT * FROM contacts ORDER BY created_at DESC')
+            
+            rows = cursor.fetchall()
+            contacts = rows_to_list(rows)
+            
+            # Limiter le nombre de résultats si spécifié
+            if limit:
+                contacts = contacts[:limit]
+            
+            # Convertir id en _id pour compatibilité
+            for contact in contacts:
+                contact['_id'] = str(contact['id'])
+                contact['read'] = bool(contact.get('read', 0))
+                del contact['id']
+                if 'created_at' in contact:
+                    if isinstance(contact['created_at'], str):
+                        pass  # Déjà en string
+                    else:
+                        contact['created_at'] = contact['created_at'].isoformat() if hasattr(contact['created_at'], 'isoformat') else str(contact['created_at'])
+            
+            return jsonify(contacts)
     except Exception as e:
         app.logger.error(f"Erreur get_contacts_api: {e}")
         return jsonify({
@@ -1291,21 +1435,20 @@ def get_contacts_api():
 def mark_contact_read_api(contact_id):
     """Marque un message comme lu ou non lu"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        data = request.get_json()
-        read_status = data.get('read', True)
-        
-        result = mongo_db.contacts.update_one(
-            {"_id": ObjectId(contact_id)},
-            {"$set": {"read": read_status}}
-        )
-        
-        if result.matched_count > 0:
-            return jsonify({'success': True, 'message': 'Statut mis à jour'})
-        return jsonify({'error': 'Message non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            data = request.get_json()
+            read_status = 1 if data.get('read', True) else 0
+            
+            cursor = conn.cursor()
+            cursor.execute('UPDATE contacts SET read = ? WHERE id = ?', (read_status, int(contact_id)))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Statut mis à jour'})
+            return jsonify({'error': 'Message non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur mark_contact_read_api: {e}")
         return jsonify({'error': str(e)}), 500
@@ -1315,64 +1458,63 @@ def mark_contact_read_api(contact_id):
 def delete_contact_api(contact_id):
     """Supprime un message de contact"""
     try:
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour delete_contact_api")
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        result = mongo_db.contacts.delete_one({"_id": ObjectId(contact_id)})
-        
-        if result.deleted_count > 0:
-            return jsonify({'success': True, 'message': 'Message supprimé'})
-        return jsonify({'error': 'Message non trouvé'}), 404
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM contacts WHERE id = ?', (int(contact_id),))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                return jsonify({'success': True, 'message': 'Message supprimé'})
+            return jsonify({'error': 'Message non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_contact_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Les fonctions de validation sont importées depuis utils.validators
 
-# ========== Route de diagnostic MongoDB ==========
+# ========== Route de diagnostic SQLite ==========
 @app.route('/api/admin/mongo-status', methods=['GET'])
 @admin_required
 def mongo_status_api():
-    """Route de diagnostic pour vérifier l'état de la connexion MongoDB"""
+    """Route de diagnostic pour vérifier l'état de la connexion SQLite (compatibilité avec l'ancien nom)"""
     try:
-        mongo_uri = os.getenv('MONGO_URI')
-        mongo_db_name = os.getenv('MONGO_DB_NAME', 'portfolio_db')
+        db_path = os.getenv('SQLITE_DB_PATH', 'portfolio.db')
         
         status = {
-            'mongo_uri_configured': bool(mongo_uri),
-            'mongo_uri_preview': mongo_uri[:20] + '...' if mongo_uri and len(mongo_uri) > 20 else mongo_uri if mongo_uri else None,
-            'mongo_db_name': mongo_db_name,
+            'db_type': 'SQLite',
+            'db_path': db_path,
             'connection_status': 'unknown',
-            'collections': [],
+            'tables': [],
             'error': None
         }
         
-        mongo_db = ensure_mongo_connection()
-        if mongo_db is None:
-            status['connection_status'] = 'disconnected'
-            status['error'] = 'Impossible de se connecter à MongoDB'
-            return jsonify(status), 503
-        
-        # Tester la connexion
+        # Tester la connexion SQLite
         try:
-            mongo_client = app.config.get('MONGO_CLIENT')
-            mongo_client.admin.command('ping')
-            status['connection_status'] = 'connected'
-            
-            # Lister les collections disponibles
-            status['collections'] = mongo_db.list_collection_names()
-            
-            # Compter les documents dans chaque collection
-            counts = {}
-            for collection_name in status['collections']:
-                try:
-                    counts[collection_name] = mongo_db[collection_name].count_documents({})
-                except:
-                    counts[collection_name] = 'error'
-            status['document_counts'] = counts
-            
+            with get_db() as conn:
+                if conn is None:
+                    status['connection_status'] = 'disconnected'
+                    status['error'] = 'Impossible de se connecter à SQLite'
+                    return jsonify(status), 503
+                
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [row[0] for row in cursor.fetchall()]
+                status['tables'] = tables
+                status['connection_status'] = 'connected'
+                
+                # Compter les documents dans chaque table
+                counts = {}
+                for table_name in tables:
+                    try:
+                        cursor.execute(f'SELECT COUNT(*) FROM {table_name}')
+                        counts[table_name] = cursor.fetchone()[0]
+                    except:
+                        counts[table_name] = 'error'
+                status['document_counts'] = counts
+                
         except Exception as e:
             status['connection_status'] = 'error'
             status['error'] = str(e)

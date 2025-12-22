@@ -12,211 +12,284 @@ const getHeaders = () => {
 };
 
 // ========== Navigation entre sections ==========
+// Définir showSection globalement pour qu'elle soit accessible partout
 function showSection(sectionName) {
-    if (!sectionName) return;
+    if (!sectionName) {
+        console.error('showSection appelée sans nom de section');
+        return;
+    }
     
     // Masquer toutes les sections
     const allSections = document.querySelectorAll('.content-section');
+    if (allSections.length === 0) {
+        console.warn('Aucune section avec la classe content-section trouvée');
+        return;
+    }
+    
     allSections.forEach(section => {
         section.style.display = 'none';
         section.classList.remove('active-section');
     });
-    
+
     // Afficher la section demandée
     const targetSection = document.getElementById(`section-${sectionName}`);
-    if (targetSection) {
-        targetSection.style.display = 'block';
-        targetSection.classList.add('active-section');
+    if (!targetSection) {
+        console.error(`Section non trouvée: section-${sectionName}`);
+        return;
     }
     
-    // Mettre à jour le menu actif
-    const menuItems = document.querySelectorAll('.menu-item');
-    menuItems.forEach(item => {
-        item.classList.remove('active');
-        if (item.getAttribute('data-section') === sectionName) {
-            item.classList.add('active');
-        }
-    });
+    targetSection.style.display = 'block';
+    targetSection.classList.add('active-section');
     
     // Mettre à jour le titre de la page
-    const pageTitle = document.getElementById('current-page');
-    if (pageTitle) {
-        const activeItem = document.querySelector(`[data-section="${sectionName}"]`);
-        pageTitle.textContent = activeItem ? (activeItem.getAttribute('aria-label') || sectionName) : 'Dashboard';
+    const pageTitleEl = document.getElementById('current-page');
+    if (pageTitleEl) {
+        const menuItem = document.querySelector(`[data-section="${sectionName}"]`);
+        const pageTitle = menuItem ? menuItem.getAttribute('aria-label') || sectionName : sectionName;
+        pageTitleEl.textContent = pageTitle;
     }
     
-    // Charger les données de la section si nécessaire
-    if (sectionName === 'skills') initSkillsSection();
-    else if (sectionName === 'partners') initPartnersSection();
-    else if (sectionName === 'projects') initProjectsSection();
-    else if (sectionName === 'services') initServicesSection();
-    else if (sectionName === 'contacts') loadContacts();
-    else if (sectionName === 'homepage') loadHomepageData();
+    // Charger les données si nécessaire
+    if (sectionName === 'projects') {
+        if (typeof initProjectsSection === 'function') {
+            initProjectsSection();
+        }
+    } else if (sectionName === 'services') {
+        if (typeof initServicesSection === 'function') {
+            initServicesSection();
+        }
+    } else if (sectionName === 'contacts') {
+        if (typeof loadContacts === 'function') {
+            loadContacts();
+        }
+    } else if (sectionName === 'profile') {
+        if (typeof loadProfile === 'function') {
+            loadProfile();
+        }
+        if (typeof loadLoginHistory === 'function') {
+            loadLoginHistory();
+        }
+    } else if (sectionName === 'skills') {
+        if (typeof initSkillsSection === 'function') {
+            initSkillsSection();
+        }
+    } else if (sectionName === 'partners') {
+        if (typeof initPartnersSection === 'function') {
+            initPartnersSection();
+        }
+    } else if (sectionName === 'dashboard') {
+        if (typeof loadDashboardStats === 'function') {
+            loadDashboardStats();
+        }
+    } else if (sectionName === 'admins') {
+        if (typeof loadAdminUsers === 'function') {
+            loadAdminUsers();
+        }
+    } else if (sectionName === 'homepage') {
+        if (typeof loadHomepageData === 'function') {
+            loadHomepageData();
+        }
+    }
 }
 
-// Initialiser la navigation
-document.addEventListener('DOMContentLoaded', () => {
-    // Gérer les clics sur les éléments du menu
+// Initialiser la navigation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier que les éléments nécessaires existent
     const menuItems = document.querySelectorAll('.menu-item[data-section]');
+    
+    if (menuItems.length === 0) {
+        console.warn('Aucun élément de menu avec data-section trouvé');
+            return;
+        }
+        
+    console.log(`✅ ${menuItems.length} éléments de menu trouvés`);
+    
     menuItems.forEach(item => {
         item.addEventListener('click', function(e) {
-            e.preventDefault();
-            const section = this.getAttribute('data-section');
-            if (section) {
-                showSection(section);
+            const href = this.getAttribute('href');
+            if (href && href.startsWith('#')) {
+    e.preventDefault();
+                e.stopPropagation();
+                
+                const section = this.getAttribute('data-section');
+                if (section) {
+                    console.log(`🔄 Navigation vers la section: ${section}`);
+                    showSection(section);
+                    
+                    // Mettre à jour l'état actif
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    this.classList.add('active');
+        } else {
+                    console.error('Section non trouvée:', section);
+                }
             }
         });
     });
     
-    // Charger les données initiales
+    // Afficher la section dashboard par défaut si aucune section n'est active
+    const activeSection = document.querySelector('.content-section.active-section');
+    if (!activeSection) {
+        console.log('Aucune section active, affichage du dashboard par défaut');
+        showSection('dashboard');
+    }
+    
+    // Charger les données au démarrage
+    console.log('🔄 Chargement des données initiales...');
     loadHomepageData();
     loadSkills();
     loadPartners();
     loadProjects();
     loadServices();
     loadContacts();
-    
-    // Vérifier l'état MongoDB
-    checkMongoDBStatus();
 });
 
-// ========== Vérification MongoDB ==========
-async function checkMongoDBStatus() {
-    setTimeout(async () => {
-        try {
-            const response = await fetch(`${API_BASE}/admin/mongo-status`, {
-                headers: getHeaders(),
-                credentials: 'include'
-            });
-            
-            if (response.ok) {
-                const status = await response.json();
-                if (status.connection_status !== 'connected') {
-                    showMongoDBWarningBanner();
-                }
-            } else {
-                // Fallback : tester une API simple
-                const testResponse = await fetch(`${API_BASE}/skills`);
-                if (!testResponse.ok) {
-                    const data = await testResponse.json().catch(() => ({}));
-                    if (data.error === 'MongoDB non disponible' || testResponse.status === 503) {
-                        showMongoDBWarningBanner();
-                    }
-                }
-            }
-        } catch (error) {
-            // Ignorer les erreurs silencieusement
+// ========== Fonctions utilitaires ==========
+function showToast(message, type = 'info') {
+    // Utiliser la fonction showToast de admin.js si disponible
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+            return;
         }
-    }, 2000);
+        
+    // Fallback si showToast n'est pas disponible
+    console.log(`[${type.toUpperCase()}] ${message}`);
 }
 
-function showMongoDBWarningBanner() {
-    if (document.getElementById('mongodb-config-warning')) return;
-    
-    const banner = document.createElement('div');
-    banner.id = 'mongodb-config-warning';
-    banner.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-        color: white;
-        padding: 1.5rem 2rem;
-        z-index: 10000;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    `;
-    
-    banner.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
-            <div style="flex: 1;">
-                <strong style="font-size: 1.2rem; display: block; margin-bottom: 0.5rem;">⚠️ URGENT : MongoDB non configuré</strong>
-                <p style="margin: 0; font-size: 0.95rem; opacity: 0.95; line-height: 1.5;">
-                    La variable <code style="background: rgba(255,255,255,0.25); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold;">MONGO_URI</code> n'est pas définie en production.
-                    Les données ne peuvent pas être chargées.
-                </p>
-                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">
-                    <strong>Solution :</strong> PythonAnywhere → Web → votre app → "Environment variables" → Ajoutez MONGO_URI → Redémarrez
-                </p>
-                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem;">
-                    📚 Guide : <code style="background: rgba(255,255,255,0.2); padding: 0.15rem 0.4rem; border-radius: 3px;">CONFIGURER_MONGO_URI.md</code>
-                </p>
-            </div>
-            <button onclick="document.getElementById('mongodb-config-warning').remove(); const mainContent = document.querySelector('.main-content'); if(mainContent) mainContent.style.paddingTop = '0';" 
-                    style="background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.4); 
-                           color: white; padding: 0.6rem 1.2rem; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                ✕ Fermer
-            </button>
-        </div>
-    `;
-    
-    document.body.insertBefore(banner, document.body.firstChild);
-    
-    // Ajuster le padding du contenu principal
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        mainContent.style.paddingTop = '120px';
-    }
+// Fonction pour gérer les erreurs 401 (session expirée)
+async function handle401Error() {
+    showToast('Session expirée. Veuillez vous reconnecter.', 'error');
+    setTimeout(() => {
+        window.location.href = '/admin/login';
+    }, 2000);
+    return false;
 }
 
 // ========== Homepage Management ==========
 async function loadHomepageData() {
     try {
         const response = await fetch(`${API_BASE}/homepage`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.badge) document.getElementById('homepage-badge').value = data.badge || '';
-            if (data.title_line1) document.getElementById('homepage-title1').value = data.title_line1 || '';
-            if (data.title_line2) document.getElementById('homepage-title2').value = data.title_line2 || '';
-            if (data.description) document.getElementById('homepage-description').value = data.description || '';
-            if (data.email) document.getElementById('homepage-email').value = data.email || '';
-            if (data.cta_text) document.getElementById('homepage-cta').value = data.cta_text || '';
-            if (data.about_title) document.getElementById('homepage-about-title').value = data.about_title || '';
-            if (data.about_name) document.getElementById('homepage-about-name').value = data.about_name || '';
-            if (data.about_subtitle) document.getElementById('homepage-about-subtitle').value = data.about_subtitle || '';
-            if (data.about_description) document.getElementById('homepage-about-description').value = data.about_description || '';
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data && !data.error && Object.keys(data).length > 0) {
+            const badgeEl = document.getElementById('homepage-badge');
+            const title1El = document.getElementById('homepage-title1');
+            const title2El = document.getElementById('homepage-title2');
+            const descEl = document.getElementById('homepage-description');
+            const emailEl = document.getElementById('homepage-email');
+            const ctaEl = document.getElementById('homepage-cta');
+            const aboutTitleEl = document.getElementById('homepage-about-title');
+            const aboutNameEl = document.getElementById('homepage-about-name');
+            const aboutSubtitleEl = document.getElementById('homepage-about-subtitle');
+            const aboutDescEl = document.getElementById('homepage-about-description');
+            
+            if (badgeEl) badgeEl.value = data.badge || '';
+            if (title1El) title1El.value = data.title_line1 || '';
+            if (title2El) title2El.value = data.title_line2 || '';
+            if (descEl) descEl.value = data.description || '';
+            if (emailEl) emailEl.value = data.email || '';
+            if (ctaEl) ctaEl.value = data.cta_text || '';
+            if (aboutTitleEl) aboutTitleEl.value = data.about_title || '';
+            if (aboutNameEl) aboutNameEl.value = data.about_name || '';
+            if (aboutSubtitleEl) aboutSubtitleEl.value = data.about_subtitle || '';
+            if (aboutDescEl) aboutDescEl.value = data.about_description || '';
         }
     } catch (error) {
-        console.error('Erreur lors du chargement de la homepage:', error);
+        console.error('Erreur lors du chargement des données homepage:', error);
+        showToast('Erreur lors du chargement des données. MongoDB est peut-être indisponible.', 'error');
     }
 }
+
+// Attacher l'événement submit au formulaire homepage
+document.addEventListener('DOMContentLoaded', function() {
+    const homepageForm = document.getElementById('homepage-form');
+    if (homepageForm) {
+        homepageForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+                badge: document.getElementById('homepage-badge').value,
+                title_line1: document.getElementById('homepage-title1').value,
+                title_line2: document.getElementById('homepage-title2').value,
+                description: document.getElementById('homepage-description').value,
+                email: document.getElementById('homepage-email').value,
+                cta_text: document.getElementById('homepage-cta').value,
+                about_title: document.getElementById('homepage-about-title').value,
+                about_name: document.getElementById('homepage-about-name').value,
+                about_subtitle: document.getElementById('homepage-about-subtitle').value,
+                about_description: document.getElementById('homepage-about-description').value,
+                type: 'header'
+        };
+
+        try {
+                const response = await fetch(`${API_BASE}/homepage`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify(formData)
+                });
+
+            if (!response.ok) {
+                const result = await response.json();
+                if (response.status === 401) {
+                    await handle401Error();
+                    return;
+                }
+                    showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+            return;
+        }
+        
+            const result = await response.json();
+                if (result.success) {
+                    showToast('Données enregistrées avec succès !', 'success');
+        } else {
+                    showToast(result.error || 'Erreur lors de l\'enregistrement', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+                showToast('Erreur lors de l\'enregistrement', 'error');
+            }
+        });
+    }
+});
 
 // ========== Skills Management ==========
 let allSkillsData = [];
 
 async function loadSkills() {
     try {
+        console.log('🔄 Chargement des compétences...');
         const response = await fetch(`${API_BASE}/skills`);
+        const data = await response.json();
         
-        if (!response.ok) {
-            let errorData = {};
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
-            }
-            
+        // Vérifier si c'est une erreur MongoDB
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
             const skillsList = document.getElementById('skills-list');
             if (skillsList) {
                 skillsList.innerHTML = `
-                    <div style="padding: 2rem; text-align: center; background: rgba(220, 53, 69, 0.1); border: 2px solid #dc3545; border-radius: 8px;">
-                        <p style="font-size: 1.3rem; margin-bottom: 1rem; color: #dc3545; font-weight: bold;">⚠️ Base de données non disponible</p>
-                        <p style="color: var(--gray); margin-bottom: 1rem;">${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
-                        <p style="color: var(--gray); font-size: 0.9rem;">
-                            Configurez <code style="background: rgba(0,0,0,0.2); padding: 0.2rem 0.4rem; border-radius: 3px;">MONGO_URI</code> dans les variables d'environnement.
-                        </p>
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée. Vérifiez la variable MONGO_URI.'}</p>
                     </div>
                 `;
             }
-            showMongoDBWarningBanner();
+            showToast('Impossible de charger les compétences : MongoDB non disponible', 'error');
             return;
         }
         
-        const data = await response.json();
-        allSkillsData = Array.isArray(data) ? data : [];
-        displaySkills(allSkillsData);
+        const skills = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${skills.length} compétence(s) chargée(s)`);
+        
+        allSkillsData = skills;
+        displaySkills(skills);
     } catch (error) {
-        console.error('Erreur lors du chargement des compétences:', error);
+        console.error('❌ Erreur lors du chargement des compétences:', error);
+        showToast('Erreur lors du chargement des compétences', 'error');
+        const skillsList = document.getElementById('skills-list');
+        if (skillsList) {
+            skillsList.innerHTML = '<p>Aucune compétence disponible.</p>';
+        }
     }
 }
 
@@ -225,20 +298,32 @@ function displaySkills(skills) {
     if (!skillsList) return;
     
     if (skills.length === 0) {
-        skillsList.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 2rem;">Aucune compétence trouvée.</p>';
+        skillsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucune compétence disponible.</p>';
         return;
     }
     
-    skillsList.innerHTML = skills.map(skill => `
-        <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>${skill.title || 'Sans titre'}</h3>
-            <p>${skill.description || ''}</p>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button class="btn btn-secondary btn-sm" onclick="editSkill('${skill._id}')">Modifier</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteSkill('${skill._id}')">Supprimer</button>
+    skillsList.innerHTML = '';
+    skills.forEach(skill => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h3>${skill.title || 'Sans titre'}</h3>
+                    <p>${skill.description || ''}</p>
+                    <p style="color: var(--gray); font-size: 0.9rem;">
+                        <strong>Projets:</strong> ${skill.projects_count || 0} | 
+                        <strong>Ordre:</strong> ${skill.order || 0}
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-primary" onclick="editSkill('${skill._id}')">Modifier</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSkill('${skill._id}')">Supprimer</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+        skillsList.appendChild(card);
+    });
 }
 
 function initSkillsSection() {
@@ -247,16 +332,28 @@ function initSkillsSection() {
 
 function editSkill(skillId) {
     console.log('Modifier compétence:', skillId);
-    if (typeof window.showToast === 'function') {
-        window.showToast('Fonctionnalité à implémenter', 'info');
-    }
+    showToast('Fonctionnalité à implémenter', 'info');
 }
 
 function deleteSkill(skillId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette compétence ?')) return;
-    console.log('Supprimer compétence:', skillId);
-    if (typeof window.showToast === 'function') {
-        window.showToast('Fonctionnalité à implémenter', 'info');
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette compétence ?')) {
+        fetch(`${API_BASE}/skills/${skillId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Compétence supprimée', 'success');
+                loadSkills();
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
     }
 }
 
@@ -265,34 +362,36 @@ let allPartnersData = [];
 
 async function loadPartners() {
     try {
+        console.log('🔄 Chargement des partenaires...');
         const response = await fetch(`${API_BASE}/partners`);
+        const data = await response.json();
         
-        if (!response.ok) {
-            let errorData = {};
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
-            }
-            
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
             const partnersList = document.getElementById('partners-list');
             if (partnersList) {
                 partnersList.innerHTML = `
-                    <div style="padding: 2rem; text-align: center; background: rgba(220, 53, 69, 0.1); border: 2px solid #dc3545; border-radius: 8px;">
-                        <p style="font-size: 1.3rem; margin-bottom: 1rem; color: #dc3545; font-weight: bold;">⚠️ Base de données non disponible</p>
-                        <p style="color: var(--gray); margin-bottom: 1rem;">${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
                     </div>
                 `;
             }
-            showMongoDBWarningBanner();
+            showToast('Impossible de charger les partenaires : MongoDB non disponible', 'error');
             return;
         }
         
-        const data = await response.json();
-        allPartnersData = Array.isArray(data) ? data : [];
-        displayPartners(allPartnersData);
+        const partners = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${partners.length} partenaire(s) chargé(s)`);
+        
+        allPartnersData = partners;
+        displayPartners(partners);
     } catch (error) {
-        console.error('Erreur lors du chargement des partenaires:', error);
+        console.error('❌ Erreur lors du chargement des partenaires:', error);
+        showToast('Erreur lors du chargement des partenaires', 'error');
+        const partnersList = document.getElementById('partners-list');
+        if (partnersList) {
+            partnersList.innerHTML = '<p>Aucun partenaire disponible.</p>';
+        }
     }
 }
 
@@ -301,19 +400,31 @@ function displayPartners(partners) {
     if (!partnersList) return;
     
     if (partners.length === 0) {
-        partnersList.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 2rem;">Aucun partenaire trouvé.</p>';
+        partnersList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun partenaire disponible.</p>';
         return;
     }
     
-    partnersList.innerHTML = partners.map(partner => `
-        <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>${partner.name || 'Sans nom'}</h3>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button class="btn btn-secondary btn-sm" onclick="editPartner('${partner._id}')">Modifier</button>
-                <button class="btn btn-danger btn-sm" onclick="deletePartner('${partner._id}')">Supprimer</button>
+    partnersList.innerHTML = '';
+    partners.forEach(partner => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    ${partner.image ? `<img src="/static/${partner.image}" alt="${partner.name}" style="width: 60px; height: auto;">` : ''}
+                    <div>
+                        <h3>${partner.name || 'Sans nom'}</h3>
+                        <p style="color: var(--gray); font-size: 0.9rem;"><strong>Ordre:</strong> ${partner.order || 0}</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-primary" onclick="editPartner('${partner._id}')">Modifier</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePartner('${partner._id}')">Supprimer</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+        partnersList.appendChild(card);
+    });
 }
 
 function initPartnersSection() {
@@ -322,11 +433,29 @@ function initPartnersSection() {
 
 function editPartner(partnerId) {
     console.log('Modifier partenaire:', partnerId);
+    showToast('Fonctionnalité à implémenter', 'info');
 }
 
 function deletePartner(partnerId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce partenaire ?')) return;
-    console.log('Supprimer partenaire:', partnerId);
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce partenaire ?')) {
+        fetch(`${API_BASE}/partners/${partnerId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Partenaire supprimé', 'success');
+                loadPartners();
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
 }
 
 // ========== Projects Management ==========
@@ -334,34 +463,36 @@ let allProjectsData = [];
 
 async function loadProjects() {
     try {
+        console.log('🔄 Chargement des projets...');
         const response = await fetch(`${API_BASE}/projects`);
+        const data = await response.json();
         
-        if (!response.ok) {
-            let errorData = {};
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
-            }
-            
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
             const projectsList = document.getElementById('projects-list');
             if (projectsList) {
                 projectsList.innerHTML = `
-                    <div style="padding: 2rem; text-align: center; background: rgba(220, 53, 69, 0.1); border: 2px solid #dc3545; border-radius: 8px;">
-                        <p style="font-size: 1.3rem; margin-bottom: 1rem; color: #dc3545; font-weight: bold;">⚠️ Base de données non disponible</p>
-                        <p style="color: var(--gray); margin-bottom: 1rem;">${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
                     </div>
                 `;
             }
-            showMongoDBWarningBanner();
+            showToast('Impossible de charger les projets : MongoDB non disponible', 'error');
             return;
         }
         
-        const data = await response.json();
-        allProjectsData = Array.isArray(data) ? data : [];
-        displayProjects(allProjectsData);
+        const projects = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${projects.length} projet(s) chargé(s)`);
+        
+        allProjectsData = projects;
+        displayProjects(projects);
     } catch (error) {
-        console.error('Erreur lors du chargement des projets:', error);
+        console.error('❌ Erreur lors du chargement des projets:', error);
+        showToast('Erreur lors du chargement des projets', 'error');
+        const projectsList = document.getElementById('projects-list');
+        if (projectsList) {
+            projectsList.innerHTML = '<p>Aucun projet disponible.</p>';
+        }
     }
 }
 
@@ -370,20 +501,37 @@ function displayProjects(projects) {
     if (!projectsList) return;
     
     if (projects.length === 0) {
-        projectsList.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 2rem;">Aucun projet trouvé.</p>';
+        projectsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun projet disponible.</p>';
         return;
     }
     
-    projectsList.innerHTML = projects.map(project => `
-        <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>${project.title || 'Sans titre'}</h3>
-            <p>${project.description || ''}</p>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button class="btn btn-secondary btn-sm" onclick="editProject('${project._id}')">Modifier</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteProject('${project._id}')">Supprimer</button>
+    projectsList.innerHTML = '';
+    projects.forEach(project => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        const statusBadge = project.status === 'published' ? '<span style="color: var(--green);">● Publié</span>' : 
+                           project.status === 'draft' ? '<span style="color: orange;">● Brouillon</span>' : 
+                           '<span style="color: gray;">● Archivé</span>';
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                    <h3>${project.title || 'Sans titre'}</h3>
+                    <p style="color: var(--gray); margin: 0.5rem 0;"><strong>Technologies:</strong> ${project.technologies || 'N/A'}</p>
+                    <p style="color: var(--gray); margin: 0.5rem 0;">${project.description ? project.description.substring(0, 100) + '...' : ''}</p>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.9rem;">
+                        ${statusBadge}
+                        <span><strong>Ordre:</strong> ${project.order || 0}</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-left: 1rem;">
+                    <button class="btn btn-sm btn-primary" onclick="editProject('${project._id}')">Modifier</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteProject('${project._id}')">Supprimer</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+        projectsList.appendChild(card);
+    });
 }
 
 function initProjectsSection() {
@@ -392,11 +540,29 @@ function initProjectsSection() {
 
 function editProject(projectId) {
     console.log('Modifier projet:', projectId);
+    showToast('Fonctionnalité à implémenter', 'info');
 }
 
 function deleteProject(projectId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) return;
-    console.log('Supprimer projet:', projectId);
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) {
+        fetch(`${API_BASE}/projects/${projectId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Projet supprimé', 'success');
+                loadProjects();
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
 }
 
 // ========== Services Management ==========
@@ -404,34 +570,36 @@ let allServicesData = [];
 
 async function loadServices() {
     try {
+        console.log('🔄 Chargement des services...');
         const response = await fetch(`${API_BASE}/services`);
+        const data = await response.json();
         
-        if (!response.ok) {
-            let errorData = {};
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
-            }
-            
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
             const servicesList = document.getElementById('services-list');
             if (servicesList) {
                 servicesList.innerHTML = `
-                    <div style="padding: 2rem; text-align: center; background: rgba(220, 53, 69, 0.1); border: 2px solid #dc3545; border-radius: 8px;">
-                        <p style="font-size: 1.3rem; margin-bottom: 1rem; color: #dc3545; font-weight: bold;">⚠️ Base de données non disponible</p>
-                        <p style="color: var(--gray); margin-bottom: 1rem;">${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                    <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                        <p>${data.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
                     </div>
                 `;
             }
-            showMongoDBWarningBanner();
+            showToast('Impossible de charger les services : MongoDB non disponible', 'error');
             return;
         }
         
-        const data = await response.json();
-        allServicesData = Array.isArray(data) ? data : [];
-        displayServices(allServicesData);
+        const services = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${services.length} service(s) chargé(s)`);
+        
+        allServicesData = services;
+        displayServices(services);
     } catch (error) {
-        console.error('Erreur lors du chargement des services:', error);
+        console.error('❌ Erreur lors du chargement des services:', error);
+        showToast('Erreur lors du chargement des services', 'error');
+        const servicesList = document.getElementById('services-list');
+        if (servicesList) {
+            servicesList.innerHTML = '<p>Aucun service disponible.</p>';
+        }
     }
 }
 
@@ -440,20 +608,29 @@ function displayServices(services) {
     if (!servicesList) return;
     
     if (services.length === 0) {
-        servicesList.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 2rem;">Aucun service trouvé.</p>';
+        servicesList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun service disponible.</p>';
         return;
     }
     
-    servicesList.innerHTML = services.map(service => `
-        <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>${service.title || 'Sans titre'}</h3>
-            <p>${service.description || ''}</p>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button class="btn btn-secondary btn-sm" onclick="editService('${service._id}')">Modifier</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteService('${service._id}')">Supprimer</button>
+    servicesList.innerHTML = '';
+    services.forEach(service => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                    <h3>${service.title || 'Sans titre'}</h3>
+                    <p style="color: var(--gray); margin: 0.5rem 0;">${service.description ? service.description.substring(0, 150) + '...' : ''}</p>
+                    <span style="font-size: 0.9rem; color: var(--gray);"><strong>Ordre:</strong> ${service.order || 0}</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-left: 1rem;">
+                    <button class="btn btn-sm btn-primary" onclick="editService('${service._id}')">Modifier</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteService('${service._id}')">Supprimer</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+        servicesList.appendChild(card);
+    });
 }
 
 function initServicesSection() {
@@ -462,11 +639,29 @@ function initServicesSection() {
 
 function editService(serviceId) {
     console.log('Modifier service:', serviceId);
+    showToast('Fonctionnalité à implémenter', 'info');
 }
 
 function deleteService(serviceId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) return;
-    console.log('Supprimer service:', serviceId);
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
+        fetch(`${API_BASE}/services/${serviceId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Service supprimé', 'success');
+                loadServices();
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
 }
 
 // ========== Contacts Management ==========
@@ -474,36 +669,38 @@ let allContacts = [];
 
 async function loadContacts() {
     try {
+        console.log('🔄 Chargement des contacts...');
         const response = await fetch(`${API_BASE}/contacts`, {
             headers: getHeaders()
         });
+        const data = await response.json();
         
         const contactsList = document.getElementById('contacts-list');
         if (!contactsList) return;
         
-        if (!response.ok) {
-            let errorData = {};
-            try {
-                errorData = await response.json();
-            } catch (e) {
-                errorData = { error: 'Erreur serveur', message: `Erreur HTTP ${response.status}` };
-            }
-            
+        if (!response.ok || (data.error && data.error === 'MongoDB non disponible')) {
             contactsList.innerHTML = `
-                <div style="padding: 2rem; text-align: center; background: rgba(220, 53, 69, 0.1); border: 2px solid #dc3545; border-radius: 8px;">
-                    <p style="font-size: 1.3rem; margin-bottom: 1rem; color: #dc3545; font-weight: bold;">⚠️ Base de données non disponible</p>
-                    <p style="color: var(--gray); margin-bottom: 1rem;">${errorData.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
+                <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                    <p style="font-size: 1.2rem; margin-bottom: 1rem;">⚠️ Base de données non disponible</p>
+                    <p>${data.message || 'La connexion à MongoDB n\'est pas configurée.'}</p>
                 </div>
             `;
-            showMongoDBWarningBanner();
+            showToast('Impossible de charger les contacts : MongoDB non disponible', 'error');
             return;
         }
         
-        const data = await response.json();
-        allContacts = Array.isArray(data) ? data : [];
-        displayContacts(allContacts);
+        const contacts = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${contacts.length} contact(s) chargé(s)`);
+        
+        allContacts = contacts;
+        displayContacts(contacts);
     } catch (error) {
-        console.error('Erreur lors du chargement des contacts:', error);
+        console.error('❌ Erreur lors du chargement des contacts:', error);
+        showToast('Erreur lors du chargement des contacts', 'error');
+        const contactsList = document.getElementById('contacts-list');
+        if (contactsList) {
+            contactsList.innerHTML = '<p>Aucun message disponible.</p>';
+        }
     }
 }
 
@@ -512,27 +709,86 @@ function displayContacts(contacts) {
     if (!contactsList) return;
     
     if (contacts.length === 0) {
-        contactsList.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 2rem;">Aucun message de contact trouvé.</p>';
+        contactsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun message disponible.</p>';
         return;
     }
     
-    contactsList.innerHTML = contacts.map(contact => `
-        <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>${contact.name || 'Sans nom'} - ${contact.email || 'Sans email'}</h3>
-            <p>${contact.message || ''}</p>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button class="btn btn-secondary btn-sm" onclick="markContactRead('${contact._id}')">Marquer comme lu</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteContact('${contact._id}')">Supprimer</button>
+    contactsList.innerHTML = '';
+    contacts.forEach(contact => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        const date = new Date(contact.created_at);
+        const formattedDate = date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        card.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h3>${contact.subject || 'Sans sujet'}</h3>
+                        <div style="color: var(--gray); font-size: 0.9rem; margin-top: 0.5rem;">
+                            <p><strong>De:</strong> ${contact.name} (<a href="mailto:${contact.email}" style="color: var(--green);">${contact.email}</a>)</p>
+                            <p><strong>Date:</strong> ${formattedDate}</p>
+                        </div>
+                        <div style="background: var(--dark-bg); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                            <p style="color: var(--white); white-space: pre-wrap;">${contact.message || ''}</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="mailto:${contact.email}?subject=Re: ${encodeURIComponent(contact.subject)}" class="btn btn-sm btn-primary">
+                        Répondre
+                    </a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteContact('${contact._id}')">Supprimer</button>
+                </div>
             </div>
-        </div>
-    `).join('');
-}
-
-function markContactRead(contactId) {
-    console.log('Marquer contact comme lu:', contactId);
+        `;
+        contactsList.appendChild(card);
+    });
 }
 
 function deleteContact(contactId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) return;
-    console.log('Supprimer contact:', contactId);
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+        fetch(`${API_BASE}/contacts/${contactId}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Message supprimé', 'success');
+                loadContacts();
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
+}
+
+// ========== Profile Management ==========
+function loadProfile() {
+    console.log('Chargement du profil');
+    // Cette fonction peut être étendue pour charger le profil depuis l'API
+    showToast('Fonctionnalité à implémenter', 'info');
+}
+
+function loadLoginHistory() {
+    console.log('Chargement de l\'historique de connexion');
+    // Cette fonction peut être étendue pour charger l'historique depuis l'API
+}
+
+// ========== Admin Users Management ==========
+function loadAdminUsers() {
+    console.log('Chargement des administrateurs');
+    // Cette fonction peut être étendue pour charger les administrateurs depuis l'API
+    showToast('Fonctionnalité à implémenter', 'info');
 }

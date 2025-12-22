@@ -1,142 +1,226 @@
 """
-Module de gestion de la connexion MongoDB
+Module de gestion de la connexion SQLite
 """
 import os
-from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+import sqlite3
+from datetime import datetime
+from contextlib import contextmanager
+import json
 
-def get_mongo_client():
+# Chemin de la base de données SQLite
+DB_PATH = os.getenv('SQLITE_DB_PATH', 'portfolio.db')
+
+def get_db_connection():
     """
-    Crée et retourne un client MongoDB basé sur les variables d'environnement
+    Crée et retourne une connexion SQLite
     
     Returns:
-        tuple: (client, database) ou (None, None) en cas d'erreur
+        sqlite3.Connection: Connexion à la base de données SQLite
     """
-    mongo_uri = os.getenv('MONGO_URI')
-    mongo_db_name = os.getenv('MONGO_DB_NAME', 'portfolio_db')
-    
-    # Si MONGO_URI n'est pas défini, retourner None
-    if not mongo_uri:
-        print("⚠️  MONGO_URI non défini - MongoDB désactivé")
-        print("📝 Pour activer MongoDB en production:")
-        print("   1. Sur PythonAnywhere: Web → Environment variables → Ajoutez MONGO_URI")
-        print("   2. Format: mongodb+srv://username:password@cluster.mongodb.net/dbname")
-        print("   3. Redémarrez l'application après avoir ajouté la variable")
-        return None, None
-    
     try:
-        # Créer le client MongoDB avec des paramètres optimisés
-        client = MongoClient(
-            mongo_uri,
-            serverSelectionTimeoutMS=10000,  # Timeout de 10 secondes
-            connectTimeoutMS=10000,
-            socketTimeoutMS=20000,
-            retryWrites=True,
-            w='majority'
-        )
-        
-        # Tester la connexion
-        client.admin.command('ping')
-        print(f"✅ Connexion MongoDB réussie - Base de données: {mongo_db_name}")
-        
-        # Sélectionner la base de données
-        db = client[mongo_db_name]
-        
-        return client, db
-        
-    except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-        error_msg = str(e)
-        print(f"Erreur de connexion MongoDB: {error_msg[:200]}")
-        print("L'application fonctionnera sans base de donnees MongoDB")
-        
-        # Messages d'aide spécifiques
-        if "Connection refused" in error_msg:
-            print("Conseil: Verifiez votre connexion internet et que MongoDB Atlas est accessible")
-            print("Conseil: Verifiez que votre IP est autorisee dans MongoDB Atlas Network Access")
-        elif "timeout" in error_msg.lower():
-            print("Conseil: Le serveur MongoDB ne repond pas. Verifiez votre MONGO_URI dans .env")
-        elif "authentication" in error_msg.lower():
-            print("Conseil: Verifiez vos identifiants MongoDB dans MONGO_URI")
-        
-        return None, None
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn.row_factory = sqlite3.Row  # Permet d'accéder aux colonnes par nom
+        return conn
     except Exception as e:
-        print(f"❌ Erreur inattendue MongoDB: {e}")
-        return None, None
+        print(f"❌ Erreur lors de la connexion à SQLite: {e}")
+        return None
 
-def init_database(db):
+@contextmanager
+def get_db():
     """
-    Initialise la base de données avec les collections et index nécessaires
+    Contexte manager pour gérer les connexions SQLite
+    """
+    conn = get_db_connection()
+    if conn is None:
+        yield None
+        return
     
-    Args:
-        db: Instance de la base de données MongoDB
+    try:
+        yield conn
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Erreur SQLite: {e}")
+        raise
+    finally:
+        conn.close()
+
+def init_database():
+    """
+    Initialise la base de données SQLite avec les tables nécessaires
     """
     try:
-        # Créer les collections si elles n'existent pas
-        collections = ['projects', 'services', 'contacts', 'analytics', 'homepage', 'skills', 'partners', 'admin_users', 'login_history']
-        
-        # Créer un index pour admin_users
-        if 'admin_users' in db.list_collection_names():
-            db.admin_users.create_index("username", unique=True)
-        
-        for collection_name in collections:
-            if collection_name not in db.list_collection_names():
-                db.create_collection(collection_name)
-                print(f"✅ Collection '{collection_name}' créée")
-        
-        # Créer des index pour optimiser les requêtes
-        if 'projects' in db.list_collection_names():
-            db.projects.create_index("title")
-            db.projects.create_index("created_at")
-            db.projects.create_index("views")
-        
-        # Créer des index pour analytics
-        if 'analytics' in db.list_collection_names():
-            try:
-                db.analytics.create_index("type")
-                db.analytics.create_index("date")
-                db.analytics.create_index("timestamp")
-                db.analytics.create_index("visitor_id")
-                db.analytics.create_index("project_id")
-                print("Index crees pour la collection 'analytics'")
-            except Exception as e:
-                pass
-        
-        # Créer la collection contacts si elle n'existe pas
-        if 'contacts' not in db.list_collection_names():
-            db.create_collection('contacts')
-            print("Collection 'contacts' creee")
-        
-        # Créer les index pour la collection contacts (ignorer si déjà existants)
-        try:
-            db.contacts.create_index("email")
-            db.contacts.create_index("created_at")
-            db.contacts.create_index("read")  # Index pour filtrer les messages lus/non lus
-            print("Index crees pour la collection 'contacts'")
-        except Exception as e:
-            # Les index peuvent déjà exister
-            pass
-        
-        # Initialiser les données de la page d'accueil si elles n'existent pas
-        init_homepage_data(db)
-        
-        # Initialiser les compétences si elles n'existent pas
-        init_skills_data(db)
-        
-        # Initialiser les partenaires si elles n'existent pas
-        init_partners_data(db)
-        
-        print("✅ Base de données initialisée avec succès")
-        
+        with get_db() as conn:
+            if conn is None:
+                print("❌ Impossible de créer la connexion SQLite")
+                return False
+            
+            cursor = conn.cursor()
+            
+            # Table homepage
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS homepage (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL DEFAULT 'header',
+                    badge TEXT,
+                    title_line1 TEXT,
+                    title_line2 TEXT,
+                    description TEXT,
+                    email TEXT,
+                    cta_text TEXT,
+                    about_title TEXT,
+                    about_name TEXT,
+                    about_subtitle TEXT,
+                    about_description TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table skills
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS skills (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    icon TEXT,
+                    description TEXT,
+                    projects_count INTEGER DEFAULT 0,
+                    order_index INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table partners
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS partners (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    image TEXT,
+                    order_index INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table projects
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS projects (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    technologies TEXT,
+                    description TEXT,
+                    link TEXT,
+                    github_link TEXT,
+                    image TEXT,
+                    status TEXT DEFAULT 'published',
+                    order_index INTEGER DEFAULT 0,
+                    featured INTEGER DEFAULT 0,
+                    views INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table services
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS services (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    icon TEXT,
+                    order_index INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table contacts
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS contacts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    subject TEXT,
+                    message TEXT NOT NULL,
+                    read INTEGER DEFAULT 0,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table admin_users
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS admin_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    email TEXT,
+                    full_name TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP
+                )
+            ''')
+            
+            # Table login_history
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS login_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    success INTEGER DEFAULT 1,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Table analytics
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS analytics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    type TEXT NOT NULL,
+                    page_path TEXT,
+                    project_id INTEGER,
+                    visitor_id TEXT,
+                    ip_address TEXT,
+                    user_agent TEXT,
+                    referer TEXT,
+                    date DATE,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Créer les index
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_projects_created ON projects(created_at)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_contacts_read ON contacts(read)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_contacts_created ON contacts(created_at)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics(type)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_analytics_date ON analytics(date)')
+            
+            conn.commit()
+            
+            # Initialiser les données par défaut
+            init_homepage_data(conn)
+            init_skills_data(conn)
+            init_partners_data(conn)
+            
+            print("✅ Base de données SQLite initialisée avec succès")
+            return True
+            
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation de la base de données: {e}")
+        return False
 
-def init_homepage_data(db):
+def init_homepage_data(conn):
     """Initialise les données de la page d'accueil avec des valeurs par défaut"""
     try:
-        homepage_collection = db.homepage
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM homepage WHERE type = ?', ('header',))
+        count = cursor.fetchone()[0]
         
-        # Vérifier si des données existent déjà
-        if homepage_collection.count_documents({}) == 0:
+        if count == 0:
             default_data = {
                 "type": "header",
                 "badge": "Développeur Full-Stack & Data Science",
@@ -150,62 +234,76 @@ def init_homepage_data(db):
                 "about_subtitle": "Développeur Full-Stack & Data Science passionné par l'innovation et l'excellence technique.",
                 "about_description": "Je suis un développeur Full-Stack et Data Scientist avec une passion pour créer des solutions technologiques complètes et performantes. Mon expertise couvre tout le spectre du développement web, du frontend interactif aux APIs backend robustes, en passant par l'analyse de données et le machine learning.\n\nFort de plusieurs années d'expérience, j'ai développé des applications web modernes, conçu des architectures scalables et transformé des données complexes en insights actionnables. Je maîtrise les technologies modernes comme React, Node.js, Python, SQL, ainsi que les outils de data science comme Pandas, NumPy, Scikit-learn et les visualisations avec Matplotlib et D3.js.\n\nJe suis constamment en veille technologique, curieux des nouvelles tendances et toujours prêt à relever de nouveaux défis. Mon approche combine rigueur technique, créativité et attention aux détails pour livrer des solutions qui font la différence."
             }
-            homepage_collection.insert_one(default_data)
+            
+            cursor.execute('''
+                INSERT INTO homepage (type, badge, title_line1, title_line2, description, email, cta_text,
+                                     about_title, about_name, about_subtitle, about_description)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                default_data['type'], default_data['badge'], default_data['title_line1'],
+                default_data['title_line2'], default_data['description'], default_data['email'],
+                default_data['cta_text'], default_data['about_title'], default_data['about_name'],
+                default_data['about_subtitle'], default_data['about_description']
+            ))
+            conn.commit()
             print("✅ Données par défaut de la page d'accueil créées")
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation des données homepage: {e}")
 
-def init_skills_data(db):
+def init_skills_data(conn):
     """Initialise les compétences avec des valeurs par défaut"""
     try:
-        skills_collection = db.skills
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM skills')
+        count = cursor.fetchone()[0]
         
-        # Vérifier si des compétences existent déjà
-        if skills_collection.count_documents({}) == 0:
+        if count == 0:
             default_skills = [
-                {
-                    "title": "Full-Stack Development",
-                    "icon": "icons/code.svg",
-                    "description": "Développement d'applications web complètes, du frontend au backend, avec les dernières technologies.",
-                    "projects_count": 15,
-                    "order": 1
-                },
-                {
-                    "title": "Data Science",
-                    "icon": "icons/design.svg",
-                    "description": "Analyse de données, machine learning et visualisation pour extraire des insights précieux.",
-                    "projects_count": 12,
-                    "order": 2
-                },
-                {
-                    "title": "Architecture & DevOps",
-                    "icon": "icons/phone.svg",
-                    "description": "Conception d'architectures scalables et déploiement avec les meilleures pratiques DevOps.",
-                    "projects_count": 8,
-                    "order": 3
-                }
+                ("Full-Stack Development", "icons/code.svg", "Développement d'applications web complètes, du frontend au backend, avec les dernières technologies.", 15, 1),
+                ("Data Science", "icons/design.svg", "Analyse de données, machine learning et visualisation pour extraire des insights précieux.", 12, 2),
+                ("Architecture & DevOps", "icons/phone.svg", "Conception d'architectures scalables et déploiement avec les meilleures pratiques DevOps.", 8, 3)
             ]
-            skills_collection.insert_many(default_skills)
+            
+            cursor.executemany('''
+                INSERT INTO skills (title, icon, description, projects_count, order_index)
+                VALUES (?, ?, ?, ?, ?)
+            ''', default_skills)
+            conn.commit()
             print("✅ Compétences par défaut créées")
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation des compétences: {e}")
 
-def init_partners_data(db):
+def init_partners_data(conn):
     """Initialise les partenaires/clients avec des valeurs par défaut"""
     try:
-        partners_collection = db.partners
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM partners')
+        count = cursor.fetchone()[0]
         
-        # Vérifier si des partenaires existent déjà
-        if partners_collection.count_documents({}) == 0:
+        if count == 0:
             default_partners = [
-                {"name": "wallety", "image": "images/partners/wallety.png", "order": 1},
-                {"name": "artisty", "image": "images/partners/artisty.png", "order": 2},
-                {"name": "khedma-lik", "image": "images/partners/khedma-lik.png", "order": 3},
-                {"name": "directy", "image": "images/partners/directy.png", "order": 4},
-                {"name": "telefy", "image": "images/partners/telefy.png", "order": 5}
+                ("wallety", "images/partners/wallety.png", 1),
+                ("artisty", "images/partners/artisty.png", 2),
+                ("khedma-lik", "images/partners/khedma-lik.png", 3),
+                ("directy", "images/partners/directy.png", 4),
+                ("telefy", "images/partners/telefy.png", 5)
             ]
-            partners_collection.insert_many(default_partners)
+            
+            cursor.executemany('''
+                INSERT INTO partners (name, image, order_index)
+                VALUES (?, ?, ?)
+            ''', default_partners)
+            conn.commit()
             print("✅ Partenaires par défaut créés")
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation des partenaires: {e}")
 
+def row_to_dict(row):
+    """Convertit une ligne SQLite en dictionnaire"""
+    if row is None:
+        return None
+    return dict(row)
+
+def rows_to_list(rows):
+    """Convertit plusieurs lignes SQLite en liste de dictionnaires"""
+    return [dict(row) for row in rows]
