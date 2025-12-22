@@ -20,9 +20,42 @@ from bson import ObjectId
 import json
 import re
 from werkzeug.exceptions import BadRequest, InternalServerError
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
+
+# Flask-Limiter (optionnel)
+FLASK_LIMITER_AVAILABLE = False
+Limiter = None
+get_remote_address = None
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    FLASK_LIMITER_AVAILABLE = True
+except ImportError:
+    # Fallback si Flask-Limiter n'est pas installé
+    class Limiter:
+        def __init__(self, *args, **kwargs):
+            pass
+        def limit(self, *args, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
+    
+    def get_remote_address():
+        from flask import request
+        return request.remote_addr or '127.0.0.1'
+
+# Flask-WTF CSRF (optionnel)
+try:
+    from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
+    CSRF_AVAILABLE = True
+except ImportError:
+    CSRF_AVAILABLE = False
+    class CSRFProtect:
+        def __init__(self, *args, **kwargs):
+            pass
+        def exempt(self, *args, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
 
 # Flask-Mail sera importé après la création de l'app Flask
 FLASK_MAIL_AVAILABLE = False
@@ -76,21 +109,28 @@ app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
 app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
 
 # Configuration CSRF
-app.config['WTF_CSRF_ENABLED'] = True
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 heure
-app.config['WTF_CSRF_SSL_STRICT'] = not app.config['DEBUG']  # SSL strict en production
-
-# Initialiser CSRF Protection
-csrf = CSRFProtect(app)
+if CSRF_AVAILABLE:
+    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 heure
+    app.config['WTF_CSRF_SSL_STRICT'] = not app.config['DEBUG']  # SSL strict en production
+    csrf = CSRFProtect(app)
+else:
+    app.config['WTF_CSRF_ENABLED'] = False
+    csrf = CSRFProtect(app)  # Utilise le fallback
+    print("⚠️ Flask-WTF non installé - CSRF protection désactivée")
 
 # Configuration Flask-Limiter pour rate limiting
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",  # En production, utiliser Redis: "redis://localhost:6379"
-    strategy="fixed-window"
-)
+if FLASK_LIMITER_AVAILABLE:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",  # En production, utiliser Redis: "redis://localhost:6379"
+        strategy="fixed-window"
+    )
+else:
+    limiter = Limiter()  # Utilise le fallback (pas de rate limiting)
+    print("⚠️ Flask-Limiter non installé - Rate limiting désactivé")
 
 # Variables personnalisées pour le portfolio
 app.config['PORTFOLIO_NAME'] = os.getenv('PORTFOLIO_NAME', 'Pricemou claude')
