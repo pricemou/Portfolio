@@ -10,6 +10,8 @@ import hashlib
 import re
 from werkzeug.exceptions import BadRequest, InternalServerError
 
+# Flask-Mail sera importé après la création de l'app Flask
+
 # Import des validators
 try:
     from utils.validators import (
@@ -63,6 +65,29 @@ app.config['PORTFOLIO_DESCRIPTION'] = os.getenv('PORTFOLIO_DESCRIPTION', 'Dével
 
 # Clé d'administration
 app.config['ADMIN_KEY'] = os.getenv('ADMIN_KEY', 'admin-secret-key-change-me')
+
+# Configuration Flask-Mail pour l'envoi d'emails
+try:
+    from flask_mail import Mail, Message
+    FLASK_MAIL_AVAILABLE = True
+    
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+    app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', '')
+    
+    # Initialiser Flask-Mail
+    mail = Mail(app)
+    print("Flask-Mail configure et pret")
+except ImportError:
+    FLASK_MAIL_AVAILABLE = False
+    Mail = None
+    Message = None
+    mail = None
+    print("Flask-Mail non installe - les emails ne seront pas envoyes. Installez avec: pip install Flask-Mail")
 
 # Fonctions utilitaires pour l'authentification
 def hash_password(password):
@@ -234,6 +259,181 @@ def services():
             app.logger.error(f"Erreur lors de la récupération des services: {e}")
     
     return render_template('services.html', current_year=current_year, services=services_list)
+
+@app.route('/contact')
+def contact():
+    """Page de contact"""
+    current_year = datetime.now().year
+    portfolio_email = app.config.get('PORTFOLIO_EMAIL', 'contact@example.com')
+    return render_template('contact.html', current_year=current_year, portfolio_email=portfolio_email)
+
+@app.route('/api/contact', methods=['POST'])
+@app.route('/contact/submit', methods=['POST'])
+def contact_submit():
+    """Reçoit et stocke un message de contact"""
+    try:
+        # Accepter à la fois JSON et form-data
+        if request.is_json:
+            data = request.get_json()
+            name = data.get('name', '').strip()
+            email = data.get('email', '').strip()
+            subject = data.get('subject', '').strip()
+            message = data.get('message', '').strip()
+        else:
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            subject = request.form.get('subject', '').strip()
+            message = request.form.get('message', '').strip()
+        
+        # Validation des champs requis
+        required_fields = {
+            'name': name,
+            'email': email,
+            'subject': subject,
+            'message': message
+        }
+        
+        missing_fields = [field for field, value in required_fields.items() if not value]
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'error': f'Champs manquants: {", ".join(missing_fields)}'
+            }), 400
+        
+        # Validation de l'email
+        if not validate_email(email):
+            return jsonify({
+                'success': False,
+                'error': 'Format d\'email invalide'
+            }), 400
+        
+        # Nettoyer et valider les données
+        cleaned_data = {
+            'name': sanitize_input(name, max_length=100),
+            'email': sanitize_input(email, max_length=200),
+            'subject': sanitize_input(subject, max_length=200),
+            'message': sanitize_input(message, max_length=2000),
+            'created_at': datetime.now(),
+            'read': False,
+            'ip_address': request.remote_addr,
+            'user_agent': request.headers.get('User-Agent', '')[:500]
+        }
+        
+        # Stocker dans MongoDB
+        mongo_db = app.config.get('MONGO_DB')
+        if mongo_db is not None:
+            try:
+                contacts_collection = mongo_db.contacts
+                result = contacts_collection.insert_one(cleaned_data)
+                app.logger.info(f"Nouveau message de contact reçu de {email} (ID: {result.inserted_id})")
+                
+                # Optionnel: Envoyer un email de notification
+                send_contact_notification_email(cleaned_data)
+                
+                response_data = {
+                    'success': True,
+                    'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.'
+                }
+                app.logger.info(f"Contact sauvegardé avec succès: {email}")
+                response = jsonify(response_data)
+                response.headers['Content-Type'] = 'application/json; charset=utf-8'
+                return response, 200
+            except Exception as e:
+                app.logger.error(f"Erreur lors du stockage du contact: {e}")
+                return jsonify({
+                    'success': False,
+                    'error': 'Erreur lors de l\'enregistrement du message. Veuillez réessayer.'
+                }), 500
+        else:
+            # Mode sans MongoDB - juste logger
+            app.logger.info(f"Message de contact reçu (MongoDB non disponible): {email} - {subject}")
+            response_data = {
+                'success': True,
+                'message': 'Votre message a été reçu. Je vous répondrai dans les plus brefs délais.'
+            }
+            return jsonify(response_data), 200
+            
+    except Exception as e:
+        app.logger.error(f"Erreur contact_submit: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Erreur lors de l\'envoi du message. Veuillez réessayer.'
+        }), 500
+
+def send_contact_notification_email(contact_data):
+    """Envoie un email de notification pour un nouveau message de contact"""
+    try:
+        # Vérifier si Flask-Mail est disponible
+        if not FLASK_MAIL_AVAILABLE or mail is None:
+            app.logger.debug("Flask-Mail non disponible - notification email ignorée")
+            return False
+        
+        # Vérifier si la configuration email est complète
+        mail_username = app.config.get('MAIL_USERNAME')
+        mail_password = app.config.get('MAIL_PASSWORD')
+        
+        if not mail_username or not mail_password:
+            app.logger.debug("Configuration email non complète - notification email ignorée")
+            app.logger.warning("Pour activer les emails, configurez MAIL_USERNAME et MAIL_PASSWORD dans .env")
+            app.logger.warning("Pour Gmail, vous DEVEZ utiliser un mot de passe d'application (pas votre mot de passe normal)")
+            app.logger.warning("Voir CONFIGURATION_EMAIL.md pour les instructions")
+            return False
+        
+        # Email de destination (peut être configuré dans .env ou utiliser PORTFOLIO_EMAIL)
+        recipient_email = os.getenv('NOTIFICATION_EMAIL', 'pricemoufromon97@gmail.com')
+        
+        # Créer le message email
+        subject = f"Nouveau message de contact: {contact_data['subject']}"
+        body = f"""Nouveau message reçu depuis le formulaire de contact:
+
+De: {contact_data['name']}
+Email: {contact_data['email']}
+Sujet: {contact_data['subject']}
+
+Message:
+{contact_data['message']}
+
+---
+Date: {contact_data['created_at'].strftime('%d/%m/%Y %H:%M:%S')}
+IP: {contact_data.get('ip_address', 'N/A')}
+"""
+        
+        html_body = f"""
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <h2 style="color: #4DBA87;">Nouveau message de contact</h2>
+    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <p><strong>De:</strong> {contact_data['name']}</p>
+        <p><strong>Email:</strong> <a href="mailto:{contact_data['email']}">{contact_data['email']}</a></p>
+        <p><strong>Sujet:</strong> {contact_data['subject']}</p>
+    </div>
+    <div style="background: #fff; padding: 15px; border-left: 4px solid #4DBA87; margin: 20px 0;">
+        <p><strong>Message:</strong></p>
+        <p style="white-space: pre-wrap;">{contact_data['message']}</p>
+    </div>
+    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+        <p>Date: {contact_data['created_at'].strftime('%d/%m/%Y %H:%M:%S')}</p>
+        <p>IP: {contact_data.get('ip_address', 'N/A')}</p>
+    </div>
+</body>
+</html>
+"""
+        
+        msg = Message(
+            subject=subject,
+            recipients=[recipient_email],
+            body=body,
+            html=html_body
+        )
+        
+        # Envoyer l'email
+        mail.send(msg)
+        app.logger.info(f"Email de notification envoye a {recipient_email} pour le message de {contact_data['email']}")
+        return True
+        
+    except Exception as e:
+        app.logger.error(f"Erreur lors de l'envoi de l'email de notification: {e}", exc_info=True)
+        return False
 
 def login_required(f):
     """Décorateur pour protéger les routes nécessitant une connexion"""
@@ -949,6 +1149,85 @@ def delete_service_api(service_id):
         return jsonify({'error': 'Service non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_service_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ========== API Routes pour Contacts ==========
+@app.route('/api/contacts', methods=['GET'])
+@admin_required
+def get_contacts_api():
+    """Récupère la liste des messages de contact"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        if mongo_db is None:
+            return jsonify([])
+        
+        # Récupérer les paramètres de filtrage
+        read_filter = request.args.get('read')
+        limit = request.args.get('limit', type=int)
+        
+        query = {}
+        if read_filter is not None:
+            query['read'] = read_filter.lower() == 'true'
+        
+        # Récupérer les contacts
+        contacts = list(mongo_db.contacts.find(query).sort("created_at", -1))
+        
+        # Limiter le nombre de résultats si spécifié
+        if limit:
+            contacts = contacts[:limit]
+        
+        # Convertir ObjectId en string
+        for contact in contacts:
+            if '_id' in contact:
+                contact['_id'] = str(contact['_id'])
+            if 'created_at' in contact and isinstance(contact['created_at'], datetime):
+                contact['created_at'] = contact['created_at'].isoformat()
+        
+        return jsonify(contacts)
+    except Exception as e:
+        app.logger.error(f"Erreur get_contacts_api: {e}")
+        return jsonify([])
+
+@app.route('/api/contacts/<contact_id>/read', methods=['PUT'])
+@admin_required
+def mark_contact_read_api(contact_id):
+    """Marque un message comme lu ou non lu"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        if mongo_db is None:
+            return jsonify({'error': 'Base de données non disponible'}), 503
+        
+        data = request.get_json()
+        read_status = data.get('read', True)
+        
+        result = mongo_db.contacts.update_one(
+            {"_id": ObjectId(contact_id)},
+            {"$set": {"read": read_status}}
+        )
+        
+        if result.matched_count > 0:
+            return jsonify({'success': True, 'message': 'Statut mis à jour'})
+        return jsonify({'error': 'Message non trouvé'}), 404
+    except Exception as e:
+        app.logger.error(f"Erreur mark_contact_read_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts/<contact_id>', methods=['DELETE'])
+@admin_required
+def delete_contact_api(contact_id):
+    """Supprime un message de contact"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        if mongo_db is None:
+            return jsonify({'error': 'Base de données non disponible'}), 503
+        
+        result = mongo_db.contacts.delete_one({"_id": ObjectId(contact_id)})
+        
+        if result.deleted_count > 0:
+            return jsonify({'success': True, 'message': 'Message supprimé'})
+        return jsonify({'error': 'Message non trouvé'}), 404
+    except Exception as e:
+        app.logger.error(f"Erreur delete_contact_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Les fonctions de validation sont importées depuis utils.validators

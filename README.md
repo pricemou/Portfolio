@@ -137,6 +137,17 @@ Le projet utilise un fichier `.env` pour la configuration. Les variables princip
 
 **Important :** Changez le mot de passe par défaut en production !
 
+### Configuration Email (optionnel)
+Pour recevoir des notifications par email lors de nouveaux messages de contact :
+- `MAIL_SERVER` : Serveur SMTP (défaut: smtp.gmail.com)
+- `MAIL_PORT` : Port SMTP (défaut: 587)
+- `MAIL_USE_TLS` : Utiliser TLS (défaut: True)
+- `MAIL_USERNAME` : Votre adresse email
+- `MAIL_PASSWORD` : Mot de passe d'application (pour Gmail, utilisez un mot de passe d'application)
+- `NOTIFICATION_EMAIL` : Email de destination pour les notifications (défaut: pricemoufromon97@gmail.com)
+
+**Note :** Pour Gmail, vous devez créer un [mot de passe d'application](https://myaccount.google.com/apppasswords). Voir [CONFIGURATION_EMAIL.md](CONFIGURATION_EMAIL.md) pour plus de détails.
+
 **Important :** Le fichier `.env` est ignoré par Git pour des raisons de sécurité. Ne commitez jamais vos clés secrètes !
 
 ### Installation de MongoDB

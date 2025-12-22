@@ -19,6 +19,11 @@
                 {% if request.endpoint == 'services' %}&lt; Services /&gt;{% else %}Services.{% endif %}
             </a>
         </li>
+        <li class="{% if request.endpoint == 'contact' %}green{% endif %}">
+            <a href="{{ url_for('contact') }}">
+                {% if request.endpoint == 'contact' %}&lt; Contact /&gt;{% else %}Contact.{% endif %}
+            </a>
+        </li>
         <li class="{% if request.endpoint == 'index' and '#about' in request.url %}green{% endif %}">
             <a href="{{ url_for('index') }}#about">
                 {% if request.endpoint == 'index' and '#about' in request.url %}&lt; À propos /&gt;{% else %}À propos.{% endif %}

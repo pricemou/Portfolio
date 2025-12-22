@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPartners();
     loadProjects();
     loadServices();
+    loadContacts();
 });
 
 function showSection(sectionName) {
@@ -981,6 +982,155 @@ function deleteService(serviceId) {
     .catch(error => {
         console.error('Erreur:', error);
         showToast(error.message || 'Erreur lors de la suppression du service', 'error');
+    });
+}
+
+// ========== Contacts Management ==========
+async function loadContacts() {
+    try {
+        const response = await fetch(`${API_BASE}/contacts`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contacts = await response.json();
+        
+        const contactsList = document.getElementById('contacts-list');
+        if (!contactsList) return;
+        
+        contactsList.innerHTML = '';
+        
+        // Vérifier que contacts est un tableau
+        if (!Array.isArray(contacts)) {
+            console.error('Les contacts ne sont pas un tableau:', contacts);
+            contactsList.innerHTML = '<p>Erreur: Format de données invalide.</p>';
+            return;
+        }
+        
+        if (contacts.length === 0) {
+            contactsList.innerHTML = '<p>Aucun message de contact reçu.</p>';
+            return;
+        }
+
+        contacts.forEach(contact => {
+            const contactCard = createContactCard(contact);
+            contactsList.appendChild(contactCard);
+        });
+    } catch (error) {
+        console.error('Erreur lors du chargement des contacts:', error);
+        showToast('Erreur lors du chargement des messages. MongoDB est peut-être indisponible.', 'error');
+        const contactsList = document.getElementById('contacts-list');
+        if (contactsList) {
+            contactsList.innerHTML = '<p>Aucun message disponible.</p>';
+        }
+    }
+}
+
+function createContactCard(contact) {
+    const card = document.createElement('div');
+    card.className = 'admin-card';
+    card.style.borderLeft = contact.read ? '4px solid var(--gray, #8B8B8B)' : '4px solid var(--green, #4DBA87)';
+    
+    const date = new Date(contact.created_at);
+    const formattedDate = date.toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const readBadge = contact.read 
+        ? '<span style="color: var(--gray); font-size: 0.85rem;">● Lu</span>' 
+        : '<span style="color: var(--green); font-size: 0.85rem; font-weight: bold;">● Non lu</span>';
+    
+    card.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                        <h3 style="margin: 0;">${contact.subject || 'Sans sujet'}</h3>
+                        ${readBadge}
+                    </div>
+                    <div style="color: var(--gray); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        <p style="margin: 0.25rem 0;"><strong>De:</strong> ${contact.name} (<a href="mailto:${contact.email}" style="color: var(--green);">${contact.email}</a>)</p>
+                        <p style="margin: 0.25rem 0;"><strong>Date:</strong> ${formattedDate}</p>
+                    </div>
+                    <div style="background: var(--dark-bg, #25262A); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                        <p style="color: var(--white, #FFFFFF); white-space: pre-wrap; margin: 0;">${contact.message || ''}</p>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="btn btn-sm ${contact.read ? 'btn-secondary' : 'btn-primary'}" onclick="toggleContactRead('${contact._id}', ${!contact.read})">
+                    ${contact.read ? '<i class="fas fa-envelope"></i> Marquer non lu' : '<i class="fas fa-envelope-open"></i> Marquer lu'}
+                </button>
+                <a href="mailto:${contact.email}?subject=Re: ${encodeURIComponent(contact.subject)}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-reply"></i> Répondre
+                </a>
+                <button class="btn btn-sm btn-danger" onclick="deleteContact('${contact._id}')">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    `;
+    return card;
+}
+
+async function toggleContactRead(contactId, readStatus) {
+    try {
+        const response = await fetch(`${API_BASE}/contacts/${contactId}/read`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify({ read: readStatus })
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            if (response.status === 401) {
+                await handle401Error();
+                return;
+            }
+            throw new Error(result.error || 'Erreur lors de la mise à jour');
+        }
+
+        showToast(readStatus ? 'Message marqué comme lu' : 'Message marqué comme non lu', 'success');
+        loadContacts();
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast(error.message || 'Erreur lors de la mise à jour', 'error');
+    }
+}
+
+function deleteContact(contactId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+        return;
+    }
+    
+    fetch(`${API_BASE}/contacts/${contactId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    })
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 401) {
+                handle401Error();
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Erreur lors de la suppression');
+                });
+            }
+        }
+        return response.json();
+    })
+    .then(data => {
+        showToast('Message supprimé avec succès', 'success');
+        loadContacts();
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast(error.message || 'Erreur lors de la suppression du message', 'error');
     });
 }
 

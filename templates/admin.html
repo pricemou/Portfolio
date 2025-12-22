@@ -36,6 +36,11 @@
         .fa-sign-out-alt::before { content: "🚪"; }
         .fa-book::before { content: "📖"; }
         .fa-info-circle::before { content: "ℹ️"; }
+        .fa-envelope::before { content: "✉️"; }
+        .fa-envelope-open::before { content: "📬"; }
+        .fa-reply::before { content: "↩️"; }
+        .fa-trash::before { content: "🗑️"; }
+        .fa-sync-alt::before { content: "🔄"; }
     </style>
     <!-- Tentative de chargement Font Awesome depuis CDN -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" onerror="this.onerror=null; console.log('Font Awesome non chargé, utilisation des icônes de base');">
@@ -66,6 +71,9 @@
                 </a>
                 <a href="#services" class="nav-btn menu-item" data-section="services" aria-label="Services">
                     <i class="fas fa-code"></i>
+                </a>
+                <a href="#contacts" class="nav-btn menu-item" data-section="contacts" aria-label="Contacts">
+                    <i class="fas fa-envelope"></i>
                 </a>
                 <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
                     <i class="fas fa-globe"></i>
@@ -250,6 +258,19 @@
                             <button class="btn btn-primary" onclick="openServiceModal()">+ Ajouter un service</button>
                         </div>
                         <div id="services-list" class="admin-list"></div>
+                    </div>
+
+                    <!-- Section Contacts -->
+                    <div id="section-contacts" class="content-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Messages de contact</h2>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary" onclick="loadContacts()" title="Actualiser">
+                                    <i class="fas fa-sync-alt"></i> Actualiser
+                                </button>
+                            </div>
+                        </div>
+                        <div id="contacts-list" class="admin-list"></div>
                     </div>
                 </div>
             </div>
