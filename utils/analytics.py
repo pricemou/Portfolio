@@ -291,3 +291,4 @@ def get_project_statistics(db, project_id):
         print(f"Erreur lors de la récupération des statistiques du projet: {e}")
         return {'views': 0, 'views_by_day': []}
 
+

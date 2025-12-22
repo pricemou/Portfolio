@@ -57,3 +57,4 @@ def validate_integer(value, min_value=None, max_value=None):
     except (ValueError, TypeError):
         return False
 
+

@@ -82,6 +82,9 @@
                 <a href="#profile" class="nav-btn menu-item" data-section="profile" aria-label="Profil">
                     <i class="fas fa-user"></i>
                 </a>
+                <a href="#admins" class="nav-btn menu-item" data-section="admins" aria-label="Administrateurs">
+                    <i class="fas fa-users-cog"></i>
+                </a>
                 <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
                     <i class="fas fa-globe"></i>
                 </a>
@@ -393,6 +396,21 @@
                             <div id="login-history-list" class="admin-list"></div>
                         </div>
                     </div>
+
+                    <!-- Section Administrateurs -->
+                    <div id="section-admins" class="content-section" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <div>
+                                <h2>Gestion des Administrateurs</h2>
+                                <p style="color: var(--gray); font-size: 0.9rem;">Créez et gérez les comptes administrateurs</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="openCreateAdminModal()">
+                                <i class="fas fa-plus"></i> Nouvel administrateur
+                            </button>
+                        </div>
+
+                        <div id="admins-list" class="admin-list"></div>
+                    </div>
                 </div>
             </div>
 
@@ -689,6 +707,38 @@
         // Plus besoin de clé dans localStorage
         console.log('Interface admin chargée');
     </script>
+    <!-- Modal Création Administrateur -->
+    <div id="create-admin-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Créer un nouvel administrateur</h3>
+                <button class="modal-close" onclick="closeCreateAdminModal()">&times;</button>
+            </div>
+            <form id="create-admin-form" onsubmit="createAdmin(event)">
+                <div class="form-group">
+                    <label for="new-admin-username">Nom d'utilisateur *</label>
+                    <input type="text" id="new-admin-username" required minlength="3" maxlength="50" placeholder="min. 3 caractères">
+                </div>
+                <div class="form-group">
+                    <label for="new-admin-password">Mot de passe *</label>
+                    <input type="password" id="new-admin-password" required minlength="6" placeholder="min. 6 caractères">
+                </div>
+                <div class="form-group">
+                    <label for="new-admin-email">Email</label>
+                    <input type="email" id="new-admin-email" placeholder="admin@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="new-admin-full-name">Nom complet</label>
+                    <input type="text" id="new-admin-full-name" placeholder="Nom complet">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateAdminModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-data.js') }}"></script>

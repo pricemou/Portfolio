@@ -18,44 +18,9 @@ from database import get_mongo_client, init_database
 from functools import wraps
 from bson import ObjectId
 import json
+import hashlib
 import re
 from werkzeug.exceptions import BadRequest, InternalServerError
-
-# Flask-Limiter (optionnel)
-FLASK_LIMITER_AVAILABLE = False
-Limiter = None
-get_remote_address = None
-try:
-    from flask_limiter import Limiter
-    from flask_limiter.util import get_remote_address
-    FLASK_LIMITER_AVAILABLE = True
-except ImportError:
-    # Fallback si Flask-Limiter n'est pas installé
-    class Limiter:
-        def __init__(self, *args, **kwargs):
-            pass
-        def limit(self, *args, **kwargs):
-            def decorator(f):
-                return f
-            return decorator
-    
-    def get_remote_address():
-        from flask import request
-        return request.remote_addr or '127.0.0.1'
-
-# Flask-WTF CSRF (optionnel)
-try:
-    from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
-    CSRF_AVAILABLE = True
-except ImportError:
-    CSRF_AVAILABLE = False
-    class CSRFProtect:
-        def __init__(self, *args, **kwargs):
-            pass
-        def exempt(self, *args, **kwargs):
-            def decorator(f):
-                return f
-            return decorator
 
 # Flask-Mail sera importé après la création de l'app Flask
 FLASK_MAIL_AVAILABLE = False
@@ -108,30 +73,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
 app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
 
-# Configuration CSRF
-if CSRF_AVAILABLE:
-    app.config['WTF_CSRF_ENABLED'] = True
-    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 heure
-    app.config['WTF_CSRF_SSL_STRICT'] = not app.config['DEBUG']  # SSL strict en production
-    csrf = CSRFProtect(app)
-else:
-    app.config['WTF_CSRF_ENABLED'] = False
-    csrf = CSRFProtect(app)  # Utilise le fallback
-    print("⚠️ Flask-WTF non installé - CSRF protection désactivée")
-
-# Configuration Flask-Limiter pour rate limiting
-if FLASK_LIMITER_AVAILABLE:
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://",  # En production, utiliser Redis: "redis://localhost:6379"
-        strategy="fixed-window"
-    )
-else:
-    limiter = Limiter()  # Utilise le fallback (pas de rate limiting)
-    print("⚠️ Flask-Limiter non installé - Rate limiting désactivé")
-
 # Variables personnalisées pour le portfolio
 app.config['PORTFOLIO_NAME'] = os.getenv('PORTFOLIO_NAME', 'Pricemou claude')
 app.config['PORTFOLIO_TITLE'] = os.getenv('PORTFOLIO_TITLE', 'Développeur Full-Stack & Data Science')
@@ -164,61 +105,10 @@ except ImportError:
     mail = None
     print("Flask-Mail non installe - les emails ne seront pas envoyes. Installez avec: pip install Flask-Mail")
 
-# Import des fonctions de sécurité
-try:
-    from utils.security import (
-        hash_password, check_password,
-        sanitize_html, sanitize_text, sanitize_input_advanced
-    )
-except ImportError:
-    # Fallback si le module n'existe pas encore
-    import bcrypt
-    from html import escape
-    
-    def hash_password(password):
-        """Hash un mot de passe avec bcrypt"""
-        if not password:
-            raise ValueError("Le mot de passe ne peut pas être vide")
-        salt = bcrypt.gensalt(rounds=12)
-        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-        return hashed.decode('utf-8')
-    
-    def check_password(password, hashed):
-        """Vérifie si un mot de passe correspond au hash"""
-        if not password or not hashed:
-            return False
-        try:
-            # Si le hash est en format SHA256 (ancien système), retourner False
-            if len(hashed) == 64 and re.match(r'^[a-f0-9]{64}$', hashed):
-                return False
-            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-        except Exception:
-            return False
-    
-    def sanitize_html(html_content):
-        """Nettoie le contenu HTML pour prévenir les attaques XSS"""
-        if not html_content:
-            return ""
-        return escape(html_content)
-    
-    def sanitize_text(text):
-        """Nettoie le texte pour prévenir les attaques XSS"""
-        if not text:
-            return ""
-        return escape(text)
-    
-    def sanitize_input_advanced(text, max_length=None, allow_html=False):
-        """Nettoie une entrée utilisateur de manière avancée"""
-        if not text:
-            return ""
-        text = text.strip()
-        if allow_html:
-            text = sanitize_html(text)
-        else:
-            text = sanitize_text(text)
-        if max_length and len(text) > max_length:
-            text = text[:max_length]
-        return text
+# Fonctions utilitaires pour l'authentification
+def hash_password(password):
+    """Hash un mot de passe avec SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def init_admin_user(db):
     """Initialise l'utilisateur admin par défaut si nécessaire"""
@@ -298,26 +188,6 @@ def index():
     current_year = datetime.now().year
     mongo_db = app.config.get('MONGO_DB')
     
-    # Tracking analytics
-    if mongo_db is not None:
-        try:
-            from utils.analytics import track_page_view, track_visitor
-            track_page_view(
-                mongo_db,
-                '/',
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                request.headers.get('Referer', '')
-            )
-            track_visitor(
-                mongo_db,
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                '/'
-            )
-        except Exception as e:
-            app.logger.debug(f"Erreur tracking analytics: {e}")
-    
     # Récupérer les données dynamiques depuis MongoDB
     homepage_data = get_homepage_data(mongo_db) if mongo_db is not None else None
     skills = get_skills_data(mongo_db) if mongo_db is not None else []
@@ -364,30 +234,10 @@ def index():
 def works():
     """Page des réalisations"""
     current_year = datetime.now().year
-    mongo_db = app.config.get('MONGO_DB')
-    
-    # Tracking analytics
-    if mongo_db is not None:
-        try:
-            from utils.analytics import track_page_view, track_visitor
-            track_page_view(
-                mongo_db,
-                '/works',
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                request.headers.get('Referer', '')
-            )
-            track_visitor(
-                mongo_db,
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                '/works'
-            )
-        except Exception as e:
-            app.logger.debug(f"Erreur tracking analytics: {e}")
     
     # Récupérer les projets depuis MongoDB (si disponible)
     projects = []
+    mongo_db = app.config.get('MONGO_DB')
     if mongo_db is not None:
         try:
             projects_collection = mongo_db.projects
@@ -397,11 +247,8 @@ def works():
             for project in projects:
                 if '_id' in project:
                     project['_id'] = str(project['_id'])
-                # Ajouter le compteur de vues (par défaut 0)
-                if 'views' not in project:
-                    project['views'] = 0
         except Exception as e:
-            app.logger.error(f"Erreur lors de la récupération des projets: {e}")
+            print(f"Erreur lors de la récupération des projets: {e}")
     
     return render_template('works.html', 
                          current_year=current_year,
@@ -411,30 +258,10 @@ def works():
 def services():
     """Page des services"""
     current_year = datetime.now().year
-    mongo_db = app.config.get('MONGO_DB')
-    
-    # Tracking analytics
-    if mongo_db is not None:
-        try:
-            from utils.analytics import track_page_view, track_visitor
-            track_page_view(
-                mongo_db,
-                '/services',
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                request.headers.get('Referer', '')
-            )
-            track_visitor(
-                mongo_db,
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                '/services'
-            )
-        except Exception as e:
-            app.logger.debug(f"Erreur tracking analytics: {e}")
     
     # Récupérer les services depuis MongoDB (si disponible)
     services_list = []
+    mongo_db = app.config.get('MONGO_DB')
     if mongo_db is not None:
         try:
             services_collection = mongo_db.services
@@ -454,34 +281,10 @@ def contact():
     """Page de contact"""
     current_year = datetime.now().year
     portfolio_email = app.config.get('PORTFOLIO_EMAIL', 'contact@example.com')
-    mongo_db = app.config.get('MONGO_DB')
-    
-    # Tracking analytics
-    if mongo_db is not None:
-        try:
-            from utils.analytics import track_page_view, track_visitor
-            track_page_view(
-                mongo_db,
-                '/contact',
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                request.headers.get('Referer', '')
-            )
-            track_visitor(
-                mongo_db,
-                request.remote_addr,
-                request.headers.get('User-Agent', ''),
-                '/contact'
-            )
-        except Exception as e:
-            app.logger.debug(f"Erreur tracking analytics: {e}")
-    
     return render_template('contact.html', current_year=current_year, portfolio_email=portfolio_email)
 
 @app.route('/api/contact', methods=['POST'])
 @app.route('/contact/submit', methods=['POST'])
-@limiter.limit("5 per minute")  # Rate limiting: 5 requêtes par minute pour le formulaire public
-@csrf.exempt  # CSRF exempt car formulaire public avec validation serveur
 def contact_submit():
     """Reçoit et stocke un message de contact"""
     try:
@@ -520,12 +323,12 @@ def contact_submit():
                 'error': 'Format d\'email invalide'
             }), 400
         
-        # Nettoyer et valider les données avec sanitization XSS avancée
+        # Nettoyer et valider les données
         cleaned_data = {
-            'name': sanitize_input_advanced(name, max_length=100),
-            'email': sanitize_input_advanced(email, max_length=200),
-            'subject': sanitize_input_advanced(subject, max_length=200),
-            'message': sanitize_input_advanced(message, max_length=2000),
+            'name': sanitize_input(name, max_length=100),
+            'email': sanitize_input(email, max_length=200),
+            'subject': sanitize_input(subject, max_length=200),
+            'message': sanitize_input(message, max_length=2000),
             'created_at': datetime.now(),
             'read': False,
             'ip_address': request.remote_addr,
@@ -538,36 +341,33 @@ def contact_submit():
             try:
                 contacts_collection = mongo_db.contacts
                 result = contacts_collection.insert_one(cleaned_data)
-                contact_id = str(result.inserted_id)
-                app.logger.info(f"Nouveau message de contact sauvegarde dans l'espace admin (ID: {contact_id}) - De: {email}")
+                app.logger.info(f"Nouveau message de contact reçu de {email} (ID: {result.inserted_id})")
                 
                 # Optionnel: Envoyer un email de notification
                 send_contact_notification_email(cleaned_data)
                 
                 response_data = {
                     'success': True,
-                    'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.',
-                    'contact_id': contact_id
+                    'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.'
                 }
-                app.logger.info(f"Contact sauvegarde avec succes dans MongoDB: {email} - ID: {contact_id}")
+                app.logger.info(f"Contact sauvegardé avec succès: {email}")
                 response = jsonify(response_data)
                 response.headers['Content-Type'] = 'application/json; charset=utf-8'
                 return response, 200
             except Exception as e:
-                app.logger.error(f"Erreur lors du stockage du contact dans MongoDB: {e}", exc_info=True)
+                app.logger.error(f"Erreur lors du stockage du contact: {e}")
                 return jsonify({
                     'success': False,
                     'error': 'Erreur lors de l\'enregistrement du message. Veuillez réessayer.'
                 }), 500
         else:
             # Mode sans MongoDB - juste logger
-            app.logger.warning(f"Message de contact reçu mais MongoDB non disponible - Message NON sauvegardé: {email} - {subject}")
-            app.logger.warning("Le message ne sera pas visible dans l'espace admin sans MongoDB")
+            app.logger.info(f"Message de contact reçu (MongoDB non disponible): {email} - {subject}")
             response_data = {
-                'success': False,
-                'error': 'Service temporairement indisponible. Veuillez réessayer plus tard.'
+                'success': True,
+                'message': 'Votre message a été reçu. Je vous répondrai dans les plus brefs délais.'
             }
-            return jsonify(response_data), 503
+            return jsonify(response_data), 200
             
     except Exception as e:
         app.logger.error(f"Erreur contact_submit: {e}")
@@ -747,38 +547,7 @@ def admin_login():
                 admin_collection = mongo_db.admin_users
                 admin_user = admin_collection.find_one({"username": username})
                 
-                # Vérifier le mot de passe avec bcrypt (ou SHA256 pour migration)
-                password_valid = False
-                if admin_user:
-                    stored_password = admin_user['password']
-                    # Essayer bcrypt d'abord
-                    password_valid = check_password(password, stored_password)
-                    
-                    # Si bcrypt échoue et que c'est un hash SHA256, vérifier avec SHA256
-                    # puis migrer vers bcrypt
-                    if not password_valid and len(stored_password) == 64:
-                        import hashlib
-                        sha256_hash = hashlib.sha256(password.encode()).hexdigest()
-                        if sha256_hash == stored_password:
-                            password_valid = True
-                            # Migrer vers bcrypt
-                            admin_collection.update_one(
-                                {"_id": admin_user['_id']},
-                                {"$set": {"password": hash_password(password)}}
-                            )
-                
-                if admin_user and password_valid:
-                    # Enregistrer la connexion dans l'historique
-                    login_history_collection = mongo_db.login_history
-                    login_history_collection.insert_one({
-                        "admin_id": str(admin_user['_id']),
-                        "username": username,
-                        "ip_address": request.remote_addr,
-                        "user_agent": request.headers.get('User-Agent', '')[:500],
-                        "login_time": datetime.now(),
-                        "success": True
-                    })
-                    
+                if admin_user and admin_user['password'] == hash_password(password):
                     # Mettre à jour la dernière connexion
                     admin_collection.update_one(
                         {"username": username},
@@ -846,8 +615,6 @@ def get_homepage_api():
 
 @app.route('/api/homepage', methods=['PUT'])
 @admin_required
-@limiter.limit("10 per minute")  # Rate limiting: 10 requêtes par minute
-@csrf.exempt  # CSRF exempt car API avec authentification admin
 def update_homepage_api():
     """Met à jour les données de la page d'accueil"""
     try:
@@ -1127,8 +894,6 @@ def get_projects_api():
 
 @app.route('/api/projects', methods=['POST'])
 @admin_required
-@limiter.limit("20 per minute")  # Rate limiting: 20 requêtes par minute
-@csrf.exempt
 def create_project_api():
     """Crée un nouveau projet"""
     try:
@@ -1152,8 +917,7 @@ def create_project_api():
             'github_link': sanitize_input(data.get('github_link', ''), max_length=500),
             'status': sanitize_input(data.get('status', 'published'), max_length=50),
             'order': int(data.get('order', 0)) if str(data.get('order', 0)).isdigit() else 0,
-            'featured': bool(data.get('featured', False)),
-            'views': 0  # Initialiser le compteur de vues à 0
+            'featured': bool(data.get('featured', False))
         }
         
         # Valider les URLs
@@ -1258,8 +1022,6 @@ def update_project_api(project_id):
 
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
 @admin_required
-@limiter.limit("10 per minute")
-@csrf.exempt
 def delete_project_api(project_id):
     """Supprime un projet"""
     mongo_db = app.config.get('MONGO_DB')
@@ -1297,8 +1059,6 @@ def get_services_api():
 
 @app.route('/api/services', methods=['POST'])
 @admin_required
-@limiter.limit("20 per minute")
-@csrf.exempt
 def create_service_api():
     """Crée un nouveau service"""
     try:
@@ -1342,8 +1102,6 @@ def create_service_api():
 
 @app.route('/api/services/<service_id>', methods=['PUT'])
 @admin_required
-@limiter.limit("20 per minute")
-@csrf.exempt
 def update_service_api(service_id):
     """Met à jour un service"""
     mongo_db = app.config.get('MONGO_DB')
@@ -1394,8 +1152,6 @@ def update_service_api(service_id):
 
 @app.route('/api/services/<service_id>', methods=['DELETE'])
 @admin_required
-@limiter.limit("10 per minute")
-@csrf.exempt
 def delete_service_api(service_id):
     """Supprime un service"""
     mongo_db = app.config.get('MONGO_DB')
@@ -1488,297 +1244,6 @@ def delete_contact_api(contact_id):
         return jsonify({'error': 'Message non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_contact_api: {e}")
-        return jsonify({'error': str(e)}), 500
-
-# ========== API Routes pour Gestion du Profil Admin ==========
-@app.route('/api/admin/profile', methods=['GET'])
-@login_required
-def get_admin_profile():
-    """Récupère les informations du profil administrateur"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        admin_id = session.get('admin_id')
-        admin_username = session.get('admin_username')
-        
-        if mongo_db is None or not admin_id:
-            # Mode sans MongoDB - retourner les infos de session
-            return jsonify({
-                'username': admin_username,
-                'email': os.getenv('ADMIN_EMAIL', ''),
-                'created_at': None,
-                'last_login': None
-            })
-        
-        admin_collection = mongo_db.admin_users
-        admin_user = admin_collection.find_one({"_id": ObjectId(admin_id)})
-        
-        if not admin_user:
-            return jsonify({'error': 'Utilisateur non trouvé'}), 404
-        
-        profile_data = {
-            'username': admin_user.get('username', ''),
-            'email': admin_user.get('email', ''),
-            'full_name': admin_user.get('full_name', ''),
-            'created_at': admin_user.get('created_at').isoformat() if admin_user.get('created_at') else None,
-            'last_login': admin_user.get('last_login').isoformat() if admin_user.get('last_login') else None
-        }
-        
-        return jsonify(profile_data)
-    except Exception as e:
-        app.logger.error(f"Erreur get_admin_profile: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/admin/profile', methods=['PUT'])
-@login_required
-@limiter.limit("10 per minute")
-@csrf.exempt
-def update_admin_profile():
-    """Met à jour les informations du profil administrateur"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        admin_id = session.get('admin_id')
-        
-        if mongo_db is None:
-            return jsonify({'error': 'Base de données non disponible'}), 503
-        
-        if not admin_id:
-            return jsonify({'error': 'Non authentifié'}), 401
-        
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'Données JSON manquantes'}), 400
-        
-        admin_collection = mongo_db.admin_users
-        update_data = {}
-        
-        # Mettre à jour l'email si fourni
-        if 'email' in data:
-            email = sanitize_input(data['email'], max_length=200)
-            if email and validate_email(email):
-                update_data['email'] = email
-            elif email:
-                return jsonify({'error': 'Format d\'email invalide'}), 400
-        
-        # Mettre à jour le nom complet si fourni
-        if 'full_name' in data:
-            update_data['full_name'] = sanitize_input(data['full_name'], max_length=100)
-        
-        if not update_data:
-            return jsonify({'error': 'Aucune donnée à mettre à jour'}), 400
-        
-        update_data['updated_at'] = datetime.now()
-        
-        result = admin_collection.update_one(
-            {"_id": ObjectId(admin_id)},
-            {"$set": update_data}
-        )
-        
-        if result.matched_count > 0:
-            return jsonify({'success': True, 'message': 'Profil mis à jour avec succès'})
-        return jsonify({'error': 'Utilisateur non trouvé'}), 404
-    except Exception as e:
-        app.logger.error(f"Erreur update_admin_profile: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/admin/change-password', methods=['POST'])
-@login_required
-@limiter.limit("5 per minute")  # Limite stricte pour changement de mot de passe
-@csrf.exempt
-def change_admin_password():
-    """Change le mot de passe de l'administrateur"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        admin_id = session.get('admin_id')
-        admin_username = session.get('admin_username')
-        
-        if not admin_id:
-            return jsonify({'error': 'Non authentifié'}), 401
-        
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'Données JSON manquantes'}), 400
-        
-        current_password = data.get('current_password', '')
-        new_password = data.get('new_password', '')
-        confirm_password = data.get('confirm_password', '')
-        
-        # Validation
-        if not current_password or not new_password or not confirm_password:
-            return jsonify({'error': 'Tous les champs sont requis'}), 400
-        
-        if len(new_password) < 6:
-            return jsonify({'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères'}), 400
-        
-        if new_password != confirm_password:
-            return jsonify({'error': 'Les mots de passe ne correspondent pas'}), 400
-        
-        if new_password == current_password:
-            return jsonify({'error': 'Le nouveau mot de passe doit être différent de l\'ancien'}), 400
-        
-        # Vérifier l'ancien mot de passe
-        if mongo_db is None:
-            # Mode sans MongoDB - utiliser les variables d'environnement
-            expected_password = os.getenv('ADMIN_PASSWORD', 'admin123')
-            if current_password != expected_password:
-                return jsonify({'error': 'Mot de passe actuel incorrect'}), 400
-            
-            # En production, il faudrait mettre à jour la variable d'environnement
-            return jsonify({'error': 'Changement de mot de passe non disponible sans MongoDB'}), 503
-        else:
-            admin_collection = mongo_db.admin_users
-            admin_user = admin_collection.find_one({"_id": ObjectId(admin_id)})
-            
-            if not admin_user:
-                return jsonify({'error': 'Utilisateur non trouvé'}), 404
-            
-            # Vérifier le mot de passe actuel
-            if admin_user['password'] != hash_password(current_password):
-                return jsonify({'error': 'Mot de passe actuel incorrect'}), 400
-            
-            # Mettre à jour le mot de passe
-            admin_collection.update_one(
-                {"_id": ObjectId(admin_id)},
-                {"$set": {
-                    "password": hash_password(new_password),
-                    "password_changed_at": datetime.now()
-                }}
-            )
-            
-            app.logger.info(f"Mot de passe change pour l'utilisateur {admin_username}")
-            return jsonify({'success': True, 'message': 'Mot de passe changé avec succès'})
-    except Exception as e:
-        app.logger.error(f"Erreur change_admin_password: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/admin/login-history', methods=['GET'])
-@login_required
-def get_login_history():
-    """Récupère l'historique des connexions"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        admin_id = session.get('admin_id')
-        
-        if not admin_id:
-            return jsonify({'error': 'Non authentifié'}), 401
-        
-        if mongo_db is None:
-            return jsonify({'history': [], 'total': 0, 'limit': 50, 'skip': 0})
-        
-        # Récupérer les paramètres de pagination
-        limit = request.args.get('limit', type=int) or 50
-        skip = request.args.get('skip', type=int) or 0
-        
-        login_history_collection = mongo_db.login_history
-        history = list(
-            login_history_collection.find({"admin_id": admin_id})
-            .sort("login_time", -1)
-            .limit(limit)
-            .skip(skip)
-        )
-        
-        # Convertir ObjectId et datetime
-        for entry in history:
-            if '_id' in entry:
-                entry['_id'] = str(entry['_id'])
-            if 'login_time' in entry and isinstance(entry['login_time'], datetime):
-                entry['login_time'] = entry['login_time'].isoformat()
-        
-        # Compter le total
-        total = login_history_collection.count_documents({"admin_id": admin_id})
-        
-        return jsonify({
-            'history': history,
-            'total': total,
-            'limit': limit,
-            'skip': skip
-        })
-    except Exception as e:
-        app.logger.error(f"Erreur get_login_history: {e}")
-        return jsonify({'error': str(e)}), 500
-
-# ========== API Routes pour Analytics ==========
-@app.route('/api/analytics/stats', methods=['GET'])
-@admin_required
-@limiter.limit("30 per minute")
-@csrf.exempt
-def get_analytics_stats():
-    """Récupère les statistiques globales"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        
-        if mongo_db is None:
-            return jsonify({
-                'total_views': 0,
-                'total_visitors': 0,
-                'total_projects': 0,
-                'total_services': 0,
-                'total_contacts': 0,
-                'engagement_rate': 0,
-                'views_by_day': [],
-                'visitors_by_day': [],
-                'top_projects': []
-            })
-        
-        from utils.analytics import get_statistics
-        
-        days = request.args.get('days', type=int) or 30
-        stats = get_statistics(mongo_db, days)
-        
-        return jsonify(stats)
-    except Exception as e:
-        app.logger.error(f"Erreur get_analytics_stats: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/analytics/project/<project_id>', methods=['GET'])
-@admin_required
-@limiter.limit("30 per minute")
-@csrf.exempt
-def get_project_analytics(project_id):
-    """Récupère les statistiques d'un projet spécifique"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        
-        if mongo_db is None:
-            return jsonify({'views': 0, 'views_by_day': []})
-        
-        from utils.analytics import get_project_statistics
-        
-        stats = get_project_statistics(mongo_db, project_id)
-        
-        return jsonify(stats)
-    except Exception as e:
-        app.logger.error(f"Erreur get_project_analytics: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/analytics/track-project-view', methods=['POST'])
-@limiter.limit("30 per minute")  # Rate limiting pour tracking public
-@csrf.exempt
-def track_project_view_api():
-    """Endpoint pour tracker une vue de projet (public, pas d'authentification requise)"""
-    try:
-        mongo_db = app.config.get('MONGO_DB')
-        
-        if mongo_db is None:
-            return jsonify({'success': True})
-        
-        data = request.get_json()
-        project_id = data.get('project_id')
-        
-        if not project_id:
-            return jsonify({'error': 'project_id requis'}), 400
-        
-        from utils.analytics import track_project_view
-        
-        track_project_view(
-            mongo_db,
-            project_id,
-            request.remote_addr,
-            request.headers.get('User-Agent', '')
-        )
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        app.logger.error(f"Erreur track_project_view_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Les fonctions de validation sont importées depuis utils.validators

@@ -212,3 +212,4 @@ sudo systemctl restart nginx
 - Vérifiez que MongoDB est accessible
 - Vérifiez les variables d'environnement
 
+

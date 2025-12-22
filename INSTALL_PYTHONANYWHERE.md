@@ -69,3 +69,4 @@ pip install --user Flask==3.0.0 Werkzeug==3.0.1 python-dotenv==1.0.0 pymongo==4.
 
 Sur PythonAnywhere, utilisez `pip install --user` pour installer les packages dans votre répertoire utilisateur, car vous n'avez pas les droits root.
 
+

@@ -167,3 +167,4 @@ def generate_csrf_token():
     token = secrets.token_urlsafe(32)
     return token
 
+

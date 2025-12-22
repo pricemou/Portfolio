@@ -95,6 +95,8 @@ function showSection(sectionName) {
             if (typeof loadDashboardStats === 'function') {
                 loadDashboardStats();
             }
+        } else if (sectionName === 'admins') {
+            loadAdminUsers();
         }
     }
 }
@@ -1983,4 +1985,188 @@ function exportServicesCSV() {
     exportToCSV(csvData, `services_${new Date().toISOString().split('T')[0]}.csv`);
     showToast('Export CSV réussi', 'success');
 }
+
+// ============================================
+// Gestion des Administrateurs
+// ============================================
+
+async function loadAdminUsers() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/users`, {
+            method: 'GET',
+            headers: getHeaders(),
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                handle401Error();
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const admins = await response.json();
+        displayAdminUsers(admins);
+    } catch (error) {
+        console.error('Erreur lors du chargement des administrateurs:', error);
+        showToast('Erreur lors du chargement des administrateurs', 'error');
+    }
+}
+
+function displayAdminUsers(admins) {
+    const container = document.getElementById('admins-list');
+    if (!container) return;
+
+    if (!admins || admins.length === 0) {
+        container.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun administrateur trouvé</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    
+    admins.forEach(admin => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        card.style.marginBottom = '1rem';
+        
+        // Récupérer le username de l'admin actuel depuis le DOM
+        const currentUsername = document.getElementById('currentUsername')?.textContent?.trim() || '';
+        const isCurrentUser = admin.username === currentUsername;
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 0.5rem 0;">${admin.username || 'Sans nom'}</h4>
+                    ${admin.full_name ? `<p style="color: var(--gray); margin: 0 0 0.25rem 0;">${admin.full_name}</p>` : ''}
+                    ${admin.email ? `<p style="color: var(--gray); margin: 0 0 0.25rem 0; font-size: 0.9rem;"><i class="fas fa-envelope"></i> ${admin.email}</p>` : ''}
+                    <p style="color: var(--gray); margin: 0.5rem 0 0 0; font-size: 0.85rem;">
+                        Créé le: ${admin.created_at ? new Date(admin.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                        ${admin.last_login ? ` | Dernière connexion: ${new Date(admin.last_login).toLocaleDateString('fr-FR')}` : ' | Jamais connecté'}
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    ${isCurrentUser ? '<span style="color: var(--green); font-size: 0.85rem;">Vous</span>' : ''}
+                    ${!isCurrentUser ? `
+                        <button class="btn btn-danger btn-sm" onclick="deleteAdminUser('${admin._id}', '${admin.username}')" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+function openCreateAdminModal() {
+    const modal = document.getElementById('create-admin-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('open'), 10);
+    }
+}
+
+function closeCreateAdminModal() {
+    const modal = document.getElementById('create-admin-modal');
+    if (modal) {
+        modal.classList.remove('open');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            const form = document.getElementById('create-admin-form');
+            if (form) form.reset();
+        }, 300);
+    }
+}
+
+async function createAdmin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('new-admin-username').value.trim();
+    const password = document.getElementById('new-admin-password').value;
+    const email = document.getElementById('new-admin-email').value.trim();
+    const fullName = document.getElementById('new-admin-full-name').value.trim();
+    
+    // Validation
+    if (username.length < 3) {
+        showToast('Le nom d\'utilisateur doit contenir au moins 3 caractères', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('Le mot de passe doit contenir au moins 6 caractères', 'error');
+        return;
+    }
+    
+    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        showToast('Format d\'email invalide', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/users`, {
+            method: 'POST',
+            headers: getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({
+                username,
+                password,
+                email: email || '',
+                full_name: fullName || ''
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Erreur lors de la création');
+        }
+
+        showToast('Administrateur créé avec succès', 'success');
+        closeCreateAdminModal();
+        loadAdminUsers();
+    } catch (error) {
+        console.error('Erreur lors de la création de l\'administrateur:', error);
+        showToast(error.message || 'Erreur lors de la création de l\'administrateur', 'error');
+    }
+}
+
+async function deleteAdminUser(userId, username) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'administrateur "${username}" ?\n\nCette action est irréversible.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Erreur lors de la suppression');
+        }
+
+        showToast('Administrateur supprimé avec succès', 'success');
+        loadAdminUsers();
+    } catch (error) {
+        console.error('Erreur lors de la suppression de l\'administrateur:', error);
+        showToast(error.message || 'Erreur lors de la suppression', 'error');
+    }
+}
+
+// Fermer le modal en cliquant sur l'overlay
+document.addEventListener('DOMContentLoaded', function() {
+    const createAdminModal = document.getElementById('create-admin-modal');
+    if (createAdminModal) {
+        createAdminModal.addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeCreateAdminModal();
+            }
+        });
+    }
+});
 
