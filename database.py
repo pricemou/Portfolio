@@ -21,10 +21,14 @@ def get_mongo_client():
         return None, None
     
     try:
-        # Créer le client MongoDB
+        # Créer le client MongoDB avec des paramètres optimisés
         client = MongoClient(
             mongo_uri,
-            serverSelectionTimeoutMS=5000  # Timeout de 5 secondes
+            serverSelectionTimeoutMS=10000,  # Timeout de 10 secondes
+            connectTimeoutMS=10000,
+            socketTimeoutMS=20000,
+            retryWrites=True,
+            w='majority'
         )
         
         # Tester la connexion
@@ -37,8 +41,19 @@ def get_mongo_client():
         return client, db
         
     except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-        print(f"❌ Erreur de connexion MongoDB: {e}")
-        print("⚠️  L'application fonctionnera sans base de données MongoDB")
+        error_msg = str(e)
+        print(f"Erreur de connexion MongoDB: {error_msg[:200]}")
+        print("L'application fonctionnera sans base de donnees MongoDB")
+        
+        # Messages d'aide spécifiques
+        if "Connection refused" in error_msg:
+            print("Conseil: Verifiez votre connexion internet et que MongoDB Atlas est accessible")
+            print("Conseil: Verifiez que votre IP est autorisee dans MongoDB Atlas Network Access")
+        elif "timeout" in error_msg.lower():
+            print("Conseil: Le serveur MongoDB ne repond pas. Verifiez votre MONGO_URI dans .env")
+        elif "authentication" in error_msg.lower():
+            print("Conseil: Verifiez vos identifiants MongoDB dans MONGO_URI")
+        
         return None, None
     except Exception as e:
         print(f"❌ Erreur inattendue MongoDB: {e}")

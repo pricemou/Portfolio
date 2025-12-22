@@ -1,4 +1,16 @@
 import os
+import sys
+import socket
+
+# Configuration UTF-8 pour Windows
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        # Python < 3.7
+        pass
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime
 from dotenv import load_dotenv
@@ -11,6 +23,10 @@ import re
 from werkzeug.exceptions import BadRequest, InternalServerError
 
 # Flask-Mail sera importé après la création de l'app Flask
+FLASK_MAIL_AVAILABLE = False
+Mail = None
+Message = None
+mail = None
 
 # Import des validators
 try:
@@ -1273,8 +1289,34 @@ def forbidden_error(error):
     return redirect(url_for('index')), 403
 
 if __name__ == '__main__':
+    import socket
+    
     host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', 5000))
     debug = app.config['DEBUG']
+    
+    # Vérifier si le port est disponible
+    def is_port_available(port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((host, port))
+                return True
+            except OSError:
+                return False
+    
+    # Si le port n'est pas disponible, essayer les ports suivants
+    original_port = port
+    if not is_port_available(port):
+        print(f"Le port {port} est deja utilise. Recherche d'un port disponible...")
+        for test_port in range(port + 1, port + 10):
+            if is_port_available(test_port):
+                port = test_port
+                print(f"Utilisation du port {port} a la place")
+                break
+        else:
+            print(f"Aucun port disponible entre {original_port} et {original_port + 10}")
+            print("Arretez l'autre application qui utilise le port ou changez le port dans .env")
+            sys.exit(1)
+    
     app.run(host=host, port=port, debug=debug)
 
