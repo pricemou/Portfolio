@@ -42,5 +42,5 @@ instance/
 Thumbs.db
 
 # Environment variables
-.env
+# .env
 .env.local
