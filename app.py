@@ -95,9 +95,20 @@ try:
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', '')
     
+    # Configuration pour l'hébergement (timeouts plus longs)
+    app.config['MAIL_TIMEOUT'] = int(os.getenv('MAIL_TIMEOUT', 30))  # 30 secondes par défaut
+    app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
+    
     # Initialiser Flask-Mail
     mail = Mail(app)
-    print("Flask-Mail configure et pret")
+    
+    # Vérifier la configuration
+    mail_username = app.config.get('MAIL_USERNAME')
+    mail_password = app.config.get('MAIL_PASSWORD')
+    if mail_username and mail_password:
+        print(f"Flask-Mail configure et pret (serveur: {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']})")
+    else:
+        print("Flask-Mail configure mais MAIL_USERNAME ou MAIL_PASSWORD manquants - emails desactives")
 except ImportError:
     FLASK_MAIL_AVAILABLE = False
     Mail = None
@@ -384,13 +395,18 @@ def send_contact_notification_email(contact_data):
             app.logger.debug("Flask-Mail non disponible - notification email ignorée")
             return False
         
+        # Vérifier si l'envoi est supprimé (pour les tests)
+        if app.config.get('MAIL_SUPPRESS_SEND', False):
+            app.logger.debug("MAIL_SUPPRESS_SEND activé - email non envoyé")
+            return False
+        
         # Vérifier si la configuration email est complète
         mail_username = app.config.get('MAIL_USERNAME')
         mail_password = app.config.get('MAIL_PASSWORD')
         
         if not mail_username or not mail_password:
-            app.logger.debug("Configuration email non complète - notification email ignorée")
-            app.logger.warning("Pour activer les emails, configurez MAIL_USERNAME et MAIL_PASSWORD dans .env")
+            app.logger.warning("Configuration email incomplete - MAIL_USERNAME ou MAIL_PASSWORD manquants")
+            app.logger.warning("Pour activer les emails, configurez MAIL_USERNAME et MAIL_PASSWORD dans les variables d'environnement")
             app.logger.warning("Pour Gmail, vous DEVEZ utiliser un mot de passe d'application (pas votre mot de passe normal)")
             app.logger.warning("Voir CONFIGURATION_EMAIL.md pour les instructions")
             return False
@@ -442,13 +458,39 @@ IP: {contact_data.get('ip_address', 'N/A')}
             html=html_body
         )
         
-        # Envoyer l'email
-        mail.send(msg)
-        app.logger.info(f"Email de notification envoye a {recipient_email} pour le message de {contact_data['email']}")
-        return True
+        # Envoyer l'email avec gestion d'erreurs détaillée
+        try:
+            app.logger.info(f"Tentative d'envoi d'email a {recipient_email} depuis {mail_username} via {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']}")
+            mail.send(msg)
+            app.logger.info(f"Email de notification envoye avec succes a {recipient_email} pour le message de {contact_data['email']}")
+            return True
+        except Exception as send_error:
+            error_type = type(send_error).__name__
+            error_msg = str(send_error)
+            
+            # Messages d'erreur spécifiques selon le type d'erreur
+            if "authentication" in error_msg.lower() or "535" in error_msg or "535-5.7.8" in error_msg:
+                app.logger.error(f"ERREUR AUTHENTIFICATION EMAIL: {error_msg}")
+                app.logger.error("Solution: Utilisez un mot de passe d'application Gmail (pas votre mot de passe normal)")
+                app.logger.error("Voir: https://myaccount.google.com/apppasswords")
+            elif "connection" in error_msg.lower() or "refused" in error_msg.lower():
+                app.logger.error(f"ERREUR CONNEXION EMAIL: {error_msg}")
+                app.logger.error(f"Verifiez que le serveur {app.config['MAIL_SERVER']} est accessible depuis votre serveur d'hebergement")
+                app.logger.error("Verifiez que le port {app.config['MAIL_PORT']} n'est pas bloque par un firewall")
+            elif "timeout" in error_msg.lower():
+                app.logger.error(f"ERREUR TIMEOUT EMAIL: {error_msg}")
+                app.logger.error("Le serveur SMTP ne repond pas dans les delais. Augmentez MAIL_TIMEOUT si necessaire")
+            else:
+                app.logger.error(f"ERREUR ENVOI EMAIL ({error_type}): {error_msg}")
+            
+            # Logger les détails de configuration (sans le mot de passe)
+            app.logger.debug(f"Configuration email: serveur={app.config['MAIL_SERVER']}, port={app.config['MAIL_PORT']}, TLS={app.config['MAIL_USE_TLS']}, SSL={app.config['MAIL_USE_SSL']}, username={mail_username}")
+            
+            return False
         
     except Exception as e:
-        app.logger.error(f"Erreur lors de l'envoi de l'email de notification: {e}", exc_info=True)
+        error_type = type(e).__name__
+        app.logger.error(f"ERREUR GENERALE lors de l'envoi de l'email de notification ({error_type}): {e}", exc_info=True)
         return False
 
 def login_required(f):
