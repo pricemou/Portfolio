@@ -17,7 +17,11 @@ def get_mongo_client():
     
     # Si MONGO_URI n'est pas défini, retourner None
     if not mongo_uri:
-        print("⚠️  MONGO_URI non défini dans .env - MongoDB désactivé")
+        print("⚠️  MONGO_URI non défini - MongoDB désactivé")
+        print("📝 Pour activer MongoDB en production:")
+        print("   1. Sur PythonAnywhere: Web → Environment variables → Ajoutez MONGO_URI")
+        print("   2. Format: mongodb+srv://username:password@cluster.mongodb.net/dbname")
+        print("   3. Redémarrez l'application après avoir ajouté la variable")
         return None, None
     
     try:

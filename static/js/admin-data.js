@@ -133,6 +133,9 @@ document.addEventListener('DOMContentLoaded', function() {
         showSection('dashboard');
     }
     
+    // Vérifier l'état MongoDB au démarrage
+    checkMongoDBStatusOnLoad();
+    
     // Charger les données au démarrage
     console.log('🔄 Chargement initial des données...');
     loadHomepageData();
@@ -142,6 +145,77 @@ document.addEventListener('DOMContentLoaded', function() {
     loadServices();
     loadContacts();
 });
+
+// Vérifier l'état MongoDB au chargement
+async function checkMongoDBStatusOnLoad() {
+    // Attendre un peu pour que les requêtes se lancent
+    setTimeout(async () => {
+        try {
+            // Tester une API pour voir si MongoDB est disponible
+            const response = await fetch(`${API_BASE}/skills`);
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                if (data.error === 'MongoDB non disponible' || response.status === 503) {
+                    showMongoDBWarningBanner();
+                }
+            }
+        } catch (error) {
+            // Ignorer les erreurs silencieusement
+        }
+    }, 2000);
+}
+
+function showMongoDBWarningBanner() {
+    // Vérifier si le bandeau existe déjà
+    if (document.getElementById('mongodb-config-warning')) {
+        return;
+    }
+    
+    const banner = document.createElement('div');
+    banner.id = 'mongodb-config-warning';
+    banner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        z-index: 10000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        font-family: 'Roboto Mono', monospace;
+    `;
+    
+    banner.innerHTML = `
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
+            <div style="flex: 1;">
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.5rem;">⚠️ MongoDB non configuré</strong>
+                <p style="margin: 0; font-size: 0.9rem; opacity: 0.95;">
+                    La variable <code style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.4rem; border-radius: 3px;">MONGO_URI</code> n'est pas définie en production.
+                    Les données ne peuvent pas être chargées. 
+                    <a href="#" onclick="window.open('https://help.pythonanywhere.com/pages/environment-variables-for-web-apps/', '_blank'); return false;" 
+                       style="color: white; text-decoration: underline; font-weight: bold;">
+                       Consultez le guide de configuration
+                    </a>
+                </p>
+            </div>
+            <button onclick="document.getElementById('mongodb-config-warning').remove(); document.querySelector('.main-content').style.paddingTop = '0';" 
+                    style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); 
+                           color: white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; 
+                           font-size: 0.9rem; white-space: nowrap;">
+                ✕ Fermer
+            </button>
+        </div>
+    `;
+    
+    document.body.insertBefore(banner, document.body.firstChild);
+    
+    // Ajuster le padding du contenu principal
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.paddingTop = '100px';
+    }
+}
 
 // ========== Fonctions utilitaires ==========
 // Ne pas redéfinir showToast - utiliser celle de admin.js
