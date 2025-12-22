@@ -144,7 +144,7 @@
                             </div>
                             <div class="stat-info">
                                 <p class="stat-label">Total Projets</p>
-                                <p class="stat-value" id="total-projects">12</p>
+                                <p class="stat-value" id="total-projects">0</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -153,7 +153,7 @@
                             </div>
                             <div class="stat-info">
                                 <p class="stat-label">Vues Total</p>
-                                <p class="stat-value" id="total-views">1,234</p>
+                                <p class="stat-value" id="total-views">0</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -162,7 +162,7 @@
                             </div>
                             <div class="stat-info">
                                 <p class="stat-label">Visiteurs</p>
-                                <p class="stat-value" id="total-visitors">456</p>
+                                <p class="stat-value" id="total-visitors">0</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -171,9 +171,27 @@
                             </div>
                             <div class="stat-info">
                                 <p class="stat-label">Taux Engagement</p>
-                                <p class="stat-value" id="engagement-rate">87%</p>
+                                <p class="stat-value" id="engagement-rate">0%</p>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Graphiques Analytics -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                        <div class="admin-card">
+                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Vues par jour (30 derniers jours)</h3>
+                            <div id="views-chart" style="min-height: 250px;"></div>
+                        </div>
+                        <div class="admin-card">
+                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Visiteurs par jour (30 derniers jours)</h3>
+                            <div id="visitors-chart" style="min-height: 250px;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Projets -->
+                    <div class="admin-card" style="margin-top: 2rem;">
+                        <h3 style="margin-top: 0; margin-bottom: 1rem;">Top 5 Projets les plus vus</h3>
+                        <div id="top-projects-list" class="admin-list"></div>
                     </div>
 
                     <!-- Section Dashboard -->
@@ -422,7 +440,16 @@
                             </div>
                             <div class="panel-stat-info">
                                 <p class="panel-stat-label">Services</p>
-                                <p class="panel-stat-value" id="panel-services">6</p>
+                                <p class="panel-stat-value" id="panel-services">0</p>
+                            </div>
+                        </div>
+                        <div class="panel-stat-card">
+                            <div class="panel-stat-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="panel-stat-info">
+                                <p class="panel-stat-label">Messages</p>
+                                <p class="panel-stat-value" id="panel-contacts">0</p>
                             </div>
                         </div>
                         <div class="panel-stat-card">

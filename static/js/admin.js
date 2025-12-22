@@ -119,7 +119,7 @@ function loadPanelStats() {
     }
 }
 
-function updatePanelStats() {
+async function updatePanelStats() {
     // Update last update time
     const lastUpdate = document.getElementById('panel-last-update');
     if (lastUpdate) {
@@ -127,7 +127,186 @@ function updatePanelStats() {
         lastUpdate.textContent = `Mis à jour: ${now.toLocaleTimeString('fr-FR')}`;
     }
     
-    // You can add more stat updates here
+    // Charger les statistiques depuis l'API
+    try {
+        const response = await fetch('/api/analytics/stats?days=30', {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const stats = await response.json();
+            
+            // Mettre à jour les statistiques du panel
+            const activeProjects = document.getElementById('panel-active-projects');
+            if (activeProjects) {
+                activeProjects.textContent = stats.total_projects || 0;
+            }
+            
+            const panelServices = document.getElementById('panel-services');
+            if (panelServices) {
+                panelServices.textContent = stats.total_services || 0;
+            }
+            
+            const panelContacts = document.getElementById('panel-contacts');
+            if (panelContacts) {
+                panelContacts.textContent = stats.total_contacts || 0;
+            }
+        }
+    } catch (error) {
+        console.debug('Erreur lors du chargement des stats:', error);
+    }
+}
+
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/analytics/stats?days=30', {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Pas connecté, ignorer
+                return;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const stats = await response.json();
+        
+        // Mettre à jour les statistiques du dashboard
+        const totalProjects = document.getElementById('total-projects');
+        if (totalProjects) {
+            totalProjects.textContent = stats.total_projects || 0;
+        }
+        
+        const totalViews = document.getElementById('total-views');
+        if (totalViews) {
+            totalViews.textContent = (stats.total_views || 0).toLocaleString('fr-FR');
+        }
+        
+        const totalVisitors = document.getElementById('total-visitors');
+        if (totalVisitors) {
+            totalVisitors.textContent = (stats.total_visitors || 0).toLocaleString('fr-FR');
+        }
+        
+        const engagementRate = document.getElementById('engagement-rate');
+        if (engagementRate) {
+            engagementRate.textContent = `${stats.engagement_rate || 0}%`;
+        }
+        
+        // Charger les graphiques
+        loadCharts(stats);
+        
+        // Charger le top des projets
+        loadTopProjects(stats.top_projects || []);
+    } catch (error) {
+        console.debug('Erreur lors du chargement des stats du dashboard:', error);
+    }
+}
+
+function loadTopProjects(projects) {
+    const topProjectsList = document.getElementById('top-projects-list');
+    if (!topProjectsList) return;
+    
+    if (!projects || projects.length === 0) {
+        topProjectsList.innerHTML = '<p style="color: var(--gray);">Aucun projet avec des vues pour le moment.</p>';
+        return;
+    }
+    
+    topProjectsList.innerHTML = '';
+    
+    projects.forEach((project, index) => {
+        const card = document.createElement('div');
+        card.className = 'admin-card';
+        card.style.display = 'flex';
+        card.style.justifyContent = 'space-between';
+        card.style.alignItems = 'center';
+        card.style.marginBottom = '0.5rem';
+        
+        card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="
+                    background: var(--green, #4DBA87);
+                    color: white;
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: 0.9rem;
+                ">${index + 1}</span>
+                <div>
+                    <strong>${project.title || 'Projet sans titre'}</strong>
+                    <p style="color: var(--gray); font-size: 0.85rem; margin: 0.25rem 0 0 0;">${project.views || 0} vue${(project.views || 0) > 1 ? 's' : ''}</p>
+                </div>
+            </div>
+        `;
+        
+        topProjectsList.appendChild(card);
+    });
+}
+
+function loadCharts(stats) {
+    // Graphique des vues par jour
+    const viewsChart = document.getElementById('views-chart');
+    if (viewsChart && stats.views_by_day && stats.views_by_day.length > 0) {
+        renderSimpleChart(viewsChart, stats.views_by_day, 'views', 'Vues par jour');
+    }
+    
+    // Graphique des visiteurs par jour
+    const visitorsChart = document.getElementById('visitors-chart');
+    if (visitorsChart && stats.visitors_by_day && stats.visitors_by_day.length > 0) {
+        renderSimpleChart(visitorsChart, stats.visitors_by_day, 'visitors', 'Visiteurs par jour');
+    }
+}
+
+function renderSimpleChart(container, data, key, title) {
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucune donnée disponible</p>';
+        return;
+    }
+    
+    const maxValue = Math.max(...data.map(d => d[key] || 0), 1);
+    const chartHeight = 200;
+    
+    let chartHTML = `<div style="margin-bottom: 1rem;"><strong>${title}</strong></div>`;
+    chartHTML += `<div style="display: flex; align-items: flex-end; gap: 2px; height: ${chartHeight}px; padding: 1rem 0;">`;
+    
+    data.forEach((item, index) => {
+        const value = item[key] || 0;
+        const height = (value / maxValue) * chartHeight;
+        const date = new Date(item.date);
+        const dayLabel = date.getDate();
+        
+        chartHTML += `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; position: relative;">
+                <div style="
+                    width: 100%;
+                    background: linear-gradient(to top, var(--green, #4DBA87), rgba(77, 186, 135, 0.5));
+                    height: ${height}px;
+                    border-radius: 4px 4px 0 0;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                " 
+                title="${dayLabel}/${date.getMonth() + 1}: ${value} ${key === 'views' ? 'vues' : 'visiteurs'}"
+                onmouseover="this.style.opacity='0.8'"
+                onmouseout="this.style.opacity='1'">
+                </div>
+                <span style="font-size: 0.7rem; color: var(--gray); margin-top: 0.5rem; writing-mode: vertical-rl; text-orientation: mixed;">${dayLabel}</span>
+            </div>
+        `;
+    });
+    
+    chartHTML += '</div>';
+    container.innerHTML = chartHTML;
 }
 
 // ============================================

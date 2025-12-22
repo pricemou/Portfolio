@@ -18,6 +18,18 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/globals.css') }}">
     <script src="{{ url_for('static', filename='js/theme.js') }}" defer></script>
+    <script>
+        // Fonction pour tracker les vues de projets
+        function trackProjectView(projectId) {
+            fetch('/api/analytics/track-project-view', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ project_id: projectId })
+            }).catch(err => console.debug('Erreur tracking projet:', err));
+        }
+    </script>
 </head>
 <body>
     {% block content %}{% endblock %}

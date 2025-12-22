@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadServices();
     loadContacts();
     
+    // Charger les statistiques du dashboard
+    loadDashboardStats();
+    
     // Démarrer la vérification périodique des nouveaux messages
     requestNotificationPermission();
     startContactsMonitoring();
@@ -88,6 +91,10 @@ function showSection(sectionName) {
             initSkillsSection();
         } else if (sectionName === 'partners') {
             initPartnersSection();
+        } else if (sectionName === 'dashboard') {
+            if (typeof loadDashboardStats === 'function') {
+                loadDashboardStats();
+            }
         }
     }
 }

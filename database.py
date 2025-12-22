@@ -83,6 +83,19 @@ def init_database(db):
         if 'projects' in db.list_collection_names():
             db.projects.create_index("title")
             db.projects.create_index("created_at")
+            db.projects.create_index("views")
+        
+        # Créer des index pour analytics
+        if 'analytics' in db.list_collection_names():
+            try:
+                db.analytics.create_index("type")
+                db.analytics.create_index("date")
+                db.analytics.create_index("timestamp")
+                db.analytics.create_index("visitor_id")
+                db.analytics.create_index("project_id")
+                print("Index crees pour la collection 'analytics'")
+            except Exception as e:
+                pass
         
         # Créer la collection contacts si elle n'existe pas
         if 'contacts' not in db.list_collection_names():

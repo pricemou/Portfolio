@@ -2,7 +2,7 @@
     <div class="works-grid">
         {% if projects and projects|length > 0 %}
             {% for project in projects %}
-            <div class="work-card light-bg">
+            <div class="work-card light-bg" data-project-id="{{ project._id }}">
                 <div class="work-card-header">
                     <h3 class="white">{{ project.title }}</h3>
                     <span class="gray">{{ project.technologies }}</span>
@@ -10,7 +10,7 @@
                 <p class="gray">{{ project.description }}</p>
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     {% if project.link %}
-                    <a href="{{ project.link }}" target="_blank" rel="noopener noreferrer" class="work-link green">Voir le projet →</a>
+                    <a href="{{ project.link }}" target="_blank" rel="noopener noreferrer" class="work-link green" onclick="trackProjectView('{{ project._id }}')">Voir le projet →</a>
                     {% endif %}
                     {% if project.github_link %}
                     <a href="{{ project.github_link }}" target="_blank" rel="noopener noreferrer" class="work-link green" style="font-size: 0.9rem;">GitHub →</a>
