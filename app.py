@@ -796,12 +796,11 @@ def update_skill_api(skill_id):
 @admin_required
 def delete_skill_api(skill_id):
     """Supprime une compétence"""
+    try:
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour update_homepage_api")
+            app.logger.error("MongoDB non disponible pour delete_skill_api")
             return jsonify({'error': 'MongoDB non disponible'}), 500
-    
-    try:
         result = mongo_db.skills.delete_one({"_id": ObjectId(skill_id)})
         if result.deleted_count > 0:
             return jsonify({'success': True, 'message': 'Compétence supprimée'})
@@ -880,12 +879,11 @@ def create_partner_api():
 @admin_required
 def update_partner_api(partner_id):
     """Met à jour un partenaire"""
+    try:
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour update_homepage_api")
+            app.logger.error("MongoDB non disponible pour update_partner_api")
             return jsonify({'error': 'MongoDB non disponible'}), 500
-    
-    try:
         data = request.get_json()
         result = mongo_db.partners.update_one(
             {"_id": ObjectId(partner_id)},
@@ -901,12 +899,11 @@ def update_partner_api(partner_id):
 @admin_required
 def delete_partner_api(partner_id):
     """Supprime un partenaire"""
+    try:
         mongo_db = ensure_mongo_connection()
         if mongo_db is None:
-            app.logger.error("MongoDB non disponible pour update_homepage_api")
+            app.logger.error("MongoDB non disponible pour delete_partner_api")
             return jsonify({'error': 'MongoDB non disponible'}), 500
-    
-    try:
         result = mongo_db.partners.delete_one({"_id": ObjectId(partner_id)})
         if result.deleted_count > 0:
             return jsonify({'success': True, 'message': 'Partenaire supprimé'})
