@@ -113,6 +113,7 @@ def init_database():
                     link TEXT,
                     github_link TEXT,
                     image TEXT,
+                    additional_images TEXT,
                     status TEXT DEFAULT 'published',
                     order_index INTEGER DEFAULT 0,
                     featured INTEGER DEFAULT 0,
@@ -121,6 +122,12 @@ def init_database():
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # Ajouter la colonne additional_images si elle n'existe pas (migration)
+            try:
+                cursor.execute('ALTER TABLE projects ADD COLUMN additional_images TEXT')
+            except sqlite3.OperationalError:
+                pass  # La colonne existe déjà
             
             # Table services
             cursor.execute('''

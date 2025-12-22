@@ -59,7 +59,7 @@
 
             <div class="sidebar-nav primary-nav">
                 <a href="#dashboard" class="nav-btn menu-item active" data-section="dashboard" aria-label="Tableau de bord">
-                    <i class="fas fa-house"></i>
+                    <i class="fas fa-chart-line"></i>
                 </a>
                 <a href="#homepage" class="nav-btn menu-item" data-section="homepage" aria-label="Page d'accueil">
                     <i class="fas fa-home"></i>
@@ -71,22 +71,22 @@
                     <i class="fas fa-handshake"></i>
                 </a>
                 <a href="#projects" class="nav-btn menu-item" data-section="projects" aria-label="Projets">
-                    <i class="fas fa-folder"></i>
+                    <i class="fas fa-folder-open"></i>
                 </a>
                 <a href="#services" class="nav-btn menu-item" data-section="services" aria-label="Services">
-                    <i class="fas fa-code"></i>
+                    <i class="fas fa-cogs"></i>
                 </a>
                 <a href="#contacts" class="nav-btn menu-item" data-section="contacts" aria-label="Contacts">
                     <i class="fas fa-envelope"></i>
                 </a>
                 <a href="#profile" class="nav-btn menu-item" data-section="profile" aria-label="Profil">
-                    <i class="fas fa-user"></i>
+                    <i class="fas fa-user-circle"></i>
                 </a>
                 <a href="#admins" class="nav-btn menu-item" data-section="admins" aria-label="Administrateurs">
                     <i class="fas fa-users-cog"></i>
                 </a>
                 <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
-                    <i class="fas fa-globe"></i>
+                    <i class="fas fa-external-link-alt"></i>
                 </a>
             </div>
 
@@ -472,20 +472,20 @@
                         </div>
                         <div class="panel-stat-card">
                             <div class="panel-stat-icon">
-                                <i class="fas fa-heart"></i>
+                                <i class="fas fa-chart-line"></i>
                             </div>
                             <div class="panel-stat-info">
-                                <p class="panel-stat-label">Taux Satisfaction</p>
-                                <p class="panel-stat-value" id="panel-satisfaction">95%</p>
+                                <p class="panel-stat-label">Taux Engagement</p>
+                                <p class="panel-stat-value" id="panel-satisfaction">0%</p>
                             </div>
                         </div>
                         <div class="panel-stat-card">
                             <div class="panel-stat-icon">
-                                <i class="fas fa-clock"></i>
+                                <i class="fas fa-eye"></i>
                             </div>
                             <div class="panel-stat-info">
-                                <p class="panel-stat-label">Temps Réponse</p>
-                                <p class="panel-stat-value" id="panel-response-time">2h</p>
+                                <p class="panel-stat-label">Vues Total</p>
+                                <p class="panel-stat-value" id="panel-total-views">0</p>
                             </div>
                         </div>
                     </div>
@@ -640,8 +640,14 @@
                     <input type="url" id="project-github" placeholder="https://github.com/user/repo">
                 </div>
                 <div class="form-group">
-                    <label>Image (chemin ou URL)</label>
+                    <label>Image principale (chemin ou URL)</label>
                     <input type="text" id="project-image" placeholder="images/projects/project.png">
+                    <small style="color: var(--gray); font-size: 0.85rem;">Image principale du projet</small>
+                </div>
+                <div class="form-group">
+                    <label>Images supplémentaires (séparées par des virgules)</label>
+                    <textarea id="project-additional-images" rows="3" placeholder="images/projects/img1.png, images/projects/img2.png, images/projects/img3.png"></textarea>
+                    <small style="color: var(--gray); font-size: 0.85rem;">Ajoutez plusieurs images séparées par des virgules pour la galerie</small>
                 </div>
                 <div class="form-group">
                     <label>Statut</label>
@@ -665,6 +671,19 @@
                     <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Détail Projet -->
+    <div id="projectDetailModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 id="projectDetailTitle">Détails du projet</h3>
+                <button class="modal-close" onclick="closeProjectDetailModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="projectDetailBody" style="padding: 2rem;">
+                <!-- Le contenu sera chargé dynamiquement -->
+            </div>
         </div>
     </div>
 
@@ -742,6 +761,37 @@
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-data.js') }}"></script>
+    <script>
+        // S'assurer que les fonctions sont accessibles globalement
+        // Les exposer explicitement sur window si nécessaire
+        window.openServiceModal = window.openServiceModal || function() {
+            if (typeof openServiceModal === 'function') {
+                return openServiceModal.apply(this, arguments);
+            }
+            console.error('openServiceModal n\'est pas disponible');
+        };
+        
+        window.openProjectModal = window.openProjectModal || function() {
+            if (typeof openProjectModal === 'function') {
+                return openProjectModal.apply(this, arguments);
+            }
+            console.error('openProjectModal n\'est pas disponible');
+        };
+        
+        window.closeServiceModal = window.closeServiceModal || function() {
+            if (typeof closeServiceModal === 'function') {
+                return closeServiceModal.apply(this, arguments);
+            }
+            console.error('closeServiceModal n\'est pas disponible');
+        };
+        
+        window.closeProjectModal = window.closeProjectModal || function() {
+            if (typeof closeProjectModal === 'function') {
+                return closeProjectModal.apply(this, arguments);
+            }
+            console.error('closeProjectModal n\'est pas disponible');
+        };
+    </script>
 </body>
 </html>
 

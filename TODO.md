@@ -4,7 +4,7 @@
 
 ### Backend
 - ✅ Application Flask complète
-- ✅ Connexion MongoDB (local et Atlas)
+- ✅ Base de données SQLite
 - ✅ Authentification admin (session-based)
 - ✅ CRUD complet pour :
   - ✅ Page d'accueil (homepage)
@@ -13,7 +13,7 @@
   - ✅ Projets (projects)
   - ✅ Services (services)
   - ✅ Contacts (contacts)
-- ✅ Formulaire de contact avec stockage MongoDB
+- ✅ Formulaire de contact avec stockage SQLite
 - ✅ Notifications email (Flask-Mail)
 - ✅ Validation serveur (utils/validators.py)
 - ✅ Gestion des erreurs (404, 500, 400, 401, 403)
@@ -72,7 +72,7 @@
 
 ### 5. Performance
 - [ ] Ajouter cache pour les données fréquemment accédées
-- [ ] Optimiser les requêtes MongoDB avec des agrégations
+- [ ] Optimiser les requêtes SQLite avec des index appropriés
 - [ ] Lazy loading pour les images
 - [ ] Compression des assets statiques
 - [ ] Minification des fichiers JS/CSS en production

@@ -14,6 +14,7 @@
     --dark-bg: #25262A;
     --light-bg: #2D2E32;
     --green: #4dba87;
+    --red: #dc3545;
     --white: #FFFFFF;
     --gray: #777777;
     
@@ -587,10 +588,11 @@ body {
     transition: opacity 0.3s ease;
 }
 
-.modal[style*="display: block"],
+.modal[style*="display: flex"],
+.modal[style*="display:block"],
 .modal.open {
     display: flex !important;
-    opacity: 1;
+    opacity: 1 !important;
 }
 
 .modal-content {
@@ -763,6 +765,22 @@ body {
     background: #3da870;
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: var(--white);
+}
+
+.btn-info:hover {
+    background: #138496;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-sm {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.75rem;
 }
 
 /* ============================================
@@ -1094,6 +1112,15 @@ small {
 
 .btn-danger:hover {
     background: #c82333;
+}
+
+.btn-success {
+    background: var(--green);
+    color: var(--white);
+}
+
+.btn-success:hover {
+    background: #3da06f;
 }
 
 .admin-list {

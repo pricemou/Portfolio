@@ -28,13 +28,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Navigation menu items - La navigation est gérée par admin-data.js
-    // On garde juste la gestion des liens externes (sans data-section)
-    const menuItems = document.querySelectorAll('.menu-item:not([data-section])');
+    // Navigation menu items
+    const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach(item => {
         item.addEventListener('click', function(e) {
-            // Pour les liens externes, on ne fait rien de spécial
-            // La navigation interne est gérée par admin-data.js
+            // Don't prevent default for external links
+            if (this.getAttribute('href') && this.getAttribute('href').startsWith('#')) {
+                e.preventDefault();
+            }
+            
+            // Update active state
+            menuItems.forEach(mi => mi.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Update page title
+            const pageTitle = this.getAttribute('aria-label') || 'Dashboard';
+            document.getElementById('current-page').textContent = pageTitle;
         });
     });
     
@@ -44,6 +53,42 @@ document.addEventListener('DOMContentLoaded', function() {
         supportModal.addEventListener('click', function(e) {
             if (e.target === supportModal) {
                 closeSupportModal();
+            }
+        });
+    }
+    
+    // Close service modal on overlay click
+    const serviceModal = document.getElementById('serviceModal');
+    if (serviceModal) {
+        serviceModal.addEventListener('click', function(e) {
+            if (e.target === serviceModal) {
+                if (typeof closeServiceModal === 'function') {
+                    closeServiceModal();
+                }
+            }
+        });
+    }
+    
+    // Close project modal on overlay click
+    const projectModal = document.getElementById('projectModal');
+    if (projectModal) {
+        projectModal.addEventListener('click', function(e) {
+            if (e.target === projectModal) {
+                if (typeof closeProjectModal === 'function') {
+                    closeProjectModal();
+                }
+            }
+        });
+    }
+    
+    // Close project detail modal on overlay click
+    const projectDetailModal = document.getElementById('projectDetailModal');
+    if (projectDetailModal) {
+        projectDetailModal.addEventListener('click', function(e) {
+            if (e.target === projectDetailModal) {
+                if (typeof closeProjectDetailModal === 'function') {
+                    closeProjectDetailModal();
+                }
             }
         });
     }
@@ -133,7 +178,9 @@ async function updatePanelStats() {
             // Mettre à jour les statistiques du panel
             const activeProjects = document.getElementById('panel-active-projects');
             if (activeProjects) {
-                activeProjects.textContent = stats.total_projects || 0;
+                // Afficher les projets publiés
+                const publishedProjects = stats.projects_by_status?.published || stats.total_projects || 0;
+                activeProjects.textContent = publishedProjects;
             }
             
             const panelServices = document.getElementById('panel-services');
@@ -143,8 +190,31 @@ async function updatePanelStats() {
             
             const panelContacts = document.getElementById('panel-contacts');
             if (panelContacts) {
-                panelContacts.textContent = stats.total_contacts || 0;
+                // Afficher les messages non lus avec indicateur
+                const unreadCount = stats.unread_contacts || 0;
+                const totalCount = stats.total_contacts || 0;
+                if (unreadCount > 0) {
+                    panelContacts.innerHTML = `${totalCount} <span style="color: var(--green); font-size: 0.75em;">(${unreadCount} non lus)</span>`;
+                } else {
+                    panelContacts.textContent = totalCount;
+                }
             }
+            
+            // Mettre à jour le taux d'engagement
+            const satisfaction = document.getElementById('panel-satisfaction');
+            if (satisfaction) {
+                const engagement = stats.engagement_rate || 0;
+                satisfaction.textContent = `${engagement}%`;
+            }
+            
+            // Mettre à jour les vues totales
+            const totalViews = document.getElementById('panel-total-views');
+            if (totalViews) {
+                const views = stats.total_views || 0;
+                totalViews.textContent = views.toLocaleString('fr-FR');
+            }
+        } else {
+            console.error('Erreur lors du chargement des stats:', response.status);
         }
     } catch (error) {
         console.debug('Erreur lors du chargement des stats:', error);

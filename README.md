@@ -25,7 +25,7 @@ Developer Portfolio is a web template made for developers to present themselves 
 
 **Backend:** Python / Flask  
 **Frontend:** HTML5 / CSS3 / Jinja2 Templates  
-**Base de données:** MongoDB (local ou Atlas)  
+**Base de données:** SQLite  
 **Validation:** Utils personnalisés  
 **Tests:** unittest (Python)
 
@@ -124,11 +124,8 @@ Le projet utilise un fichier `.env` pour la configuration. Les variables princip
 - `PORTFOLIO_EMAIL` : Email de contact
 - `PORTFOLIO_DESCRIPTION` : Description du portfolio
 
-### Configuration MongoDB
-- `MONGO_URI` : URI de connexion MongoDB
-  - Local : `mongodb://localhost:27017/`
-  - Atlas : `mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority`
-- `MONGO_DB_NAME` : Nom de la base de données (défaut: portfolio_db)
+### Configuration Base de données
+- `SQLITE_DB_PATH` : Chemin vers le fichier SQLite (défaut: `portfolio.db`)
 
 ### Configuration Admin
 - `ADMIN_USERNAME` : Nom d'utilisateur pour se connecter à l'interface admin (défaut: admin)
@@ -150,20 +147,14 @@ Pour recevoir des notifications par email lors de nouveaux messages de contact :
 
 **Important :** Le fichier `.env` est ignoré par Git pour des raisons de sécurité. Ne commitez jamais vos clés secrètes !
 
-### Installation de MongoDB
+### Base de données SQLite
 
-**Option 1 : MongoDB Local**
-1. Téléchargez et installez MongoDB depuis [mongodb.com](https://www.mongodb.com/try/download/community)
-2. Démarrez le service MongoDB
-3. Utilisez dans `.env` : `MONGO_URI=mongodb://localhost:27017/`
+L'application utilise **SQLite** comme base de données, qui est intégrée à Python. Aucune installation supplémentaire n'est nécessaire !
 
-**Option 2 : MongoDB Atlas (Cloud)**
-1. Créez un compte sur [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Créez un cluster gratuit
-3. Obtenez votre URI de connexion
-4. Utilisez dans `.env` : `MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/...`
+**Configuration (optionnelle) :**
+- `SQLITE_DB_PATH` : Chemin vers le fichier de base de données (défaut: `portfolio.db`)
 
-**Note :** Si `MONGO_URI` n'est pas défini, l'application fonctionnera sans base de données MongoDB.
+**Note :** La base de données SQLite sera créée automatiquement au premier démarrage de l'application dans le fichier `portfolio.db` à la racine du projet.
 
 ## Deployment
 

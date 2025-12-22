@@ -106,9 +106,28 @@ except ImportError:
     print("Flask-Mail non installe - les emails ne seront pas envoyes. Installez avec: pip install Flask-Mail")
 
 # Fonctions utilitaires pour l'authentification
-def hash_password(password):
-    """Hash un mot de passe avec SHA256"""
-    return hashlib.sha256(password.encode()).hexdigest()
+# Utiliser bcrypt pour le hashage sécurisé des mots de passe
+try:
+    from utils.security import hash_password, check_password
+except ImportError:
+    # Fallback si le module n'existe pas
+    import bcrypt
+    def hash_password(password):
+        """Hash un mot de passe avec bcrypt"""
+        if not password:
+            raise ValueError("Le mot de passe ne peut pas être vide")
+        salt = bcrypt.gensalt(rounds=12)
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')
+    
+    def check_password(password, hashed):
+        """Vérifie un mot de passe avec bcrypt"""
+        if not password or not hashed:
+            return False
+        try:
+            return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+        except Exception:
+            return False
 
 def init_admin_user():
     """Initialise l'utilisateur admin par défaut si nécessaire"""
@@ -208,7 +227,7 @@ def index():
     skills = get_skills_data()
     partners = get_partners_data()
     
-    # Valeurs par défaut si MongoDB n'est pas disponible
+    # Valeurs par défaut si la base de données n'est pas disponible
     if not homepage_data:
         homepage_data = {
             "badge": app.config['PORTFOLIO_TITLE'],
@@ -263,9 +282,14 @@ def works():
                 ''', ('published',))
                 rows = cursor.fetchall()
                 projects = rows_to_list(rows)
-                # Convertir id en string pour compatibilité
+                # Convertir id en string pour compatibilité et nettoyer les données
                 for project in projects:
                     project['_id'] = str(project['id'])
+                    # Convertir featured en booléen
+                    project['featured'] = bool(project.get('featured', 0))
+                    # S'assurer que additional_images est une chaîne
+                    if 'additional_images' not in project:
+                        project['additional_images'] = ''
     except Exception as e:
         print(f"Erreur lors de la récupération des projets: {e}")
     
@@ -556,7 +580,18 @@ def admin_login():
                 
                 if admin_user:
                     admin_user_dict = row_to_dict(admin_user)
-                    if admin_user_dict['password'] == hash_password(password):
+                    # Utiliser check_password pour gérer bcrypt et migration depuis SHA256
+                    stored_password = admin_user_dict['password']
+                    
+                    # Vérifier avec bcrypt
+                    if check_password(password, stored_password):
+                        # Si le mot de passe est en SHA256 (ancien système), le migrer vers bcrypt
+                        if len(stored_password) == 64 and re.match(r'^[a-f0-9]{64}$', stored_password):
+                            # Migration automatique vers bcrypt
+                            new_hash = hash_password(password)
+                            cursor.execute('UPDATE admin_users SET password = ? WHERE id = ?', 
+                                         (new_hash, admin_user_dict['id']))
+                            conn.commit()
                         # Mettre à jour la dernière connexion
                         cursor.execute('''
                             UPDATE admin_users 
@@ -613,6 +648,65 @@ def admin_logout():
 def admin():
     """Page d'administration"""
     return render_template('admin.html', admin_username=session.get('admin_username', 'Admin'))
+
+# ========== Route API pour les Statistiques ==========
+@app.route('/api/analytics/stats', methods=['GET'])
+@admin_required
+def get_analytics_stats():
+    """Récupère les statistiques globales"""
+    try:
+        days = int(request.args.get('days', 30))
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({
+                    'error': 'Base de données non disponible',
+                    'total_views': 0,
+                    'total_visitors': 0,
+                    'total_projects': 0,
+                    'total_services': 0,
+                    'total_contacts': 0,
+                    'unread_contacts': 0,
+                    'engagement_rate': 0,
+                    'views_by_day': [],
+                    'visitors_by_day': [],
+                    'top_projects': []
+                }), 503
+            
+            # Importer la fonction get_statistics
+            from utils.analytics import get_statistics
+            stats = get_statistics(conn, days)
+            
+            # Ajouter les messages non lus
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM contacts WHERE read = 0')
+            unread_contacts = cursor.fetchone()[0]
+            stats['unread_contacts'] = unread_contacts
+            
+            # Ajouter les projets par statut
+            cursor.execute('SELECT status, COUNT(*) FROM projects GROUP BY status')
+            projects_by_status = {}
+            for row in cursor.fetchall():
+                projects_by_status[row[0]] = row[1]
+            stats['projects_by_status'] = projects_by_status
+            
+            return jsonify(stats), 200
+            
+    except Exception as e:
+        app.logger.error(f"Erreur get_analytics_stats: {e}")
+        return jsonify({
+            'error': str(e),
+            'total_views': 0,
+            'total_visitors': 0,
+            'total_projects': 0,
+            'total_services': 0,
+            'total_contacts': 0,
+            'unread_contacts': 0,
+            'engagement_rate': 0,
+            'views_by_day': [],
+            'visitors_by_day': [],
+            'top_projects': []
+        }), 500
 
 # ========== API Routes pour Homepage ==========
 @app.route('/api/homepage', methods=['GET'])
@@ -1043,6 +1137,9 @@ def get_projects_api():
             for project in projects:
                 project['_id'] = str(project['id'])
                 project['order'] = project.get('order_index', 0)
+                project['featured'] = bool(project.get('featured', 0))
+                if 'additional_images' not in project:
+                    project['additional_images'] = ''
                 del project['id']
                 if 'order_index' in project:
                     del project['order_index']
@@ -1077,6 +1174,7 @@ def create_project_api():
             'description': sanitize_input(data.get('description', ''), max_length=1000),
             'technologies': sanitize_input(data.get('technologies', ''), max_length=200),
             'image': sanitize_input(data.get('image', ''), max_length=500),
+            'additional_images': sanitize_input(data.get('additional_images', ''), max_length=2000),
             'link': sanitize_input(data.get('link', ''), max_length=500),
             'github_link': sanitize_input(data.get('github_link', ''), max_length=500),
             'status': sanitize_input(data.get('status', 'published'), max_length=50),
@@ -1106,14 +1204,15 @@ def create_project_api():
             
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO projects (title, description, technologies, image, link, github_link,
+                INSERT INTO projects (title, description, technologies, image, additional_images, link, github_link,
                                      status, order_index, featured, views, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 cleaned_data['title'],
                 cleaned_data['description'],
                 cleaned_data['technologies'],
                 cleaned_data.get('image', ''),
+                cleaned_data.get('additional_images', ''),
                 cleaned_data.get('link', ''),
                 cleaned_data.get('github_link', ''),
                 cleaned_data['status'],
@@ -1151,7 +1250,7 @@ def update_project_api(project_id):
             
             max_lengths = {
                 'title': 200, 'description': 1000, 'technologies': 200,
-                'image': 500, 'link': 500, 'github_link': 500, 'status': 50
+                'image': 500, 'additional_images': 2000, 'link': 500, 'github_link': 500, 'status': 50
             }
             
             for key, value in data.items():
@@ -1197,6 +1296,36 @@ def update_project_api(project_id):
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
         app.logger.error(f"Erreur update_project_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/projects/<project_id>', methods=['GET'])
+def get_project_api(project_id):
+    """Récupère un projet spécifique"""
+    try:
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM projects WHERE id = ?', (int(project_id),))
+            row = cursor.fetchone()
+            
+            if not row:
+                return jsonify({'error': 'Projet non trouvé'}), 404
+            
+            project = row_to_dict(row)
+            project['_id'] = str(project['id'])
+            project['order'] = project.get('order_index', 0)
+            project['featured'] = bool(project.get('featured', 0))
+            if 'additional_images' not in project:
+                project['additional_images'] = ''
+            del project['id']
+            if 'order_index' in project:
+                del project['order_index']
+            
+            return jsonify(project), 200
+    except Exception as e:
+        app.logger.error(f"Erreur get_project_api: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
@@ -1474,6 +1603,408 @@ def delete_contact_api(contact_id):
         return jsonify({'error': str(e)}), 500
 
 # Les fonctions de validation sont importées depuis utils.validators
+
+# ========== Routes API pour la Gestion du Profil Admin ==========
+@app.route('/api/admin/profile', methods=['GET'])
+@admin_required
+def get_admin_profile():
+    """Récupère les informations du profil de l'administrateur connecté"""
+    try:
+        admin_id = session.get('admin_id')
+        if not admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, username, email, full_name, created_at, last_login FROM admin_users WHERE id = ?', (int(admin_id),))
+            admin_user = cursor.fetchone()
+            
+            if not admin_user:
+                return jsonify({'error': 'Utilisateur non trouvé'}), 404
+            
+            profile_data = row_to_dict(admin_user)
+            # Formater les dates
+            if profile_data.get('created_at'):
+                profile_data['created_at'] = profile_data['created_at'].isoformat() if hasattr(profile_data['created_at'], 'isoformat') else str(profile_data['created_at'])
+            if profile_data.get('last_login'):
+                profile_data['last_login'] = profile_data['last_login'].isoformat() if hasattr(profile_data['last_login'], 'isoformat') else str(profile_data['last_login'])
+            
+            return jsonify(profile_data), 200
+    except Exception as e:
+        app.logger.error(f"Erreur get_admin_profile: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/profile', methods=['PUT'])
+@admin_required
+def update_admin_profile():
+    """Met à jour les informations du profil de l'administrateur connecté"""
+    try:
+        admin_id = session.get('admin_id')
+        if not admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes'}), 400
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            updates = []
+            values = []
+            
+            # Valider et mettre à jour l'email si fourni
+            if 'email' in data:
+                email = sanitize_input(data['email'], max_length=100)
+                if email and not validate_email(email):
+                    return jsonify({'error': 'Format d\'email invalide'}), 400
+                updates.append('email = ?')
+                values.append(email if email else None)
+            
+            # Mettre à jour le nom complet si fourni
+            if 'full_name' in data:
+                full_name = sanitize_input(data['full_name'], max_length=100)
+                updates.append('full_name = ?')
+                values.append(full_name if full_name else None)
+            
+            if not updates:
+                return jsonify({'error': 'Aucune donnée à mettre à jour'}), 400
+            
+            values.append(int(admin_id))
+            
+            cursor.execute(f'''
+                UPDATE admin_users SET {', '.join(updates)}
+                WHERE id = ?
+            ''', values)
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                app.logger.info(f"Profil admin mis à jour (ID: {admin_id})")
+                return jsonify({'success': True, 'message': 'Profil mis à jour avec succès'}), 200
+            return jsonify({'error': 'Aucune modification effectuée'}), 400
+    except Exception as e:
+        app.logger.error(f"Erreur update_admin_profile: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/profile/password', methods=['PUT'])
+@admin_required
+def change_admin_password():
+    """Change le mot de passe de l'administrateur connecté"""
+    try:
+        admin_id = session.get('admin_id')
+        if not admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes'}), 400
+        
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        
+        # Validation
+        if not current_password or not new_password or not confirm_password:
+            return jsonify({'error': 'Tous les champs sont requis'}), 400
+        
+        if new_password != confirm_password:
+            return jsonify({'error': 'Les nouveaux mots de passe ne correspondent pas'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères'}), 400
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            # Récupérer l'utilisateur et vérifier le mot de passe actuel
+            cursor.execute('SELECT password FROM admin_users WHERE id = ?', (int(admin_id),))
+            user_row = cursor.fetchone()
+            
+            if not user_row:
+                return jsonify({'error': 'Utilisateur non trouvé'}), 404
+            
+            stored_password = user_row[0]
+            
+            # Vérifier le mot de passe actuel
+            if not check_password(current_password, stored_password):
+                return jsonify({'error': 'Mot de passe actuel incorrect'}), 401
+            
+            # Hasher le nouveau mot de passe
+            new_password_hash = hash_password(new_password)
+            
+            # Mettre à jour le mot de passe
+            cursor.execute('UPDATE admin_users SET password = ? WHERE id = ?', (new_password_hash, int(admin_id)))
+            conn.commit()
+            
+            app.logger.info(f"Mot de passe changé pour l'admin (ID: {admin_id})")
+            return jsonify({'success': True, 'message': 'Mot de passe changé avec succès'}), 200
+    except Exception as e:
+        app.logger.error(f"Erreur change_admin_password: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/profile/login-history', methods=['GET'])
+@admin_required
+def get_login_history():
+    """Récupère l'historique des connexions de l'administrateur connecté"""
+    try:
+        admin_id = session.get('admin_id')
+        username = session.get('admin_username')
+        if not admin_id or not username:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        limit = request.args.get('limit', type=int) or 50
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, username, success, ip_address, user_agent, login_time
+                FROM login_history
+                WHERE username = ?
+                ORDER BY login_time DESC
+                LIMIT ?
+            ''', (username, limit))
+            
+            rows = cursor.fetchall()
+            history = rows_to_list(rows)
+            
+            # Formater les données
+            for entry in history:
+                entry['success'] = bool(entry.get('success', 0))
+                if entry.get('login_time'):
+                    entry['login_time'] = entry['login_time'].isoformat() if hasattr(entry['login_time'], 'isoformat') else str(entry['login_time'])
+            
+            return jsonify(history), 200
+    except Exception as e:
+        app.logger.error(f"Erreur get_login_history: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ========== Routes API pour la Gestion des Administrateurs ==========
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def get_admin_users():
+    """Récupère la liste de tous les administrateurs"""
+    try:
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({
+                    'error': 'Base de données non disponible',
+                    'message': 'La connexion à la base de données n\'est pas disponible.',
+                    'data': []
+                }), 503
+            
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, username, email, full_name, created_at, last_login 
+                FROM admin_users 
+                ORDER BY created_at DESC
+            ''')
+            
+            rows = cursor.fetchall()
+            admins = rows_to_list(rows)
+            
+            # Formater les données
+            for admin in admins:
+                admin['_id'] = str(admin['id'])
+                del admin['id']
+                admin['created_at'] = admin['created_at'].isoformat() if hasattr(admin['created_at'], 'isoformat') else str(admin['created_at'])
+                if admin.get('last_login'):
+                    admin['last_login'] = admin['last_login'].isoformat() if hasattr(admin['last_login'], 'isoformat') else str(admin['last_login'])
+            
+            return jsonify(admins), 200
+    except Exception as e:
+        app.logger.error(f"Erreur get_admin_users: {e}")
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f'Erreur lors de la récupération des administrateurs: {str(e)}',
+            'data': []
+        }), 500
+
+@app.route('/api/admin/users', methods=['POST'])
+@admin_required
+def create_admin_user():
+    """Crée un nouvel administrateur"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes'}), 400
+        
+        # Validation des champs requis
+        username = sanitize_input(data.get('username', ''), max_length=50)
+        password = data.get('password', '').strip()
+        email = sanitize_input(data.get('email', ''), max_length=100) if data.get('email') else None
+        full_name = sanitize_input(data.get('full_name', ''), max_length=100) if data.get('full_name') else None
+        
+        # Validation
+        if not username or len(username) < 3:
+            return jsonify({'error': 'Le nom d\'utilisateur doit contenir au moins 3 caractères'}), 400
+        
+        if not password or len(password) < 6:
+            return jsonify({'error': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
+        
+        if email and not validate_email(email):
+            return jsonify({'error': 'Format d\'email invalide'}), 400
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            
+            # Vérifier si le nom d'utilisateur existe déjà
+            cursor.execute('SELECT id FROM admin_users WHERE username = ?', (username,))
+            if cursor.fetchone():
+                return jsonify({'error': 'Ce nom d\'utilisateur existe déjà'}), 400
+            
+            # Hasher le mot de passe
+            password_hash = hash_password(password)
+            
+            # Créer l'administrateur
+            cursor.execute('''
+                INSERT INTO admin_users (username, password, email, full_name, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (username, password_hash, email, full_name, datetime.now()))
+            
+            admin_id = cursor.lastrowid
+            conn.commit()
+            
+            app.logger.info(f"Nouvel administrateur créé: {username} (ID: {admin_id})")
+            return jsonify({
+                'success': True,
+                'id': str(admin_id),
+                'message': 'Administrateur créé avec succès'
+            }), 201
+            
+    except Exception as e:
+        app.logger.error(f"Erreur create_admin_user: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/users/<admin_id>', methods=['PUT'])
+@admin_required
+def update_admin_user(admin_id):
+    """Met à jour un administrateur"""
+    try:
+        current_admin_id = session.get('admin_id')
+        if not current_admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        # Empêcher un admin de se modifier lui-même via cette route (utiliser /api/admin/profile)
+        if str(current_admin_id) == str(admin_id):
+            return jsonify({'error': 'Utilisez la section Profil pour modifier vos propres informations'}), 400
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes'}), 400
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            
+            # Vérifier que l'admin existe
+            cursor.execute('SELECT id FROM admin_users WHERE id = ?', (int(admin_id),))
+            if not cursor.fetchone():
+                return jsonify({'error': 'Administrateur non trouvé'}), 404
+            
+            updates = []
+            values = []
+            
+            # Mettre à jour l'email si fourni
+            if 'email' in data:
+                email = sanitize_input(data['email'], max_length=100) if data['email'] else None
+                if email and not validate_email(email):
+                    return jsonify({'error': 'Format d\'email invalide'}), 400
+                updates.append('email = ?')
+                values.append(email)
+            
+            # Mettre à jour le nom complet si fourni
+            if 'full_name' in data:
+                full_name = sanitize_input(data['full_name'], max_length=100) if data['full_name'] else None
+                updates.append('full_name = ?')
+                values.append(full_name)
+            
+            # Mettre à jour le mot de passe si fourni
+            if 'password' in data and data['password']:
+                password = data['password'].strip()
+                if len(password) < 6:
+                    return jsonify({'error': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
+                password_hash = hash_password(password)
+                updates.append('password = ?')
+                values.append(password_hash)
+            
+            if not updates:
+                return jsonify({'error': 'Aucune donnée à mettre à jour'}), 400
+            
+            values.append(int(admin_id))
+            
+            cursor.execute(f'''
+                UPDATE admin_users SET {', '.join(updates)}
+                WHERE id = ?
+            ''', values)
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                app.logger.info(f"Administrateur mis à jour (ID: {admin_id})")
+                return jsonify({'success': True, 'message': 'Administrateur mis à jour avec succès'}), 200
+            return jsonify({'error': 'Aucune modification effectuée'}), 400
+            
+    except Exception as e:
+        app.logger.error(f"Erreur update_admin_user: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/users/<admin_id>', methods=['DELETE'])
+@admin_required
+def delete_admin_user(admin_id):
+    """Supprime un administrateur"""
+    try:
+        current_admin_id = session.get('admin_id')
+        if not current_admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        # Empêcher un admin de se supprimer lui-même
+        if str(current_admin_id) == str(admin_id):
+            return jsonify({'error': 'Vous ne pouvez pas supprimer votre propre compte'}), 400
+        
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'error': 'Base de données non disponible'}), 503
+            
+            cursor = conn.cursor()
+            
+            # Vérifier que l'admin existe
+            cursor.execute('SELECT username FROM admin_users WHERE id = ?', (int(admin_id),))
+            admin_row = cursor.fetchone()
+            if not admin_row:
+                return jsonify({'error': 'Administrateur non trouvé'}), 404
+            
+            # Vérifier qu'il reste au moins un administrateur
+            cursor.execute('SELECT COUNT(*) FROM admin_users')
+            admin_count = cursor.fetchone()[0]
+            if admin_count <= 1:
+                return jsonify({'error': 'Impossible de supprimer le dernier administrateur'}), 400
+            
+            # Supprimer l'administrateur
+            cursor.execute('DELETE FROM admin_users WHERE id = ?', (int(admin_id),))
+            conn.commit()
+            
+            if cursor.rowcount > 0:
+                app.logger.info(f"Administrateur supprimé (ID: {admin_id}, Username: {admin_row[0]})")
+                return jsonify({'success': True, 'message': 'Administrateur supprimé avec succès'}), 200
+            return jsonify({'error': 'Administrateur non trouvé'}), 404
+            
+    except Exception as e:
+        app.logger.error(f"Erreur delete_admin_user: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # ========== Route de diagnostic SQLite ==========
 @app.route('/api/admin/mongo-status', methods=['GET'])

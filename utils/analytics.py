@@ -2,69 +2,77 @@
 Module de gestion des analytics et statistiques
 """
 from datetime import datetime, timedelta
-from pymongo import MongoClient
-from bson import ObjectId
 import hashlib
+from database import get_db, row_to_dict, rows_to_list
 
-def track_page_view(db, page_path, ip_address, user_agent, referer=None):
+def track_page_view(conn, page_path, ip_address, user_agent, referer=None):
     """
     Enregistre une vue de page
     
     Args:
-        db: Instance de la base de données MongoDB
+        conn: Connexion SQLite
         page_path: Chemin de la page visitée
         ip_address: Adresse IP du visiteur
         user_agent: User-Agent du navigateur
         referer: Page référente (optionnel)
     """
-    if db is None:
+    if conn is None:
         return
     
     try:
-        analytics_collection = db.analytics
-        analytics_collection.insert_one({
-            'type': 'page_view',
-            'page_path': page_path,
-            'ip_address': ip_address,
-            'user_agent': user_agent[:500] if user_agent else '',
-            'referer': referer[:500] if referer else '',
-            'timestamp': datetime.now(),
-            'date': datetime.now().date()
-        })
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO analytics (type, page_path, ip_address, user_agent, referer, timestamp, date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            'page_view',
+            page_path,
+            ip_address,
+            user_agent[:500] if user_agent else '',
+            referer[:500] if referer else '',
+            datetime.now(),
+            datetime.now().date()
+        ))
+        conn.commit()
     except Exception as e:
         print(f"Erreur lors du tracking de la vue de page: {e}")
 
-def track_project_view(db, project_id, ip_address, user_agent):
+def track_project_view(conn, project_id, ip_address, user_agent):
     """
     Enregistre une vue d'un projet spécifique
     
     Args:
-        db: Instance de la base de données MongoDB
+        conn: Connexion SQLite
         project_id: ID du projet visualisé
         ip_address: Adresse IP du visiteur
         user_agent: User-Agent du navigateur
     """
-    if db is None:
+    if conn is None:
         return
     
     try:
+        cursor = conn.cursor()
         # Enregistrer dans analytics
-        analytics_collection = db.analytics
-        analytics_collection.insert_one({
-            'type': 'project_view',
-            'project_id': project_id,
-            'ip_address': ip_address,
-            'user_agent': user_agent[:500] if user_agent else '',
-            'timestamp': datetime.now(),
-            'date': datetime.now().date()
-        })
+        cursor.execute('''
+            INSERT INTO analytics (type, project_id, ip_address, user_agent, timestamp, date)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            'project_view',
+            int(project_id),
+            ip_address,
+            user_agent[:500] if user_agent else '',
+            datetime.now(),
+            datetime.now().date()
+        ))
         
         # Incrémenter le compteur de vues du projet
-        projects_collection = db.projects
-        projects_collection.update_one(
-            {"_id": ObjectId(project_id)},
-            {"$inc": {"views": 1}}
-        )
+        cursor.execute('''
+            UPDATE projects 
+            SET views = views + 1 
+            WHERE id = ?
+        ''', (int(project_id),))
+        
+        conn.commit()
     except Exception as e:
         print(f"Erreur lors du tracking de la vue de projet: {e}")
 
@@ -82,57 +90,61 @@ def get_visitor_id(ip_address, user_agent):
     combined = f"{ip_address}_{user_agent}"
     return hashlib.md5(combined.encode()).hexdigest()
 
-def track_visitor(db, ip_address, user_agent, page_path):
+def track_visitor(conn, ip_address, user_agent, page_path):
     """
     Enregistre un visiteur unique
     
     Args:
-        db: Instance de la base de données MongoDB
+        conn: Connexion SQLite
         ip_address: Adresse IP du visiteur
         user_agent: User-Agent du navigateur
         page_path: Page visitée
     """
-    if db is None:
+    if conn is None:
         return
     
     try:
         visitor_id = get_visitor_id(ip_address, user_agent)
         today = datetime.now().date()
         
-        analytics_collection = db.analytics
+        cursor = conn.cursor()
         
         # Vérifier si ce visiteur a déjà été compté aujourd'hui
-        existing_visit = analytics_collection.find_one({
-            'type': 'visitor',
-            'visitor_id': visitor_id,
-            'date': today
-        })
+        cursor.execute('''
+            SELECT * FROM analytics 
+            WHERE type = ? AND visitor_id = ? AND date = ?
+        ''', ('visitor', visitor_id, today))
+        existing_visit = cursor.fetchone()
         
         if not existing_visit:
             # Nouveau visiteur pour aujourd'hui
-            analytics_collection.insert_one({
-                'type': 'visitor',
-                'visitor_id': visitor_id,
-                'ip_address': ip_address,
-                'user_agent': user_agent[:500] if user_agent else '',
-                'first_visit': datetime.now(),
-                'date': today
-            })
+            cursor.execute('''
+                INSERT INTO analytics (type, visitor_id, ip_address, user_agent, timestamp, date)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                'visitor',
+                visitor_id,
+                ip_address,
+                user_agent[:500] if user_agent else '',
+                datetime.now(),
+                today
+            ))
+            conn.commit()
     except Exception as e:
         print(f"Erreur lors du tracking du visiteur: {e}")
 
-def get_statistics(db, days=30):
+def get_statistics(conn, days=30):
     """
     Récupère les statistiques pour les N derniers jours
     
     Args:
-        db: Instance de la base de données MongoDB
+        conn: Connexion SQLite
         days: Nombre de jours à analyser (défaut: 30)
     
     Returns:
         dict: Statistiques agrégées
     """
-    if db is None:
+    if conn is None:
         return {
             'total_views': 0,
             'total_visitors': 0,
@@ -146,49 +158,56 @@ def get_statistics(db, days=30):
         }
     
     try:
-        analytics_collection = db.analytics
-        projects_collection = db.projects
-        services_collection = db.services
-        contacts_collection = db.contacts
+        cursor = conn.cursor()
         
         # Date de début
         start_date = datetime.now() - timedelta(days=days)
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         
         # Total des vues de pages
-        total_views = analytics_collection.count_documents({
-            'type': 'page_view',
-            'timestamp': {'$gte': start_date}
-        })
+        cursor.execute('''
+            SELECT COUNT(*) FROM analytics 
+            WHERE type = ? AND timestamp >= ?
+        ''', ('page_view', start_date))
+        total_views = cursor.fetchone()[0]
         
         # Total des visiteurs uniques
-        total_visitors = analytics_collection.count_documents({
-            'type': 'visitor',
-            'date': {'$gte': start_date.date()}
-        })
+        cursor.execute('''
+            SELECT COUNT(*) FROM analytics 
+            WHERE type = ? AND date >= ?
+        ''', ('visitor', start_date.date()))
+        total_visitors = cursor.fetchone()[0]
         
         # Total des projets publiés
-        total_projects = projects_collection.count_documents({'status': 'published'})
+        cursor.execute('SELECT COUNT(*) FROM projects WHERE status = ?', ('published',))
+        total_projects = cursor.fetchone()[0]
         
         # Total des services
-        total_services = services_collection.count_documents({})
+        cursor.execute('SELECT COUNT(*) FROM services')
+        total_services = cursor.fetchone()[0]
         
         # Total des contacts
-        total_contacts = contacts_collection.count_documents({})
+        cursor.execute('SELECT COUNT(*) FROM contacts')
+        total_contacts = cursor.fetchone()[0]
         
-        # Vues par jour (30 derniers jours)
+        # Vues par jour (N derniers jours)
         views_by_day = []
         visitors_by_day = []
         for i in range(days):
             date = (datetime.now() - timedelta(days=i)).date()
-            views_count = analytics_collection.count_documents({
-                'type': 'page_view',
-                'date': date
-            })
-            visitors_count = analytics_collection.count_documents({
-                'type': 'visitor',
-                'date': date
-            })
+            
+            cursor.execute('''
+                SELECT COUNT(*) FROM analytics 
+                WHERE type = ? AND date = ?
+            ''', ('page_view', date))
+            views_count = cursor.fetchone()[0]
+            
+            cursor.execute('''
+                SELECT COUNT(*) FROM analytics 
+                WHERE type = ? AND date = ?
+            ''', ('visitor', date))
+            visitors_count = cursor.fetchone()[0]
+            
             views_by_day.append({
                 'date': date.isoformat(),
                 'views': views_count
@@ -203,14 +222,19 @@ def get_statistics(db, days=30):
         visitors_by_day.reverse()
         
         # Top projets par vues
-        top_projects = list(projects_collection.find(
-            {'status': 'published'},
-            {'title': 1, 'views': 1, '_id': 1}
-        ).sort('views', -1).limit(5))
+        cursor.execute('''
+            SELECT id, title, views FROM projects 
+            WHERE status = ? 
+            ORDER BY views DESC 
+            LIMIT 5
+        ''', ('published',))
+        rows = cursor.fetchall()
+        top_projects = rows_to_list(rows)
         
         for project in top_projects:
-            project['_id'] = str(project['_id'])
+            project['_id'] = str(project['id'])
             project['views'] = project.get('views', 0)
+            del project['id']
         
         # Calcul du taux d'engagement
         # Engagement = (visiteurs qui ont visité plusieurs pages) / (total visiteurs) * 100
@@ -246,36 +270,39 @@ def get_statistics(db, days=30):
             'top_projects': []
         }
 
-def get_project_statistics(db, project_id):
+def get_project_statistics(conn, project_id):
     """
     Récupère les statistiques d'un projet spécifique
     
     Args:
-        db: Instance de la base de données MongoDB
+        conn: Connexion SQLite
         project_id: ID du projet
     
     Returns:
         dict: Statistiques du projet
     """
-    if db is None:
+    if conn is None:
         return {'views': 0, 'views_by_day': []}
     
     try:
-        analytics_collection = db.analytics
-        projects_collection = db.projects
+        cursor = conn.cursor()
         
-        project = projects_collection.find_one({"_id": ObjectId(project_id)})
-        total_views = project.get('views', 0) if project else 0
+        # Récupérer le projet et ses vues
+        cursor.execute('SELECT views FROM projects WHERE id = ?', (int(project_id),))
+        project_row = cursor.fetchone()
+        total_views = project_row[0] if project_row else 0
         
         # Vues par jour (30 derniers jours)
         views_by_day = []
         for i in range(30):
             date = (datetime.now() - timedelta(days=i)).date()
-            views_count = analytics_collection.count_documents({
-                'type': 'project_view',
-                'project_id': project_id,
-                'date': date
-            })
+            
+            cursor.execute('''
+                SELECT COUNT(*) FROM analytics 
+                WHERE type = ? AND project_id = ? AND date = ?
+            ''', ('project_view', int(project_id), date))
+            views_count = cursor.fetchone()[0]
+            
             views_by_day.append({
                 'date': date.isoformat(),
                 'views': views_count
@@ -290,5 +317,3 @@ def get_project_statistics(db, project_id):
     except Exception as e:
         print(f"Erreur lors de la récupération des statistiques du projet: {e}")
         return {'views': 0, 'views_by_day': []}
-
-
