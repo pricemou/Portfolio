@@ -24,17 +24,31 @@ async function handle401Error() {
 
 // ========== Navigation entre sections ==========
 document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier que les éléments nécessaires existent
     const menuItems = document.querySelectorAll('.menu-item[data-section]');
+    
+    if (menuItems.length === 0) {
+        console.warn('Aucun élément de menu avec data-section trouvé');
+        return;
+    }
+    
     menuItems.forEach(item => {
         item.addEventListener('click', function(e) {
-            if (this.getAttribute('href') && this.getAttribute('href').startsWith('#')) {
+            const href = this.getAttribute('href');
+            if (href && href.startsWith('#')) {
                 e.preventDefault();
-                const section = this.getAttribute('data-section');
-                showSection(section);
+                e.stopPropagation(); // Empêcher la propagation pour éviter les conflits
                 
-                // Mettre à jour l'état actif
-                menuItems.forEach(mi => mi.classList.remove('active'));
-                this.classList.add('active');
+                const section = this.getAttribute('data-section');
+                if (section && typeof showSection === 'function') {
+                    showSection(section);
+                    
+                    // Mettre à jour l'état actif
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    this.classList.add('active');
+                } else {
+                    console.error('Section non trouvée ou showSection non définie:', section);
+                }
             }
         });
     });
@@ -63,19 +77,40 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function showSection(sectionName) {
+    if (!sectionName) {
+        console.error('showSection appelée sans nom de section');
+        return;
+    }
+    
     // Masquer toutes les sections
-    document.querySelectorAll('.content-section').forEach(section => {
+    const allSections = document.querySelectorAll('.content-section');
+    if (allSections.length === 0) {
+        console.warn('Aucune section avec la classe content-section trouvée');
+        return;
+    }
+    
+    allSections.forEach(section => {
         section.style.display = 'none';
         section.classList.remove('active-section');
     });
 
     // Afficher la section demandée
     const targetSection = document.getElementById(`section-${sectionName}`);
-    if (targetSection) {
-        targetSection.style.display = 'block';
-        targetSection.classList.add('active-section');
-        document.getElementById('current-page').textContent = 
-            document.querySelector(`[data-section="${sectionName}"]`).getAttribute('aria-label') || sectionName;
+    if (!targetSection) {
+        console.error(`Section non trouvée: section-${sectionName}`);
+        return;
+    }
+    
+    targetSection.style.display = 'block';
+    targetSection.classList.add('active-section');
+    
+    // Mettre à jour le titre de la page
+    const pageTitleEl = document.getElementById('current-page');
+    if (pageTitleEl) {
+        const menuItem = document.querySelector(`[data-section="${sectionName}"]`);
+        const pageTitle = menuItem ? menuItem.getAttribute('aria-label') || sectionName : sectionName;
+        pageTitleEl.textContent = pageTitle;
+    }
         
         // Charger les données si nécessaire
         if (sectionName === 'projects') {

@@ -143,9 +143,45 @@ if mongo_db is not None:
     init_database(mongo_db)
     init_admin_user(mongo_db)
     app.config['MONGO_DB'] = mongo_db
+    app.config['MONGO_CLIENT'] = mongo_client
 else:
     app.config['MONGO_DB'] = None
+    app.config['MONGO_CLIENT'] = None
     print("⚠️  L'application fonctionnera sans base de données MongoDB")
+
+def ensure_mongo_connection():
+    """
+    Vérifie et réinitialise la connexion MongoDB si nécessaire
+    Retourne la base de données MongoDB ou None
+    """
+    mongo_db = app.config.get('MONGO_DB')
+    mongo_client = app.config.get('MONGO_CLIENT')
+    
+    # Si on a déjà une connexion, tester si elle fonctionne encore
+    if mongo_db is not None and mongo_client is not None:
+        try:
+            # Tester la connexion
+            mongo_client.admin.command('ping')
+            return mongo_db
+        except Exception as e:
+            app.logger.warning(f"Connexion MongoDB perdue, tentative de reconnexion: {e}")
+            # La connexion est perdue, essayer de se reconnecter
+            pass
+    
+    # Essayer de se reconnecter
+    try:
+        new_client, new_db = get_mongo_client()
+        if new_db is not None:
+            app.config['MONGO_DB'] = new_db
+            app.config['MONGO_CLIENT'] = new_client
+            app.logger.info("✅ Reconnexion MongoDB réussie")
+            return new_db
+        else:
+            app.logger.error("❌ Impossible de se reconnecter à MongoDB")
+            return None
+    except Exception as e:
+        app.logger.error(f"❌ Erreur lors de la reconnexion MongoDB: {e}")
+        return None
 
 def get_homepage_data(db):
     """Récupère les données de la page d'accueil depuis MongoDB"""
@@ -589,9 +625,10 @@ def admin():
 def get_homepage_api():
     """Récupère les données de la page d'accueil"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
             # Retourner des données par défaut si MongoDB n'est pas disponible
+            app.logger.warning("MongoDB non disponible pour get_homepage_api")
             return jsonify({
                 "badge": app.config['PORTFOLIO_TITLE'],
                 "title_line1": "De l'idée à la donnée.",
@@ -675,9 +712,10 @@ def update_homepage_api():
 def get_skills_api():
     """Récupère toutes les compétences"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
             # Retourner un tableau vide si MongoDB n'est pas disponible
+            app.logger.warning("MongoDB non disponible pour get_skills_api")
             return jsonify([])
         
         skills = get_skills_data(mongo_db)
@@ -738,11 +776,11 @@ def create_skill_api():
 @admin_required
 def update_skill_api(skill_id):
     """Met à jour une compétence"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'MongoDB non disponible'}), 500
-    
     try:
+        mongo_db = ensure_mongo_connection()
+        if mongo_db is None:
+            app.logger.error("MongoDB non disponible pour update_skill_api")
+            return jsonify({'error': 'MongoDB non disponible'}), 500
         data = request.get_json()
         result = mongo_db.skills.update_one(
             {"_id": ObjectId(skill_id)},
@@ -758,9 +796,10 @@ def update_skill_api(skill_id):
 @admin_required
 def delete_skill_api(skill_id):
     """Supprime une compétence"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'MongoDB non disponible'}), 500
+        mongo_db = ensure_mongo_connection()
+        if mongo_db is None:
+            app.logger.error("MongoDB non disponible pour update_homepage_api")
+            return jsonify({'error': 'MongoDB non disponible'}), 500
     
     try:
         result = mongo_db.skills.delete_one({"_id": ObjectId(skill_id)})
@@ -775,9 +814,10 @@ def delete_skill_api(skill_id):
 def get_partners_api():
     """Récupère tous les partenaires"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
             # Retourner un tableau vide si MongoDB n'est pas disponible
+            app.logger.warning("MongoDB non disponible pour get_partners_api")
             return jsonify([])
         
         partners = get_partners_data(mongo_db)
@@ -840,9 +880,10 @@ def create_partner_api():
 @admin_required
 def update_partner_api(partner_id):
     """Met à jour un partenaire"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'MongoDB non disponible'}), 500
+        mongo_db = ensure_mongo_connection()
+        if mongo_db is None:
+            app.logger.error("MongoDB non disponible pour update_homepage_api")
+            return jsonify({'error': 'MongoDB non disponible'}), 500
     
     try:
         data = request.get_json()
@@ -860,9 +901,10 @@ def update_partner_api(partner_id):
 @admin_required
 def delete_partner_api(partner_id):
     """Supprime un partenaire"""
-    mongo_db = app.config.get('MONGO_DB')
-    if mongo_db is None:
-        return jsonify({'error': 'MongoDB non disponible'}), 500
+        mongo_db = ensure_mongo_connection()
+        if mongo_db is None:
+            app.logger.error("MongoDB non disponible pour update_homepage_api")
+            return jsonify({'error': 'MongoDB non disponible'}), 500
     
     try:
         result = mongo_db.partners.delete_one({"_id": ObjectId(partner_id)})
@@ -877,8 +919,9 @@ def delete_partner_api(partner_id):
 def get_projects_api():
     """Récupère la liste des projets"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
+            app.logger.warning("MongoDB non disponible pour get_projects_api")
             return jsonify([])
         
         projects = list(mongo_db.projects.find().sort("created_at", -1))
@@ -1042,8 +1085,9 @@ def delete_project_api(project_id):
 def get_services_api():
     """Récupère la liste des services"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
+            app.logger.warning("MongoDB non disponible pour get_services_api")
             return jsonify([])
         
         services = list(mongo_db.services.find().sort("order", 1).sort("created_at", -1))
@@ -1173,8 +1217,9 @@ def delete_service_api(service_id):
 def get_contacts_api():
     """Récupère la liste des messages de contact"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
+            app.logger.warning("MongoDB non disponible pour get_contacts_api")
             return jsonify([])
         
         # Récupérer les paramètres de filtrage
@@ -1233,8 +1278,9 @@ def mark_contact_read_api(contact_id):
 def delete_contact_api(contact_id):
     """Supprime un message de contact"""
     try:
-        mongo_db = app.config.get('MONGO_DB')
+        mongo_db = ensure_mongo_connection()
         if mongo_db is None:
+            app.logger.error("MongoDB non disponible pour delete_contact_api")
             return jsonify({'error': 'Base de données non disponible'}), 503
         
         result = mongo_db.contacts.delete_one({"_id": ObjectId(contact_id)})
@@ -1247,6 +1293,62 @@ def delete_contact_api(contact_id):
         return jsonify({'error': str(e)}), 500
 
 # Les fonctions de validation sont importées depuis utils.validators
+
+# ========== Route de diagnostic MongoDB ==========
+@app.route('/api/admin/mongo-status', methods=['GET'])
+@admin_required
+def mongo_status_api():
+    """Route de diagnostic pour vérifier l'état de la connexion MongoDB"""
+    try:
+        mongo_uri = os.getenv('MONGO_URI')
+        mongo_db_name = os.getenv('MONGO_DB_NAME', 'portfolio_db')
+        
+        status = {
+            'mongo_uri_configured': bool(mongo_uri),
+            'mongo_uri_preview': mongo_uri[:20] + '...' if mongo_uri and len(mongo_uri) > 20 else mongo_uri if mongo_uri else None,
+            'mongo_db_name': mongo_db_name,
+            'connection_status': 'unknown',
+            'collections': [],
+            'error': None
+        }
+        
+        mongo_db = ensure_mongo_connection()
+        if mongo_db is None:
+            status['connection_status'] = 'disconnected'
+            status['error'] = 'Impossible de se connecter à MongoDB'
+            return jsonify(status), 503
+        
+        # Tester la connexion
+        try:
+            mongo_client = app.config.get('MONGO_CLIENT')
+            mongo_client.admin.command('ping')
+            status['connection_status'] = 'connected'
+            
+            # Lister les collections disponibles
+            status['collections'] = mongo_db.list_collection_names()
+            
+            # Compter les documents dans chaque collection
+            counts = {}
+            for collection_name in status['collections']:
+                try:
+                    counts[collection_name] = mongo_db[collection_name].count_documents({})
+                except:
+                    counts[collection_name] = 'error'
+            status['document_counts'] = counts
+            
+        except Exception as e:
+            status['connection_status'] = 'error'
+            status['error'] = str(e)
+            return jsonify(status), 500
+        
+        return jsonify(status), 200
+        
+    except Exception as e:
+        app.logger.error(f"Erreur mongo_status_api: {e}")
+        return jsonify({
+            'connection_status': 'error',
+            'error': str(e)
+        }), 500
 
 # ========== Handlers d'erreur ==========
 @app.errorhandler(404)

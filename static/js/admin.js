@@ -28,22 +28,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Navigation menu items
-    const menuItems = document.querySelectorAll('.menu-item');
+    // Navigation menu items - La navigation est gérée par admin-data.js
+    // On garde juste la gestion des liens externes (sans data-section)
+    const menuItems = document.querySelectorAll('.menu-item:not([data-section])');
     menuItems.forEach(item => {
         item.addEventListener('click', function(e) {
-            // Don't prevent default for external links
-            if (this.getAttribute('href') && this.getAttribute('href').startsWith('#')) {
-                e.preventDefault();
-            }
-            
-            // Update active state
-            menuItems.forEach(mi => mi.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update page title
-            const pageTitle = this.getAttribute('aria-label') || 'Dashboard';
-            document.getElementById('current-page').textContent = pageTitle;
+            // Pour les liens externes, on ne fait rien de spécial
+            // La navigation interne est gérée par admin-data.js
         });
     });
     
