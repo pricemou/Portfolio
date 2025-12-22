@@ -2,6 +2,26 @@
 
 Lorsque vous hébergez votre application Flask, l'envoi d'emails peut échouer pour plusieurs raisons. Ce guide vous aide à identifier et résoudre les problèmes courants.
 
+## 🚀 Diagnostic rapide
+
+Avant de commencer, exécutez le script de diagnostic :
+
+```bash
+python test_email.py
+```
+
+Ce script vérifie :
+- ✅ Installation de Flask-Mail
+- ✅ Configuration des variables d'environnement
+- ✅ Connexion réseau au serveur SMTP
+- ✅ Authentification SMTP
+- ✅ Configuration Flask-Mail
+
+Pour tester l'envoi réel d'email :
+```bash
+TEST_SEND_EMAIL=True python test_email.py
+```
+
 ## 🔍 Vérifications de base
 
 ### 1. Variables d'environnement configurées

@@ -460,7 +460,14 @@ IP: {contact_data.get('ip_address', 'N/A')}
         
         # Envoyer l'email avec gestion d'erreurs détaillée
         try:
-            app.logger.info(f"Tentative d'envoi d'email a {recipient_email} depuis {mail_username} via {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']}")
+            mail_server = app.config['MAIL_SERVER']
+            mail_port = app.config['MAIL_PORT']
+            app.logger.info(f"Tentative d'envoi d'email a {recipient_email} depuis {mail_username} via {mail_server}:{mail_port}")
+            
+            # En production, logger plus d'informations pour le débogage
+            if app.config.get('FLASK_ENV') == 'production':
+                app.logger.info(f"Configuration email: server={mail_server}, port={mail_port}, TLS={app.config.get('MAIL_USE_TLS')}, timeout={app.config.get('MAIL_TIMEOUT', 30)}")
+            
             mail.send(msg)
             app.logger.info(f"Email de notification envoye avec succes a {recipient_email} pour le message de {contact_data['email']}")
             return True
@@ -473,18 +480,38 @@ IP: {contact_data.get('ip_address', 'N/A')}
                 app.logger.error(f"ERREUR AUTHENTIFICATION EMAIL: {error_msg}")
                 app.logger.error("Solution: Utilisez un mot de passe d'application Gmail (pas votre mot de passe normal)")
                 app.logger.error("Voir: https://myaccount.google.com/apppasswords")
-            elif "connection" in error_msg.lower() or "refused" in error_msg.lower():
+            elif "connection" in error_msg.lower() or "refused" in error_msg.lower() or "cannot connect" in error_msg.lower():
                 app.logger.error(f"ERREUR CONNEXION EMAIL: {error_msg}")
-                app.logger.error(f"Verifiez que le serveur {app.config['MAIL_SERVER']} est accessible depuis votre serveur d'hebergement")
-                app.logger.error("Verifiez que le port {app.config['MAIL_PORT']} n'est pas bloque par un firewall")
-            elif "timeout" in error_msg.lower():
+                app.logger.error(f"Le serveur {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']} n'est pas accessible")
+                app.logger.error("Solutions possibles:")
+                app.logger.error(f"  1. Verifiez que le port {app.config['MAIL_PORT']} n'est pas bloque par un firewall")
+                app.logger.error("  2. Verifiez que votre hebergeur autorise les connexions SMTP sortantes")
+                app.logger.error(f"  3. Testez la connexion depuis le serveur avec: telnet {app.config['MAIL_SERVER']} {app.config['MAIL_PORT']}")
+                app.logger.error("  4. Considerez utiliser un service SMTP tiers (SendGrid, Mailgun) si Gmail bloque votre IP")
+            elif "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
                 app.logger.error(f"ERREUR TIMEOUT EMAIL: {error_msg}")
-                app.logger.error("Le serveur SMTP ne repond pas dans les delais. Augmentez MAIL_TIMEOUT si necessaire")
+                app.logger.error("Le serveur SMTP ne repond pas dans les delais")
+                app.logger.error(f"Solution: Augmentez MAIL_TIMEOUT (actuel: {app.config.get('MAIL_TIMEOUT', 30)}s)")
+                app.logger.error("   Ajoutez dans vos variables d'environnement: MAIL_TIMEOUT=60")
+            elif "ssl" in error_msg.lower() or "tls" in error_msg.lower():
+                app.logger.error(f"ERREUR SSL/TLS EMAIL: {error_msg}")
+                app.logger.error("Probleme de certificat SSL/TLS")
+                app.logger.error(f"Verifiez MAIL_USE_TLS={app.config.get('MAIL_USE_TLS')} et MAIL_USE_SSL={app.config.get('MAIL_USE_SSL')}")
             else:
                 app.logger.error(f"ERREUR ENVOI EMAIL ({error_type}): {error_msg}")
             
-            # Logger les détails de configuration (sans le mot de passe)
-            app.logger.debug(f"Configuration email: serveur={app.config['MAIL_SERVER']}, port={app.config['MAIL_PORT']}, TLS={app.config['MAIL_USE_TLS']}, SSL={app.config['MAIL_USE_SSL']}, username={mail_username}")
+            # Logger les détails de configuration (sans le mot de passe) - toujours en production
+            app.logger.error(f"Configuration email actuelle:")
+            app.logger.error(f"  - Serveur: {app.config['MAIL_SERVER']}")
+            app.logger.error(f"  - Port: {app.config['MAIL_PORT']}")
+            app.logger.error(f"  - TLS: {app.config.get('MAIL_USE_TLS')}")
+            app.logger.error(f"  - SSL: {app.config.get('MAIL_USE_SSL')}")
+            app.logger.error(f"  - Timeout: {app.config.get('MAIL_TIMEOUT', 30)}s")
+            app.logger.error(f"  - Username: {mail_username}")
+            app.logger.error(f"  - Password: {'*' * len(mail_password) if mail_password else 'NON DEFINI'}")
+            
+            # Suggestion de diagnostic
+            app.logger.error("Pour diagnostiquer le probleme, executez: python test_email.py")
             
             return False
         
