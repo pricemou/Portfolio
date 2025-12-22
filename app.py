@@ -95,20 +95,9 @@ try:
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', '')
     
-    # Configuration pour l'hébergement (timeouts plus longs)
-    app.config['MAIL_TIMEOUT'] = int(os.getenv('MAIL_TIMEOUT', 30))  # 30 secondes par défaut
-    app.config['MAIL_SUPPRESS_SEND'] = os.getenv('MAIL_SUPPRESS_SEND', 'False').lower() == 'true'
-    
     # Initialiser Flask-Mail
     mail = Mail(app)
-    
-    # Vérifier la configuration
-    mail_username = app.config.get('MAIL_USERNAME')
-    mail_password = app.config.get('MAIL_PASSWORD')
-    if mail_username and mail_password:
-        print(f"Flask-Mail configure et pret (serveur: {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']})")
-    else:
-        print("Flask-Mail configure mais MAIL_USERNAME ou MAIL_PASSWORD manquants - emails desactives")
+    print("Flask-Mail configure et pret")
 except ImportError:
     FLASK_MAIL_AVAILABLE = False
     Mail = None
@@ -352,33 +341,36 @@ def contact_submit():
             try:
                 contacts_collection = mongo_db.contacts
                 result = contacts_collection.insert_one(cleaned_data)
-                app.logger.info(f"Nouveau message de contact reçu de {email} (ID: {result.inserted_id})")
+                contact_id = str(result.inserted_id)
+                app.logger.info(f"Nouveau message de contact sauvegarde dans l'espace admin (ID: {contact_id}) - De: {email}")
                 
                 # Optionnel: Envoyer un email de notification
                 send_contact_notification_email(cleaned_data)
                 
                 response_data = {
                     'success': True,
-                    'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.'
+                    'message': 'Votre message a été envoyé avec succès. Je vous répondrai dans les plus brefs délais.',
+                    'contact_id': contact_id
                 }
-                app.logger.info(f"Contact sauvegardé avec succès: {email}")
+                app.logger.info(f"Contact sauvegarde avec succes dans MongoDB: {email} - ID: {contact_id}")
                 response = jsonify(response_data)
                 response.headers['Content-Type'] = 'application/json; charset=utf-8'
                 return response, 200
             except Exception as e:
-                app.logger.error(f"Erreur lors du stockage du contact: {e}")
+                app.logger.error(f"Erreur lors du stockage du contact dans MongoDB: {e}", exc_info=True)
                 return jsonify({
                     'success': False,
                     'error': 'Erreur lors de l\'enregistrement du message. Veuillez réessayer.'
                 }), 500
         else:
             # Mode sans MongoDB - juste logger
-            app.logger.info(f"Message de contact reçu (MongoDB non disponible): {email} - {subject}")
+            app.logger.warning(f"Message de contact reçu mais MongoDB non disponible - Message NON sauvegardé: {email} - {subject}")
+            app.logger.warning("Le message ne sera pas visible dans l'espace admin sans MongoDB")
             response_data = {
-                'success': True,
-                'message': 'Votre message a été reçu. Je vous répondrai dans les plus brefs délais.'
+                'success': False,
+                'error': 'Service temporairement indisponible. Veuillez réessayer plus tard.'
             }
-            return jsonify(response_data), 200
+            return jsonify(response_data), 503
             
     except Exception as e:
         app.logger.error(f"Erreur contact_submit: {e}")
@@ -395,18 +387,13 @@ def send_contact_notification_email(contact_data):
             app.logger.debug("Flask-Mail non disponible - notification email ignorée")
             return False
         
-        # Vérifier si l'envoi est supprimé (pour les tests)
-        if app.config.get('MAIL_SUPPRESS_SEND', False):
-            app.logger.debug("MAIL_SUPPRESS_SEND activé - email non envoyé")
-            return False
-        
         # Vérifier si la configuration email est complète
         mail_username = app.config.get('MAIL_USERNAME')
         mail_password = app.config.get('MAIL_PASSWORD')
         
         if not mail_username or not mail_password:
-            app.logger.warning("Configuration email incomplete - MAIL_USERNAME ou MAIL_PASSWORD manquants")
-            app.logger.warning("Pour activer les emails, configurez MAIL_USERNAME et MAIL_PASSWORD dans les variables d'environnement")
+            app.logger.debug("Configuration email non complète - notification email ignorée")
+            app.logger.warning("Pour activer les emails, configurez MAIL_USERNAME et MAIL_PASSWORD dans .env")
             app.logger.warning("Pour Gmail, vous DEVEZ utiliser un mot de passe d'application (pas votre mot de passe normal)")
             app.logger.warning("Voir CONFIGURATION_EMAIL.md pour les instructions")
             return False
@@ -458,66 +445,13 @@ IP: {contact_data.get('ip_address', 'N/A')}
             html=html_body
         )
         
-        # Envoyer l'email avec gestion d'erreurs détaillée
-        try:
-            mail_server = app.config['MAIL_SERVER']
-            mail_port = app.config['MAIL_PORT']
-            app.logger.info(f"Tentative d'envoi d'email a {recipient_email} depuis {mail_username} via {mail_server}:{mail_port}")
-            
-            # En production, logger plus d'informations pour le débogage
-            if app.config.get('FLASK_ENV') == 'production':
-                app.logger.info(f"Configuration email: server={mail_server}, port={mail_port}, TLS={app.config.get('MAIL_USE_TLS')}, timeout={app.config.get('MAIL_TIMEOUT', 30)}")
-            
-            mail.send(msg)
-            app.logger.info(f"Email de notification envoye avec succes a {recipient_email} pour le message de {contact_data['email']}")
-            return True
-        except Exception as send_error:
-            error_type = type(send_error).__name__
-            error_msg = str(send_error)
-            
-            # Messages d'erreur spécifiques selon le type d'erreur
-            if "authentication" in error_msg.lower() or "535" in error_msg or "535-5.7.8" in error_msg:
-                app.logger.error(f"ERREUR AUTHENTIFICATION EMAIL: {error_msg}")
-                app.logger.error("Solution: Utilisez un mot de passe d'application Gmail (pas votre mot de passe normal)")
-                app.logger.error("Voir: https://myaccount.google.com/apppasswords")
-            elif "connection" in error_msg.lower() or "refused" in error_msg.lower() or "cannot connect" in error_msg.lower():
-                app.logger.error(f"ERREUR CONNEXION EMAIL: {error_msg}")
-                app.logger.error(f"Le serveur {app.config['MAIL_SERVER']}:{app.config['MAIL_PORT']} n'est pas accessible")
-                app.logger.error("Solutions possibles:")
-                app.logger.error(f"  1. Verifiez que le port {app.config['MAIL_PORT']} n'est pas bloque par un firewall")
-                app.logger.error("  2. Verifiez que votre hebergeur autorise les connexions SMTP sortantes")
-                app.logger.error(f"  3. Testez la connexion depuis le serveur avec: telnet {app.config['MAIL_SERVER']} {app.config['MAIL_PORT']}")
-                app.logger.error("  4. Considerez utiliser un service SMTP tiers (SendGrid, Mailgun) si Gmail bloque votre IP")
-            elif "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-                app.logger.error(f"ERREUR TIMEOUT EMAIL: {error_msg}")
-                app.logger.error("Le serveur SMTP ne repond pas dans les delais")
-                app.logger.error(f"Solution: Augmentez MAIL_TIMEOUT (actuel: {app.config.get('MAIL_TIMEOUT', 30)}s)")
-                app.logger.error("   Ajoutez dans vos variables d'environnement: MAIL_TIMEOUT=60")
-            elif "ssl" in error_msg.lower() or "tls" in error_msg.lower():
-                app.logger.error(f"ERREUR SSL/TLS EMAIL: {error_msg}")
-                app.logger.error("Probleme de certificat SSL/TLS")
-                app.logger.error(f"Verifiez MAIL_USE_TLS={app.config.get('MAIL_USE_TLS')} et MAIL_USE_SSL={app.config.get('MAIL_USE_SSL')}")
-            else:
-                app.logger.error(f"ERREUR ENVOI EMAIL ({error_type}): {error_msg}")
-            
-            # Logger les détails de configuration (sans le mot de passe) - toujours en production
-            app.logger.error(f"Configuration email actuelle:")
-            app.logger.error(f"  - Serveur: {app.config['MAIL_SERVER']}")
-            app.logger.error(f"  - Port: {app.config['MAIL_PORT']}")
-            app.logger.error(f"  - TLS: {app.config.get('MAIL_USE_TLS')}")
-            app.logger.error(f"  - SSL: {app.config.get('MAIL_USE_SSL')}")
-            app.logger.error(f"  - Timeout: {app.config.get('MAIL_TIMEOUT', 30)}s")
-            app.logger.error(f"  - Username: {mail_username}")
-            app.logger.error(f"  - Password: {'*' * len(mail_password) if mail_password else 'NON DEFINI'}")
-            
-            # Suggestion de diagnostic
-            app.logger.error("Pour diagnostiquer le probleme, executez: python test_email.py")
-            
-            return False
+        # Envoyer l'email
+        mail.send(msg)
+        app.logger.info(f"Email de notification envoye a {recipient_email} pour le message de {contact_data['email']}")
+        return True
         
     except Exception as e:
-        error_type = type(e).__name__
-        app.logger.error(f"ERREUR GENERALE lors de l'envoi de l'email de notification ({error_type}): {e}", exc_info=True)
+        app.logger.error(f"Erreur lors de l'envoi de l'email de notification: {e}", exc_info=True)
         return False
 
 def login_required(f):
@@ -617,6 +551,17 @@ def admin_login():
                 admin_user = admin_collection.find_one({"username": username})
                 
                 if admin_user and admin_user['password'] == hash_password(password):
+                    # Enregistrer la connexion dans l'historique
+                    login_history_collection = mongo_db.login_history
+                    login_history_collection.insert_one({
+                        "admin_id": str(admin_user['_id']),
+                        "username": username,
+                        "ip_address": request.remote_addr,
+                        "user_agent": request.headers.get('User-Agent', '')[:500],
+                        "login_time": datetime.now(),
+                        "success": True
+                    })
+                    
                     # Mettre à jour la dernière connexion
                     admin_collection.update_one(
                         {"username": username},
@@ -1313,6 +1258,208 @@ def delete_contact_api(contact_id):
         return jsonify({'error': 'Message non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_contact_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ========== API Routes pour Gestion du Profil Admin ==========
+@app.route('/api/admin/profile', methods=['GET'])
+@login_required
+def get_admin_profile():
+    """Récupère les informations du profil administrateur"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        admin_id = session.get('admin_id')
+        admin_username = session.get('admin_username')
+        
+        if mongo_db is None or not admin_id:
+            # Mode sans MongoDB - retourner les infos de session
+            return jsonify({
+                'username': admin_username,
+                'email': os.getenv('ADMIN_EMAIL', ''),
+                'created_at': None,
+                'last_login': None
+            })
+        
+        admin_collection = mongo_db.admin_users
+        admin_user = admin_collection.find_one({"_id": ObjectId(admin_id)})
+        
+        if not admin_user:
+            return jsonify({'error': 'Utilisateur non trouvé'}), 404
+        
+        profile_data = {
+            'username': admin_user.get('username', ''),
+            'email': admin_user.get('email', ''),
+            'full_name': admin_user.get('full_name', ''),
+            'created_at': admin_user.get('created_at').isoformat() if admin_user.get('created_at') else None,
+            'last_login': admin_user.get('last_login').isoformat() if admin_user.get('last_login') else None
+        }
+        
+        return jsonify(profile_data)
+    except Exception as e:
+        app.logger.error(f"Erreur get_admin_profile: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/profile', methods=['PUT'])
+@login_required
+def update_admin_profile():
+    """Met à jour les informations du profil administrateur"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        admin_id = session.get('admin_id')
+        
+        if mongo_db is None:
+            return jsonify({'error': 'Base de données non disponible'}), 503
+        
+        if not admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes'}), 400
+        
+        admin_collection = mongo_db.admin_users
+        update_data = {}
+        
+        # Mettre à jour l'email si fourni
+        if 'email' in data:
+            email = sanitize_input(data['email'], max_length=200)
+            if email and validate_email(email):
+                update_data['email'] = email
+            elif email:
+                return jsonify({'error': 'Format d\'email invalide'}), 400
+        
+        # Mettre à jour le nom complet si fourni
+        if 'full_name' in data:
+            update_data['full_name'] = sanitize_input(data['full_name'], max_length=100)
+        
+        if not update_data:
+            return jsonify({'error': 'Aucune donnée à mettre à jour'}), 400
+        
+        update_data['updated_at'] = datetime.now()
+        
+        result = admin_collection.update_one(
+            {"_id": ObjectId(admin_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count > 0:
+            return jsonify({'success': True, 'message': 'Profil mis à jour avec succès'})
+        return jsonify({'error': 'Utilisateur non trouvé'}), 404
+    except Exception as e:
+        app.logger.error(f"Erreur update_admin_profile: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/change-password', methods=['POST'])
+@login_required
+def change_admin_password():
+    """Change le mot de passe de l'administrateur"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        admin_id = session.get('admin_id')
+        admin_username = session.get('admin_username')
+        
+        if not admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes'}), 400
+        
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        confirm_password = data.get('confirm_password', '')
+        
+        # Validation
+        if not current_password or not new_password or not confirm_password:
+            return jsonify({'error': 'Tous les champs sont requis'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères'}), 400
+        
+        if new_password != confirm_password:
+            return jsonify({'error': 'Les mots de passe ne correspondent pas'}), 400
+        
+        if new_password == current_password:
+            return jsonify({'error': 'Le nouveau mot de passe doit être différent de l\'ancien'}), 400
+        
+        # Vérifier l'ancien mot de passe
+        if mongo_db is None:
+            # Mode sans MongoDB - utiliser les variables d'environnement
+            expected_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+            if current_password != expected_password:
+                return jsonify({'error': 'Mot de passe actuel incorrect'}), 400
+            
+            # En production, il faudrait mettre à jour la variable d'environnement
+            return jsonify({'error': 'Changement de mot de passe non disponible sans MongoDB'}), 503
+        else:
+            admin_collection = mongo_db.admin_users
+            admin_user = admin_collection.find_one({"_id": ObjectId(admin_id)})
+            
+            if not admin_user:
+                return jsonify({'error': 'Utilisateur non trouvé'}), 404
+            
+            # Vérifier le mot de passe actuel
+            if admin_user['password'] != hash_password(current_password):
+                return jsonify({'error': 'Mot de passe actuel incorrect'}), 400
+            
+            # Mettre à jour le mot de passe
+            admin_collection.update_one(
+                {"_id": ObjectId(admin_id)},
+                {"$set": {
+                    "password": hash_password(new_password),
+                    "password_changed_at": datetime.now()
+                }}
+            )
+            
+            app.logger.info(f"Mot de passe change pour l'utilisateur {admin_username}")
+            return jsonify({'success': True, 'message': 'Mot de passe changé avec succès'})
+    except Exception as e:
+        app.logger.error(f"Erreur change_admin_password: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/login-history', methods=['GET'])
+@login_required
+def get_login_history():
+    """Récupère l'historique des connexions"""
+    try:
+        mongo_db = app.config.get('MONGO_DB')
+        admin_id = session.get('admin_id')
+        
+        if not admin_id:
+            return jsonify({'error': 'Non authentifié'}), 401
+        
+        if mongo_db is None:
+            return jsonify({'history': [], 'total': 0, 'limit': 50, 'skip': 0})
+        
+        # Récupérer les paramètres de pagination
+        limit = request.args.get('limit', type=int) or 50
+        skip = request.args.get('skip', type=int) or 0
+        
+        login_history_collection = mongo_db.login_history
+        history = list(
+            login_history_collection.find({"admin_id": admin_id})
+            .sort("login_time", -1)
+            .limit(limit)
+            .skip(skip)
+        )
+        
+        # Convertir ObjectId et datetime
+        for entry in history:
+            if '_id' in entry:
+                entry['_id'] = str(entry['_id'])
+            if 'login_time' in entry and isinstance(entry['login_time'], datetime):
+                entry['login_time'] = entry['login_time'].isoformat()
+        
+        # Compter le total
+        total = login_history_collection.count_documents({"admin_id": admin_id})
+        
+        return jsonify({
+            'history': history,
+            'total': total,
+            'limit': limit,
+            'skip': skip
+        })
+    except Exception as e:
+        app.logger.error(f"Erreur get_login_history: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Les fonctions de validation sont importées depuis utils.validators

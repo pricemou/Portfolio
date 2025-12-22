@@ -41,6 +41,10 @@
         .fa-reply::before { content: "↩️"; }
         .fa-trash::before { content: "🗑️"; }
         .fa-sync-alt::before { content: "🔄"; }
+        .fa-file-code::before { content: "📄"; }
+        .fa-file-csv::before { content: "📊"; }
+        .fa-bell::before { content: "🔔"; }
+        .fa-bell-slash::before { content: "🔕"; }
     </style>
     <!-- Tentative de chargement Font Awesome depuis CDN -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" onerror="this.onerror=null; console.log('Font Awesome non chargé, utilisation des icônes de base');">
@@ -74,6 +78,9 @@
                 </a>
                 <a href="#contacts" class="nav-btn menu-item" data-section="contacts" aria-label="Contacts">
                     <i class="fas fa-envelope"></i>
+                </a>
+                <a href="#profile" class="nav-btn menu-item" data-section="profile" aria-label="Profil">
+                    <i class="fas fa-user"></i>
                 </a>
                 <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
                     <i class="fas fa-globe"></i>
@@ -230,7 +237,10 @@
                             <h2>Compétences</h2>
                             <button class="btn btn-primary" onclick="openSkillModal()">+ Ajouter une compétence</button>
                         </div>
+                        <div id="skills-search-container"></div>
+                        <div id="skills-export-container"></div>
                         <div id="skills-list" class="admin-list"></div>
+                        <div id="skills-pagination"></div>
                     </div>
 
                     <!-- Section Partners -->
@@ -239,7 +249,10 @@
                             <h2>Partenaires</h2>
                             <button class="btn btn-primary" onclick="openPartnerModal()">+ Ajouter un partenaire</button>
                         </div>
+                        <div id="partners-search-container"></div>
+                        <div id="partners-export-container"></div>
                         <div id="partners-list" class="admin-list"></div>
+                        <div id="partners-pagination"></div>
                     </div>
 
                     <!-- Section Projects -->
@@ -248,7 +261,10 @@
                             <h2>Projets</h2>
                             <button class="btn btn-primary" onclick="openProjectModal()">+ Ajouter un projet</button>
                         </div>
+                        <div id="projects-search-container"></div>
+                        <div id="projects-export-container"></div>
                         <div id="projects-list" class="admin-list"></div>
+                        <div id="projects-pagination"></div>
                     </div>
 
                     <!-- Section Services -->
@@ -257,20 +273,107 @@
                             <h2>Services</h2>
                             <button class="btn btn-primary" onclick="openServiceModal()">+ Ajouter un service</button>
                         </div>
+                        <div id="services-search-container"></div>
+                        <div id="services-export-container"></div>
                         <div id="services-list" class="admin-list"></div>
+                        <div id="services-pagination"></div>
                     </div>
 
                     <!-- Section Contacts -->
                     <div id="section-contacts" class="content-section" style="display: none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <h2>Messages de contact</h2>
-                            <div style="display: flex; gap: 0.5rem;">
+                            <div>
+                                <h2>Messages de contact</h2>
+                                <p id="contacts-count" style="color: var(--gray); font-size: 0.9rem; margin: 0.5rem 0 0 0;">
+                                    <span id="unread-count">0</span> non lus
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="contacts-filter" onchange="filterContacts()" class="admin-select">
+                                    <option value="all">Tous les messages</option>
+                                    <option value="unread">Non lus uniquement</option>
+                                    <option value="read">Lus uniquement</option>
+                                </select>
                                 <button class="btn btn-secondary" onclick="loadContacts()" title="Actualiser">
                                     <i class="fas fa-sync-alt"></i> Actualiser
+                                </button>
+                                <button id="notification-toggle" class="btn btn-sm" onclick="toggleNotifications()" title="Activer/Désactiver les notifications">
+                                    <i class="fas fa-bell"></i>
                                 </button>
                             </div>
                         </div>
                         <div id="contacts-list" class="admin-list"></div>
+                    </div>
+
+                    <!-- Section Profil -->
+                    <div id="section-profile" class="content-section" style="display: none;">
+                        <div style="margin-bottom: 2rem;">
+                            <h2>Mon Profil</h2>
+                            <p style="color: var(--gray); font-size: 0.9rem;">Gérez vos informations personnelles et votre mot de passe</p>
+                        </div>
+
+                        <!-- Informations du compte -->
+                        <div class="admin-card" style="margin-bottom: 2rem;">
+                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Informations du compte</h3>
+                            <form id="profile-form" onsubmit="updateProfile(event)">
+                                <div style="display: grid; gap: 1rem;">
+                                    <div>
+                                        <label for="profile-username">Nom d'utilisateur</label>
+                                        <input type="text" id="profile-username" readonly>
+                                        <small>Le nom d'utilisateur ne peut pas être modifié</small>
+                                    </div>
+                                    <div>
+                                        <label for="profile-email">Email</label>
+                                        <input type="email" id="profile-email" placeholder="votre@email.com">
+                                    </div>
+                                    <div>
+                                        <label for="profile-full-name">Nom complet</label>
+                                        <input type="text" id="profile-full-name" placeholder="Votre nom complet">
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                                        <button type="button" class="btn btn-secondary" onclick="loadProfile()">Annuler</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Changer le mot de passe -->
+                        <div class="admin-card" style="margin-bottom: 2rem;">
+                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Changer le mot de passe</h3>
+                            <form id="password-form" onsubmit="changePassword(event)">
+                                <div style="display: grid; gap: 1rem;">
+                                    <div>
+                                        <label for="current-password">Mot de passe actuel</label>
+                                        <input type="password" id="current-password" required>
+                                    </div>
+                                    <div>
+                                        <label for="new-password">Nouveau mot de passe</label>
+                                        <input type="password" id="new-password" required minlength="6">
+                                        <small>Minimum 6 caractères</small>
+                                    </div>
+                                    <div>
+                                        <label for="confirm-password">Confirmer le nouveau mot de passe</label>
+                                        <input type="password" id="confirm-password" required minlength="6">
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+                                        <button type="button" class="btn btn-secondary" onclick="resetPasswordForm()">Annuler</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Historique des connexions -->
+                        <div class="admin-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="margin: 0;">Historique des connexions</h3>
+                                <button class="btn btn-secondary btn-sm" onclick="loadLoginHistory()" title="Actualiser">
+                                    <i class="fas fa-sync-alt"></i> Actualiser
+                                </button>
+                            </div>
+                            <div id="login-history-list" class="admin-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -560,6 +663,7 @@
         console.log('Interface admin chargée');
     </script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-data.js') }}"></script>
 </body>
 </html>

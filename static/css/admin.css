@@ -914,10 +914,18 @@ body {
     font-size: 0.9rem;
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="number"],
-.form-group textarea {
+/* Styles généraux pour tous les inputs, textarea, select */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="url"],
+input[type="tel"],
+input[type="date"],
+input[type="time"],
+input[type="search"],
+textarea,
+select {
     width: 100%;
     padding: var(--spacing-3) var(--spacing-4);
     background: var(--dark-bg);
@@ -927,24 +935,141 @@ body {
     font-family: 'Roboto Mono', monospace;
     font-size: 0.9rem;
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
-.form-group input:hover,
-.form-group textarea:hover {
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+input[type="url"]:hover,
+input[type="tel"]:hover,
+input[type="date"]:hover,
+input[type="time"]:hover,
+input[type="search"]:hover,
+textarea:hover,
+select:hover {
     border-color: rgba(255, 255, 255, 0.2);
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="url"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
     outline: none;
     border-color: var(--green);
     box-shadow: 0 0 0 3px rgba(77, 186, 135, 0.15);
     background: var(--light-bg);
 }
 
+input[type="text"]:disabled,
+input[type="email"]:disabled,
+input[type="password"]:disabled,
+input[type="number"]:disabled,
+input[type="url"]:disabled,
+input[type="tel"]:disabled,
+input[type="date"]:disabled,
+input[type="time"]:disabled,
+input[type="search"]:disabled,
+textarea:disabled,
+select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--dark-bg);
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="number"]::placeholder,
+input[type="url"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="date"]::placeholder,
+input[type="time"]::placeholder,
+input[type="search"]::placeholder,
+textarea::placeholder {
+    color: var(--gray);
+    opacity: 0.7;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-3) center;
+    padding-right: var(--spacing-8);
+}
+
+select:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234dba87' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Styles spécifiques pour les inputs dans form-group (pour compatibilité) */
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="number"],
+.form-group input[type="password"],
+.form-group input[type="url"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+}
+
 .form-group textarea {
     resize: vertical;
     min-height: 100px;
+}
+
+/* Labels généraux */
+label {
+    display: block;
+    margin-bottom: var(--spacing-2);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Small text pour les hints */
+small {
+    display: block;
+    margin-top: var(--spacing-1);
+    color: var(--gray);
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
+/* Classe spécifique pour les selects dans l'admin */
+.admin-select {
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: 0.9rem;
+    max-width: 250px;
+}
+
+/* Styles pour les inputs dans les sections profil */
+#section-profile input,
+#section-profile textarea,
+#section-profile select {
+    width: 100%;
+}
+
+#section-profile input[readonly] {
+    background: var(--dark-bg);
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .btn-secondary {

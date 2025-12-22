@@ -146,11 +146,7 @@ Pour recevoir des notifications par email lors de nouveaux messages de contact :
 - `MAIL_PASSWORD` : Mot de passe d'application (pour Gmail, utilisez un mot de passe d'application)
 - `NOTIFICATION_EMAIL` : Email de destination pour les notifications (défaut: pricemoufromon97@gmail.com)
 
-**Note :** Pour Gmail, vous devez créer un [mot de passe d'application](https://myaccount.google.com/apppasswords). 
-
-**En hébergement :** Si les emails ne fonctionnent pas en production, consultez [DEPLOIEMENT_EMAIL.md](DEPLOIEMENT_EMAIL.md) pour le guide de dépannage complet.
-
-Voir [CONFIGURATION_EMAIL.md](CONFIGURATION_EMAIL.md) pour la configuration de base.
+**Note :** Pour Gmail, vous devez créer un [mot de passe d'application](https://myaccount.google.com/apppasswords). Voir [CONFIGURATION_EMAIL.md](CONFIGURATION_EMAIL.md) pour plus de détails.
 
 **Important :** Le fichier `.env` est ignoré par Git pour des raisons de sécurité. Ne commitez jamais vos clés secrètes !
 

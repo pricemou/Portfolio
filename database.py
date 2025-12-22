@@ -68,7 +68,7 @@ def init_database(db):
     """
     try:
         # Créer les collections si elles n'existent pas
-        collections = ['projects', 'services', 'contacts', 'analytics', 'homepage', 'skills', 'partners', 'admin_users']
+        collections = ['projects', 'services', 'contacts', 'analytics', 'homepage', 'skills', 'partners', 'admin_users', 'login_history']
         
         # Créer un index pour admin_users
         if 'admin_users' in db.list_collection_names():
@@ -84,9 +84,20 @@ def init_database(db):
             db.projects.create_index("title")
             db.projects.create_index("created_at")
         
-        if 'contacts' in db.list_collection_names():
+        # Créer la collection contacts si elle n'existe pas
+        if 'contacts' not in db.list_collection_names():
+            db.create_collection('contacts')
+            print("Collection 'contacts' creee")
+        
+        # Créer les index pour la collection contacts (ignorer si déjà existants)
+        try:
             db.contacts.create_index("email")
             db.contacts.create_index("created_at")
+            db.contacts.create_index("read")  # Index pour filtrer les messages lus/non lus
+            print("Index crees pour la collection 'contacts'")
+        except Exception as e:
+            # Les index peuvent déjà exister
+            pass
         
         # Initialiser les données de la page d'accueil si elles n'existent pas
         init_homepage_data(db)
