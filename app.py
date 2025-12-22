@@ -731,7 +731,11 @@ def get_skills_api():
         return jsonify(skills)
     except Exception as e:
         app.logger.error(f"Erreur get_skills_api: {e}")
-        return jsonify([])  # Retourner un tableau vide en cas d'erreur
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f'Erreur lors de la récupération des compétences: {str(e)}',
+            'data': []
+        }), 500
 
 @app.route('/api/skills', methods=['POST'])
 @admin_required
@@ -836,7 +840,11 @@ def get_partners_api():
         return jsonify(partners)
     except Exception as e:
         app.logger.error(f"Erreur get_partners_api: {e}")
-        return jsonify([])  # Retourner un tableau vide en cas d'erreur
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f'Erreur lors de la récupération des partenaires: {str(e)}',
+            'data': []
+        }), 500
 
 @app.route('/api/partners', methods=['POST'])
 @admin_required
@@ -942,7 +950,11 @@ def get_projects_api():
         return jsonify(projects)
     except Exception as e:
         app.logger.error(f"Erreur get_projects_api: {e}")
-        return jsonify([])
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f'Erreur lors de la récupération des projets: {str(e)}',
+            'data': []
+        }), 500
 
 @app.route('/api/projects', methods=['POST'])
 @admin_required
@@ -1112,7 +1124,11 @@ def get_services_api():
         return jsonify(services)
     except Exception as e:
         app.logger.error(f"Erreur get_services_api: {e}")
-        return jsonify([])
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f'Erreur lors de la récupération des services: {str(e)}',
+            'data': []
+        }), 500
 
 @app.route('/api/services', methods=['POST'])
 @admin_required
@@ -1264,7 +1280,11 @@ def get_contacts_api():
         return jsonify(contacts)
     except Exception as e:
         app.logger.error(f"Erreur get_contacts_api: {e}")
-        return jsonify([])
+        return jsonify({
+            'error': 'Erreur serveur',
+            'message': f'Erreur lors de la récupération des contacts: {str(e)}',
+            'data': []
+        }), 500
 
 @app.route('/api/contacts/<contact_id>/read', methods=['PUT'])
 @admin_required
