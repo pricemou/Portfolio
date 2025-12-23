@@ -1,9 +1,16 @@
+<div class="nav-menu-overlay"></div>
 <nav class="flex light-bg justify-space">
     <div class="logo white">
         <a href="{{ url_for('index') }}">Pricemou claude</a>
     </div>
 
-    <ul class="flex white">
+    <button class="mobile-menu-toggle" aria-label="Menu" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <ul class="flex white nav-menu">
         <li class="{% if request.endpoint == 'index' %}green{% endif %}">
             <a href="{{ url_for('index') }}">
                 {% if request.endpoint == 'index' %}&lt; Accueil /&gt;{% else %}Accueil{% endif %}
