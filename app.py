@@ -273,7 +273,10 @@ def works():
     projects = []
     try:
         with get_db() as conn:
-            if conn:
+            if conn is None:
+                app.logger.error("Connexion DB impossible dans /works")
+                projects = []
+            else:
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT * FROM projects 
@@ -282,17 +285,24 @@ def works():
                 ''', ('published',))
                 rows = cursor.fetchall()
                 projects = rows_to_list(rows)
+                app.logger.info(f"Récupération de {len(projects)} projets depuis la DB")
+                
                 # Convertir id en string pour compatibilité et nettoyer les données
                 for project in projects:
                     project['_id'] = str(project['id'])
                     # Convertir featured en booléen
                     project['featured'] = bool(project.get('featured', 0))
-                    # S'assurer que additional_images est une chaîne
-                    if 'additional_images' not in project:
+                    # S'assurer que additional_images est une chaîne (None -> '')
+                    if project.get('additional_images') is None:
+                        project['additional_images'] = ''
+                    elif 'additional_images' not in project:
                         project['additional_images'] = ''
     except Exception as e:
-        print(f"Erreur lors de la récupération des projets: {e}")
+        app.logger.error(f"Erreur lors de la récupération des projets: {e}")
+        import traceback
+        app.logger.error(traceback.format_exc())
     
+    app.logger.info(f"Retour de {len(projects)} projets au template")
     return render_template('works.html', 
                          current_year=current_year,
                          projects=projects)
