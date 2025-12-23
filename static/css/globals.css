@@ -175,6 +175,7 @@ nav ul li {
   padding: 1.1rem 5rem 0rem 5rem;
   align-items: center;
   gap: 2rem;
+  flex-direction: row; /* Desktop: layout horizontal */
 }
 .page-header > div {
   flex: 1;
@@ -188,6 +189,15 @@ nav ul li {
   height: auto;
   object-fit: contain;
   display: block;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  order: 0; /* Desktop: ordre normal */
+  margin: 0; /* Desktop: pas de margin spéciale */
+  border-radius: 0; /* Desktop: pas de border-radius */
+  box-shadow: none; /* Desktop: pas de box-shadow */
+}
+.header-image:hover {
+  transform: scale(1.02);
+  opacity: 0.95;
 }
 .header h1,
 .page-header h1 {
@@ -201,6 +211,14 @@ nav ul li {
   font-weight: 500;
   margin-top: 1rem;
   margin-bottom: 2rem;
+}
+/* Paragraphes avec classe gray - Desktop */
+.header p.gray,
+.page-header p.gray {
+  color: var(--text-gray);
+  line-height: 1.6;
+  font-weight: 400;
+  text-align: center;
 }
 .header button,
 .page-header button {
@@ -505,11 +523,20 @@ nav ul li {
 /* Footer */
 footer {
   padding: 2rem 5rem;
+  flex-direction: row; /* Desktop: layout horizontal */
+  align-items: center;
+  justify-content: space-between;
 }
 footer span {
   font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;
+}
+footer ul {
+  display: flex;
+  flex-direction: row; /* Desktop: liens en ligne */
+  align-items: center;
+  gap: 1rem;
 }
 footer ul li {
   list-style-type: none;
@@ -625,9 +652,16 @@ footer ul li {
     width: 100% !important;
     max-width: 300px !important;
     height: auto !important;
-    margin: 0 auto !important;
-    object-fit: contain;
-    order: 2; /* Image après le texte */
+    margin: 1.5rem auto 0 !important;
+    object-fit: contain !important;
+    order: 2 !important; /* Image après le texte */
+    border-radius: 0.5rem !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  }
+  .header-image:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3) !important;
   }
   /* Textes responsive pour mobile */
   .header h1,
@@ -648,6 +682,18 @@ footer ul li {
     margin-bottom: 1.5rem !important;
     text-align: center !important;
     max-width: 100%;
+  }
+  /* Paragraphes avec classe gray - Mobile */
+  .header p.gray,
+  .page-header p.gray {
+    font-size: 0.9rem !important;
+    line-height: 1.7 !important;
+    color: var(--text-gray) !important;
+    text-align: center !important;
+    max-width: 100% !important;
+    margin-top: 0.75rem !important;
+    margin-bottom: 1.25rem !important;
+    padding: 0 0.5rem !important;
   }
   .header button,
   .page-header button {
