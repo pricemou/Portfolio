@@ -90,10 +90,70 @@
         
         // Exposer la fonction globalement pour onclick
         window.toggleMobileMenu = toggleMobileMenu;
+        
+        // Modal pour l'image header-image (blaiti.png)
+        function openHeaderImageModal() {
+            const modal = document.getElementById('headerImageModal');
+            const body = document.body;
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.style.opacity = '1';
+                modal.classList.add('active');
+                body.style.overflow = 'hidden';
+            }
+        }
+        
+        function closeHeaderImageModal() {
+            const modal = document.getElementById('headerImageModal');
+            const body = document.body;
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.classList.remove('active');
+                body.style.overflow = '';
+            }
+        }
+        
+        // Exposer les fonctions globalement
+        window.openHeaderImageModal = openHeaderImageModal;
+        window.closeHeaderImageModal = closeHeaderImageModal;
+        
+        // Fermer la modal en cliquant sur l'overlay ou Escape
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('headerImageModal');
+            const overlay = modal ? modal.querySelector('.header-image-modal-overlay') : null;
+            
+            if (overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) {
+                        closeHeaderImageModal();
+                    }
+                });
+            }
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (modal && modal.classList.contains('active')) {
+                        closeHeaderImageModal();
+                    }
+                }
+            });
+        });
     </script>
 </head>
 <body>
     {% block content %}{% endblock %}
+    
+    <!-- Modal pour l'image header-image -->
+    <div id="headerImageModal" class="header-image-modal">
+        <div class="header-image-modal-overlay"></div>
+        <div class="header-image-modal-content">
+            <button class="header-image-modal-close" onclick="closeHeaderImageModal()" aria-label="Fermer">
+                <span>&times;</span>
+            </button>
+            <img src="{{ url_for('static', filename='images/blaiti.png') }}" alt="blaiti" class="header-image-modal-img" />
+        </div>
+    </div>
 </body>
 </html>
 

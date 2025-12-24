@@ -27,7 +27,7 @@
             {% endif %}
         </div>
         {% if request.endpoint == 'index' %}
-            <img src="{{ url_for('static', filename='images/blaiti.png') }}" width="463" height="513" alt="blaiti" class="header-image" />
+            <img src="{{ url_for('static', filename='images/blaiti.png') }}" width="463" height="513" alt="blaiti" class="header-image" onclick="openHeaderImageModal()" style="cursor: pointer;" />
         {% endif %}
     </div>
 </header>
