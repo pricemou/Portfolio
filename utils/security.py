@@ -2,6 +2,7 @@
 Module de sécurité pour l'application Flask
 Gère le chiffrement des mots de passe, la validation XSS, et autres fonctions de sécurité
 """
+import hashlib
 import bcrypt
 import bleach
 import re
@@ -55,11 +56,9 @@ def check_password(password, hashed):
         return False
     
     try:
-        # Si le hash est en format SHA256 (ancien système), retourner False
-        # pour forcer la migration vers bcrypt
         if len(hashed) == 64 and re.match(r'^[a-f0-9]{64}$', hashed):
-            return False
-        
+            return hashlib.sha256(password.encode()).hexdigest() == hashed
+
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
     except Exception:
         return False
