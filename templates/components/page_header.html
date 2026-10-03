@@ -3,32 +3,45 @@
     <div class="page-header flex light-bg">
         <div>
             {% if request.endpoint == 'works' %}
-                <button>Portfolio</button>
-                <h1 class="white">Mes Projets</h1>
-                <p class="gray">Découvrez mes réalisations en développement Full-Stack et Data Science, des applications web aux analyses de données.</p>
+                <button>{{ t('works_badge') }}</button>
+                <h1 class="white">{{ t('works_title') }}</h1>
+                <p class="gray">{{ t('works_intro') }}</p>
             {% elif request.endpoint == 'services' %}
-                <button>Services</button>
-                <h1 class="white">Solutions Full-Stack & Data Science</h1>
-                <p class="gray">Des applications web complètes aux analyses de données avancées, je transforme vos idées en solutions technologiques performantes.</p>
+                <button>{{ t('services_badge') }}</button>
+                <h1 class="white">{{ t('services_title') }}</h1>
+                <p class="gray">{{ t('services_intro') }}</p>
+            {% elif request.endpoint == 'parcours' %}
+                <button>{{ t('career_badge') }}</button>
+                <h1 class="white">{{ t('career_title') }}</h1>
+                <p class="gray">{{ t('career_intro') }}</p>
+            {% elif request.endpoint == 'contact' %}
+                <button>{{ t('contact_badge') }}</button>
+                <h1 class="white">{{ t('contact_title') }}</h1>
+                <p class="gray">{{ t('contact_intro') }}</p>
             {% else %}
                 {% if homepage_data %}
-                    <button>{{ homepage_data.badge }}</button>
+                    <button class="availability-badge">{{ homepage_data.badge }}</button>
                     <h1 class="white">{{ homepage_data.title_line1 }}</h1>
                     <h1 class="white">{{ homepage_data.title_line2 }}</h1>
                     <p class="gray">{{ homepage_data.description }}</p>
-                    <a class="green" href="mailto:{{ homepage_data.email }}">{{ homepage_data.cta_text }}</a>
+                    <div class="hero-actions">
+                        <a class="green" href="{{ url_for('contact') }}">{{ homepage_data.cta_text }}</a>
+                        <a class="cv-btn" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
+                    </div>
                 {% else %}
-                    <button>Développeur Full-Stack & Data Science</button>
-                    <h1 class="white">De l'idée à la donnée.</h1>
-                    <h1 class="white">Du code à l'insight !</h1>
-                    <p class="gray">Je développe des applications web complètes et transforme les données en décisions stratégiques. Passionné par l'innovation technologique et l'analyse de données.</p>
-                    <a class="green" href="mailto:contact@example.com">Discutons !</a>
+                    <button class="availability-badge">{{ t('hero_badge') }}</button>
+                    <h1 class="white">{{ t('hero_line1') }}</h1>
+                    <h1 class="white">{{ t('hero_line2') }}</h1>
+                    <p class="gray">{{ t('hero_desc') }}</p>
+                    <div class="hero-actions">
+                        <a class="green" href="{{ url_for('contact') }}">{{ t('hero_cta') }}</a>
+                        <a class="cv-btn" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
+                    </div>
                 {% endif %}
             {% endif %}
         </div>
         {% if request.endpoint == 'index' %}
-            <img src="{{ url_for('static', filename='images/blaiti.png') }}" width="463" height="513" alt="blaiti" class="header-image" onclick="openHeaderImageModal()" style="cursor: pointer;" />
+            <img src="{{ url_for('static', filename='images/claude-pricemou.svg') }}" width="463" height="513" alt="Portrait de Claude Pricemou, développeur full stack" class="header-image" onclick="openHeaderImageModal()" />
         {% endif %}
     </div>
 </header>
-

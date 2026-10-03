@@ -1,17 +1,13 @@
 {% extends "base.html" %}
 
-{% block content %}
-    <!-- Header -->
-    {% include 'components/page_header.html' %}
+{% block title %}Claude Pricemou — Développeur Full Stack & Science des données{% endblock %}
+{% block meta_description %}Claude Pricemou, développeur Full Stack freelance à Trois-Rivières. Applications web, automatisation et science des données.{% endblock %}
 
+{% block content %}
+    {% include 'components/page_header.html' %}
     <main>
-        <!-- About -->
         {% include 'components/about.html' %}
     </main>
-
-    <!-- Footer -->
     {% set year = current_year %}
     {% include 'components/footer.html' %}
 {% endblock %}
-
-

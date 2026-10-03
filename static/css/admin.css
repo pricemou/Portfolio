@@ -369,10 +369,15 @@ body {
 }
 
 .content-section {
+    display: none;
     background: var(--light-bg);
     padding: var(--spacing-4);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
+}
+
+.content-section.active-section {
+    display: block;
 }
 
 .content-section h2 {

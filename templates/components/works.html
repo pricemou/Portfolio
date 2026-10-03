@@ -1,208 +1,107 @@
 <section id="works" class="dark-bg">
+    <div class="project-filters" role="tablist" aria-label="{{ t('works_title') }}">
+        <a class="filter-btn {% if active_cat == 'all' %}active{% endif %}" href="{{ url_for('works') }}">{{ t('filter_all') }}</a>
+        <a class="filter-btn {% if active_cat == 'pro' %}active{% endif %}" href="{{ url_for('works', cat='pro') }}">{{ t('filter_pro') }}</a>
+        <a class="filter-btn {% if active_cat == 'data' %}active{% endif %}" href="{{ url_for('works', cat='data') }}">{{ t('filter_data') }}</a>
+        <a class="filter-btn {% if active_cat == 'academic' %}active{% endif %}" href="{{ url_for('works', cat='academic') }}">{{ t('filter_academic') }}</a>
+    </div>
     <div class="works-grid">
+        {% set shown = namespace(n=0) %}
         {% if projects and projects|length > 0 %}
             {% for project in projects %}
-            <div class="work-card light-bg" data-project-id="{{ project._id }}">
+            {% if active_cat == 'all' or project.category == active_cat %}
+            {% set shown.n = shown.n + 1 %}
+            <article class="work-card light-bg" data-project-id="{{ project._id }}" data-category="{{ project.category }}">
                 {% if project.image %}
-                <div class="work-card-image" style="margin-bottom: 1.5rem; border-radius: 0.5rem; overflow: hidden;">
-                    <img src="{{ url_for('static', filename=project.image) if not project.image.startswith('http') else project.image }}" 
-                         alt="{{ project.title }}" 
+                <div class="work-card-image">
+                    <img src="{{ url_for('static', filename=project.image) if not project.image.startswith('http') else project.image }}"
+                         alt="Capture du projet {{ project.title }}"
                          class="work-image"
-                         onclick="event.stopPropagation(); openProjectDetail('{{ project._id }}'); return false;"
-                         onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=Image+non+disponible';"
-                         loading="lazy"
-                         style="width: 100%; height: 200px; object-fit: cover; cursor: pointer; transition: transform 0.3s ease;">
+                         loading="lazy">
                 </div>
                 {% endif %}
                 <div class="work-card-header">
                     <h3 class="white">{{ project.title }}</h3>
-                    {% if project.featured %}
-                    <span class="featured-badge" style="background: #4dba87; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                        <i class="fas fa-star"></i> Vedette
-                    </span>
-                    {% endif %}
+                    <span class="cat-badge">{{ project.category }}</span>
                 </div>
-                <span class="gray" style="display: block; margin-bottom: 1rem; font-size: 0.9rem;">{{ project.technologies }}</span>
-                <p class="gray" style="margin-bottom: 1.5rem;">{{ project.description[:150] }}{% if project.description|length > 150 %}...{% endif %}</p>
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                    <button class="work-detail-btn" onclick="event.stopPropagation(); openProjectDetail('{{ project._id }}'); return false;" style="background: #4dba87; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
-                        <i class="fas fa-eye"></i> Voir détail
-                    </button>
+                <span class="gray work-tech">{{ project.technologies }}</span>
+                {% if project.role %}
+                <p class="gray"><strong class="green">{{ t('role') }} :</strong> {{ project.role }}</p>
+                {% endif %}
+                {% if project.context %}
+                <p class="gray"><strong class="green">{{ t('context') }} :</strong> {{ project.context }}</p>
+                {% endif %}
+                <p class="gray">{{ project.description }}</p>
+                {% if project.results_list %}
+                <ul class="result-list">
+                    {% for metric in project.results_list[:4] %}
+                    <li class="green">{{ metric }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% if project.measurement %}
+                <p class="gray measurement"><em>{{ t('measurement') }} :</em> {{ project.measurement }}</p>
+                {% endif %}
+                <div class="work-actions">
+                    <button type="button" class="work-detail-btn" onclick="openProjectDetail('{{ project._id }}')">{{ t('see_detail') }}</button>
                     {% if project.link and project.link.startswith('http') %}
-                    <a href="{{ project.link }}" target="_blank" rel="noopener noreferrer" class="work-link green" onclick="if(typeof trackProjectView === 'function') { trackProjectView('{{ project._id }}'); }">Voir le projet →</a>
+                    <a href="{{ project.link }}" target="_blank" rel="noopener noreferrer" class="work-link green" onclick="trackProjectView('{{ project._id }}')">{{ t('see_project') }} →</a>
                     {% endif %}
                     {% if project.github_link and project.github_link.startswith('http') %}
-                    <a href="{{ project.github_link }}" target="_blank" rel="noopener noreferrer" class="work-link green" style="font-size: 0.9rem;">
-                        <i class="fab fa-github"></i> GitHub →
-                    </a>
+                    <a href="{{ project.github_link }}" target="_blank" rel="noopener noreferrer" class="work-link green">GitHub →</a>
                     {% endif %}
                 </div>
-            </div>
+            </article>
+            {% endif %}
             {% endfor %}
-        {% else %}
+        {% endif %}
+        {% if shown.n == 0 %}
             <div class="work-card light-bg" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                <p class="gray">Aucun projet disponible pour le moment.</p>
+                <p class="gray">{{ t('no_projects') }}</p>
             </div>
         {% endif %}
     </div>
 </section>
 
-<!-- Modale de détail du projet -->
 <div id="projectDetailModal" class="project-modal" style="display: none;">
     <div class="project-modal-overlay" onclick="closeProjectDetail()"></div>
     <div class="project-modal-content">
-        <button class="project-modal-close" onclick="closeProjectDetail()">&times;</button>
-        <div id="projectDetailContent">
-            <!-- Le contenu sera chargé dynamiquement -->
-        </div>
+        <button class="project-modal-close" onclick="closeProjectDetail()" aria-label="{{ t('close') }}">&times;</button>
+        <div id="projectDetailContent"></div>
     </div>
 </div>
 
 <script>
-// S'assurer que le script ne s'exécute qu'une fois
 if (!window.worksScriptLoaded) {
     window.worksScriptLoaded = true;
-    
-// Fonction pour ouvrir le détail d'un projet
-function openProjectDetail(projectId) {
-    // Empêcher les appels multiples
-    if (window.projectDetailLoading) return;
-    window.projectDetailLoading = true;
-    
-    // Récupérer les données du projet depuis la page
-    const projectCard = document.querySelector(`[data-project-id="${projectId}"]`);
-    if (!projectCard) {
-        window.projectDetailLoading = false;
-        return;
-    }
-    
-    // Récupérer les projets depuis le serveur
-    fetch(`/api/projects/${projectId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(project => {
-            displayProjectDetail(project);
-            window.projectDetailLoading = false;
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            // Fallback: utiliser les données de la carte
-            const title = projectCard.querySelector('h3')?.textContent || '';
-            const technologies = projectCard.querySelectorAll('.gray')[0]?.textContent || '';
-            const description = projectCard.querySelector('p')?.textContent || '';
-            displayProjectDetail({
-                _id: projectId,
-                title: title,
-                technologies: technologies,
-                description: description,
-                image: projectCard.querySelector('.work-image')?.src || ''
+    function openProjectDetail(projectId) {
+        fetch('/api/projects/' + projectId)
+            .then(function (r) { return r.json(); })
+            .then(function (project) {
+                var content = document.getElementById('projectDetailContent');
+                var results = [];
+                try { results = typeof project.results === 'string' ? JSON.parse(project.results) : (project.results || []); } catch (e) {}
+                content.innerHTML =
+                    '<h2>' + (project.title || '') + '</h2>' +
+                    '<p class="gray">' + (project.technologies || '') + '</p>' +
+                    (project.role ? '<p><strong>Rôle :</strong> ' + project.role + '</p>' : '') +
+                    (project.context ? '<p><strong>Contexte :</strong> ' + project.context + '</p>' : '') +
+                    '<p>' + (project.description || '') + '</p>' +
+                    (results.length ? '<ul>' + results.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul>' : '') +
+                    (project.measurement ? '<p><em>' + project.measurement + '</em></p>' : '');
+                document.getElementById('projectDetailModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                if (typeof trackProjectView === 'function') trackProjectView(projectId);
             });
-            window.projectDetailLoading = false;
-        });
-}
-
-function displayProjectDetail(project) {
-    const modal = document.getElementById('projectDetailModal');
-    const content = document.getElementById('projectDetailContent');
-    
-    if (!modal || !content) return;
-    
-    // Préparer les images
-    const allImages = [];
-    if (project.image) {
-        allImages.push({ url: project.image, isMain: true });
     }
-    if (project.additional_images) {
-        const additionalImages = typeof project.additional_images === 'string' 
-            ? project.additional_images.split(',').map(img => img.trim()).filter(img => img)
-            : Array.isArray(project.additional_images) 
-            ? project.additional_images 
-            : [];
-        additionalImages.forEach(img => {
-            if (img && img !== project.image) {
-                allImages.push({ url: img, isMain: false });
-            }
-        });
+    function closeProjectDetail() {
+        var modal = document.getElementById('projectDetailModal');
+        if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
     }
-    
-    // Construire le HTML
-    const imagesHtml = allImages.length > 0 ? `
-        <div class="project-images-gallery">
-            ${allImages.map((img, index) => {
-                let imgUrl = img.url;
-                if (!imgUrl.startsWith('http') && !imgUrl.startsWith('/')) {
-                    imgUrl = '/static/' + imgUrl;
-                } else if (imgUrl.startsWith('/static/')) {
-                    // Déjà correct
-                } else if (!imgUrl.startsWith('http')) {
-                    imgUrl = '/static/' + imgUrl;
-                }
-                return `
-                <div class="project-image-item">
-                    <img src="${imgUrl}" 
-                         alt="${project.title} - Image ${index + 1}"
-                         onclick="window.open(this.src, '_blank')"
-                         onerror="this.onerror=null; this.src='https://via.placeholder.com/600x400?text=Image+non+disponible';"
-                         loading="lazy">
-                    ${img.isMain ? '<span class="image-badge">Principale</span>' : ''}
-                </div>
-            `;
-            }).join('')}
-        </div>
-    ` : '';
-    
-    content.innerHTML = `
-        <div class="project-detail-header">
-            <h2>${project.title || 'Projet'}</h2>
-            ${project.featured ? '<span class="featured-badge"><i class="fas fa-star"></i> En vedette</span>' : ''}
-        </div>
-        ${imagesHtml}
-        <div class="project-detail-section">
-            <h3>Description</h3>
-            <p>${project.description || 'Aucune description disponible.'}</p>
-        </div>
-        <div class="project-detail-section">
-            <h3>Technologies</h3>
-            <div class="technologies-tags">
-                ${(project.technologies || '').split(',').map(tech => 
-                    `<span class="tech-tag">${tech.trim()}</span>`
-                ).join('')}
-            </div>
-        </div>
-        <div class="project-detail-section">
-            <h3>Liens</h3>
-            <div class="project-links">
-                ${project.link && project.link.startsWith('http') ? `<a href="${project.link}" target="_blank" rel="noopener noreferrer" class="project-link-btn"><i class="fas fa-external-link-alt"></i> Visiter le site</a>` : ''}
-                ${project.github_link && project.github_link.startsWith('http') ? `<a href="${project.github_link}" target="_blank" rel="noopener noreferrer" class="project-link-btn"><i class="fab fa-github"></i> Voir sur GitHub</a>` : ''}
-                ${!project.link && !project.github_link ? '<p class="gray">Aucun lien disponible</p>' : ''}
-            </div>
-        </div>
-    `;
-    
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeProjectDetail() {
-    const modal = document.getElementById('projectDetailModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-}
-
-// Fermer avec la touche Escape (une seule fois)
-if (!window.escapeListenerAdded) {
-    window.escapeListenerAdded = true;
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeProjectDetail();
-        }
+    window.openProjectDetail = openProjectDetail;
+    window.closeProjectDetail = closeProjectDetail;
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeProjectDetail();
     });
 }
-} // Fin de la vérification worksScriptLoaded
 </script>

@@ -1,10 +1,10 @@
 <div class="nav-menu-overlay"></div>
 <nav class="flex light-bg justify-space">
     <div class="logo white">
-        <a href="{{ url_for('index') }}">Pricemou claude</a>
+        <a href="{{ url_for('index') }}">Claude Pricemou</a>
     </div>
 
-    <button class="mobile-menu-toggle" aria-label="Menu" onclick="toggleMobileMenu()">
+    <button class="mobile-menu-toggle" aria-label="{{ t('nav_menu') }}" onclick="toggleMobileMenu()">
         <span></span>
         <span></span>
         <span></span>
@@ -12,40 +12,39 @@
 
     <ul class="flex white nav-menu">
         <li class="{% if request.endpoint == 'index' %}green{% endif %}">
-            <a href="{{ url_for('index') }}">
-                {% if request.endpoint == 'index' %}&lt; Accueil /&gt;{% else %}Accueil{% endif %}
+            <a href="{{ url_for('index') }}#about">
+                {% if request.endpoint == 'index' %}&lt; {{ t('nav_about') }} /&gt;{% else %}{{ t('nav_about') }}.{% endif %}
+            </a>
+        </li>
+        <li class="{% if request.endpoint == 'parcours' %}green{% endif %}">
+            <a href="{{ url_for('parcours') }}">
+                {% if request.endpoint == 'parcours' %}&lt; {{ t('nav_career') }} /&gt;{% else %}{{ t('nav_career') }}.{% endif %}
             </a>
         </li>
         <li class="{% if request.endpoint == 'works' %}green{% endif %}">
             <a href="{{ url_for('works') }}">
-                {% if request.endpoint == 'works' %}&lt; Projets /&gt;{% else %}Projets.{% endif %}
+                {% if request.endpoint == 'works' %}&lt; {{ t('nav_projects') }} /&gt;{% else %}{{ t('nav_projects') }}.{% endif %}
             </a>
         </li>
         <li class="{% if request.endpoint == 'services' %}green{% endif %}">
             <a href="{{ url_for('services') }}">
-                {% if request.endpoint == 'services' %}&lt; Services /&gt;{% else %}Services.{% endif %}
+                {% if request.endpoint == 'services' %}&lt; {{ t('nav_services') }} /&gt;{% else %}{{ t('nav_services') }}.{% endif %}
             </a>
         </li>
         <li class="{% if request.endpoint == 'contact' %}green{% endif %}">
             <a href="{{ url_for('contact') }}">
-                {% if request.endpoint == 'contact' %}&lt; Contact /&gt;{% else %}Contact.{% endif %}
+                {% if request.endpoint == 'contact' %}&lt; {{ t('nav_contact') }} /&gt;{% else %}{{ t('nav_contact') }}.{% endif %}
             </a>
         </li>
-        <li class="{% if request.endpoint == 'index' and '#about' in request.url %}green{% endif %}">
-            <a href="{{ url_for('index') }}#about">
-                {% if request.endpoint == 'index' and '#about' in request.url %}&lt; À propos /&gt;{% else %}À propos.{% endif %}
-            </a>
-        </li>
-        <li class="{% if request.endpoint == 'admin' %}green{% endif %}">
-            <a href="{{ url_for('admin') }}">
-                {% if request.endpoint == 'admin' %}&lt; Admin /&gt;{% else %}Admin.{% endif %}
-            </a>
+        <li class="lang-switch" aria-label="{{ t('nav_lang') }}">
+            <a href="{{ url_for('set_language', lang='fr') }}" class="{% if lang == 'fr' %}green{% endif %}" hreflang="fr" lang="fr">FR</a>
+            <span class="gray" aria-hidden="true">/</span>
+            <a href="{{ url_for('set_language', lang='en') }}" class="{% if lang == 'en' %}green{% endif %}" hreflang="en" lang="en">EN</a>
         </li>
         <li>
-            <button id="theme-toggle" class="theme-toggle" aria-label="Changer le thème" title="Changer le thème">
+            <button id="theme-toggle" class="theme-toggle" aria-label="{{ t('nav_theme') }}" title="{{ t('nav_theme') }}">
                 <span id="theme-icon">🌙</span>
             </button>
         </li>
     </ul>
 </nav>
-

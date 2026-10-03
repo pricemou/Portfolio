@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Services - Pricemou{% endblock %}
+{% block title %}{{ t('services_title') }} — Claude Pricemou{% endblock %}
+{% block meta_description %}Applications web, automatisation, tableaux de bord, machine learning et APIs.{% endblock %}
+{% block og_title %}Services — Claude Pricemou{% endblock %}
+{% block canonical %}https://claude225.pythonanywhere.com/services{% endblock %}
+{% block og_url %}https://claude225.pythonanywhere.com/services{% endblock %}
 
 {% block content %}
-    <!-- Header -->
     {% include 'components/page_header.html' %}
-
     <main>
-        <!-- Services -->
         {% include 'components/services.html' %}
     </main>
-
-    <!-- Footer -->
     {% set year = current_year %}
     {% include 'components/footer.html' %}
 {% endblock %}
-

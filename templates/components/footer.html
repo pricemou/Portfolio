@@ -1,31 +1,15 @@
 <footer class="light-bg flex justify-space">
-    <span class="white">Copyright © {{ year }} <a href="{{ url_for('index') }}">Pricemou</a> - Tous droits réservés.</span>
+    <span class="white">Copyright © {{ year }} <a href="{{ url_for('index') }}">Claude Pricemou</a> — {{ t('footer_rights') }}</span>
     <ul class="flex">
         <li>
-            <a href="https://www.facebook.com/blaiti" target="_blank" rel="noreferrer">
-                <img src="{{ url_for('static', filename='icons/facebook.svg') }}" width="24" height="24" alt="facebook-icon" />
+            <a href="https://www.linkedin.com/in/pricemou" target="_blank" rel="noopener noreferrer">
+                <img src="{{ url_for('static', filename='icons/linkedin.svg') }}" width="24" height="24" alt="LinkedIn de Claude Pricemou" />
             </a>
         </li>
         <li>
-            <a href="https://www.instagram.com/blaiti.codes" target="_blank" rel="noreferrer">
-                <img src="{{ url_for('static', filename='icons/instagram.svg') }}" width="24" height="24" alt="instagram-icon" />
-            </a>
-        </li>
-        <li>
-            <a href="https://www.linkedin.com/in/skanderblaiti" target="_blank" rel="noreferrer">
-                <img src="{{ url_for('static', filename='icons/linkedin.svg') }}" width="24" height="24" alt="linkedin-icon" />
-            </a>
-        </li>
-        <li>
-            <a href="https://github.com/blaiti" target="_blank" rel="noreferrer">
-                <img src="{{ url_for('static', filename='icons/github.svg') }}" width="24" height="24" alt="github-icon" />
-            </a>
-        </li>
-        <li>
-            <a href="https://youtube.com/Blaiti" target="_blank" rel="noreferrer">
-                <img src="{{ url_for('static', filename='icons/youtube.svg') }}" width="24" height="24" alt="youtube-icon" />
+            <a href="https://github.com/pricemou" target="_blank" rel="noopener noreferrer">
+                <img src="{{ url_for('static', filename='icons/github.svg') }}" width="24" height="24" alt="GitHub de Claude Pricemou" />
             </a>
         </li>
     </ul>
 </footer>
-

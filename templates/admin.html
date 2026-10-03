@@ -49,7 +49,7 @@
     <!-- Tentative de chargement Font Awesome depuis CDN -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" onerror="this.onerror=null; console.log('Font Awesome non chargé, utilisation des icônes de base');">
 </head>
-<body>
+<body data-active-section="{{ active_section|default('dashboard') }}">
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
@@ -58,31 +58,31 @@
             </div>
 
             <div class="sidebar-nav primary-nav">
-                <a href="#dashboard" class="nav-btn menu-item active" data-section="dashboard" aria-label="Tableau de bord">
+                <a href="{{ url_for('admin_section', section='dashboard') }}" class="nav-btn menu-item {% if active_section == 'dashboard' %}active{% endif %}" data-section="dashboard" aria-label="Tableau de bord">
                     <i class="fas fa-chart-line"></i>
                 </a>
-                <a href="#homepage" class="nav-btn menu-item" data-section="homepage" aria-label="Page d'accueil">
+                <a href="{{ url_for('admin_section', section='homepage') }}" class="nav-btn menu-item {% if active_section == 'homepage' %}active{% endif %}" data-section="homepage" aria-label="Page d'accueil">
                     <i class="fas fa-home"></i>
                 </a>
-                <a href="#skills" class="nav-btn menu-item" data-section="skills" aria-label="Compétences">
+                <a href="{{ url_for('admin_section', section='skills') }}" class="nav-btn menu-item {% if active_section == 'skills' %}active{% endif %}" data-section="skills" aria-label="Compétences">
                     <i class="fas fa-code"></i>
                 </a>
-                <a href="#partners" class="nav-btn menu-item" data-section="partners" aria-label="Partenaires">
+                <a href="{{ url_for('admin_section', section='partners') }}" class="nav-btn menu-item {% if active_section == 'partners' %}active{% endif %}" data-section="partners" aria-label="Partenaires">
                     <i class="fas fa-handshake"></i>
                 </a>
-                <a href="#projects" class="nav-btn menu-item" data-section="projects" aria-label="Projets">
+                <a href="{{ url_for('admin_section', section='projects') }}" class="nav-btn menu-item {% if active_section == 'projects' %}active{% endif %}" data-section="projects" aria-label="Projets">
                     <i class="fas fa-folder-open"></i>
                 </a>
-                <a href="#services" class="nav-btn menu-item" data-section="services" aria-label="Services">
+                <a href="{{ url_for('admin_section', section='services') }}" class="nav-btn menu-item {% if active_section == 'services' %}active{% endif %}" data-section="services" aria-label="Services">
                     <i class="fas fa-cogs"></i>
                 </a>
-                <a href="#contacts" class="nav-btn menu-item" data-section="contacts" aria-label="Contacts">
+                <a href="{{ url_for('admin_section', section='contacts') }}" class="nav-btn menu-item {% if active_section == 'contacts' %}active{% endif %}" data-section="contacts" aria-label="Contacts">
                     <i class="fas fa-envelope"></i>
                 </a>
-                <a href="#profile" class="nav-btn menu-item" data-section="profile" aria-label="Profil">
+                <a href="{{ url_for('admin_section', section='profile') }}" class="nav-btn menu-item {% if active_section == 'profile' %}active{% endif %}" data-section="profile" aria-label="Profil">
                     <i class="fas fa-user-circle"></i>
                 </a>
-                <a href="#admins" class="nav-btn menu-item" data-section="admins" aria-label="Administrateurs">
+                <a href="{{ url_for('admin_section', section='admins') }}" class="nav-btn menu-item {% if active_section == 'admins' %}active{% endif %}" data-section="admins" aria-label="Administrateurs">
                     <i class="fas fa-users-cog"></i>
                 </a>
                 <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
@@ -125,7 +125,7 @@
                             <i class="fas fa-chevron-down"></i>
                         </div>
                         <div class="user-dropdown" id="userDropdown">
-                            <a href="#" class="user-dropdown-item">
+                            <a href="{{ url_for('admin_section', section='profile') }}" class="user-dropdown-item">
                                 <i class="fas fa-user"></i> Profil
                             </a>
                             <a href="{{ url_for('admin_logout') }}" class="user-dropdown-item">
@@ -135,13 +135,13 @@
                     </div>
                 </div>
             </header>
-            <h1 class="page-title" id="current-page">Dashboard</h1>
+            <h1 class="page-title" id="current-page">{{ section_title|default('Tableau de bord') }}</h1>
 
             <!-- Content Area -->
             <div class="content-area">
                 <div class="dashboard-content">
-                    <!-- Section Dashboard -->
-                    <div id="section-dashboard" class="content-section active-section">
+                    <!-- Section Dashboard (stats/graphiques uniquement ici) -->
+                    <div id="section-dashboard" class="content-section {% if active_section == 'dashboard' %}active-section{% endif %}">
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-icon">
@@ -204,7 +204,7 @@
                     </div>
 
                     <!-- Section Homepage -->
-                    <div id="section-homepage" class="content-section" style="display: none;">
+                    <div id="section-homepage" class="content-section {% if active_section == 'homepage' %}active-section{% endif %}">
                         <h2>Page d'accueil</h2>
                         <form id="homepage-form" class="admin-form">
                             <div class="form-group">
@@ -253,7 +253,7 @@
                     </div>
 
                     <!-- Section Skills -->
-                    <div id="section-skills" class="content-section" style="display: none;">
+                    <div id="section-skills" class="content-section {% if active_section == 'skills' %}active-section{% endif %}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                             <h2>Compétences</h2>
                             <button class="btn btn-primary" onclick="openSkillModal()">+ Ajouter une compétence</button>
@@ -265,7 +265,7 @@
                     </div>
 
                     <!-- Section Partners -->
-                    <div id="section-partners" class="content-section" style="display: none;">
+                    <div id="section-partners" class="content-section {% if active_section == 'partners' %}active-section{% endif %}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                             <h2>Partenaires</h2>
                             <button class="btn btn-primary" onclick="openPartnerModal()">+ Ajouter un partenaire</button>
@@ -277,7 +277,7 @@
                     </div>
 
                     <!-- Section Projects -->
-                    <div id="section-projects" class="content-section" style="display: none;">
+                    <div id="section-projects" class="content-section {% if active_section == 'projects' %}active-section{% endif %}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                             <h2>Projets</h2>
                             <button class="btn btn-primary" onclick="openProjectModal()">+ Ajouter un projet</button>
@@ -289,7 +289,7 @@
                     </div>
 
                     <!-- Section Services -->
-                    <div id="section-services" class="content-section" style="display: none;">
+                    <div id="section-services" class="content-section {% if active_section == 'services' %}active-section{% endif %}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                             <h2>Services</h2>
                             <button class="btn btn-primary" onclick="openServiceModal()">+ Ajouter un service</button>
@@ -301,7 +301,7 @@
                     </div>
 
                     <!-- Section Contacts -->
-                    <div id="section-contacts" class="content-section" style="display: none;">
+                    <div id="section-contacts" class="content-section {% if active_section == 'contacts' %}active-section{% endif %}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                             <div>
                                 <h2>Messages de contact</h2>
@@ -327,7 +327,7 @@
                     </div>
 
                     <!-- Section Profil -->
-                    <div id="section-profile" class="content-section" style="display: none;">
+                    <div id="section-profile" class="content-section {% if active_section == 'profile' %}active-section{% endif %}">
                         <div style="margin-bottom: 2rem;">
                             <h2>Mon Profil</h2>
                             <p style="color: var(--gray); font-size: 0.9rem;">Gérez vos informations personnelles et votre mot de passe</p>
@@ -398,7 +398,7 @@
                     </div>
 
                     <!-- Section Administrateurs -->
-                    <div id="section-admins" class="content-section" style="display: none;">
+                    <div id="section-admins" class="content-section {% if active_section == 'admins' %}active-section{% endif %}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                             <div>
                                 <h2>Gestion des Administrateurs</h2>

@@ -30,7 +30,7 @@ function showSection(sectionName) {
         return;
     }
     
-    // Masquer toutes les sections
+    // Masquer toutes les sections (stats/graphiques restent dans #section-dashboard uniquement)
     const allSections = document.querySelectorAll('.content-section');
     if (allSections.length === 0) {
         console.warn('Aucune section avec la classe content-section trouvée');
@@ -38,8 +38,8 @@ function showSection(sectionName) {
     }
     
     allSections.forEach(section => {
-        section.style.display = 'none';
         section.classList.remove('active-section');
+        section.style.display = 'none';
     });
 
     // Afficher la section demandée
@@ -60,7 +60,7 @@ function showSection(sectionName) {
         pageTitleEl.textContent = pageTitle;
     }
     
-    // Charger les données si nécessaire
+    // Charger les données de la section courante uniquement
     if (sectionName === 'projects') {
         if (typeof initProjectsSection === 'function') {
             initProjectsSection();
@@ -102,56 +102,23 @@ function showSection(sectionName) {
 
 // Initialiser la navigation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
-    // Vérifier que les éléments nécessaires existent
-    const menuItems = document.querySelectorAll('.menu-item[data-section]');
-    
-    if (menuItems.length === 0) {
-        console.warn('Aucun élément de menu avec data-section trouvé');
-            return;
-        }
-        
-    console.log(`✅ ${menuItems.length} éléments de menu trouvés`);
-    
-    menuItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            const href = this.getAttribute('href');
-            if (href && href.startsWith('#')) {
-    e.preventDefault();
-                e.stopPropagation();
-                
-                const section = this.getAttribute('data-section');
-                if (section) {
-                    console.log(`🔄 Navigation vers la section: ${section}`);
-                    showSection(section);
-                    
-                    // Mettre à jour l'état actif
-                    menuItems.forEach(mi => mi.classList.remove('active'));
-                    this.classList.add('active');
-        } else {
-                    console.error('Section non trouvée:', section);
-                }
-            }
-        });
+    // Section active depuis la route serveur (/admin/<section>)
+    const sectionFromRoute = (document.body.dataset.activeSection || 'dashboard').trim();
+    const validSections = [
+        'dashboard', 'homepage', 'skills', 'partners',
+        'projects', 'services', 'contacts', 'profile', 'admins'
+    ];
+    const currentSection = validSections.includes(sectionFromRoute) ? sectionFromRoute : 'dashboard';
+
+    console.log(`✅ Section active (route): ${currentSection}`);
+
+    // Afficher uniquement la section de la route + charger ses données
+    showSection(currentSection);
+
+    // Mettre à jour l'état actif du menu
+    document.querySelectorAll('.menu-item[data-section]').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-section') === currentSection);
     });
-    
-    // Afficher la section dashboard par défaut si aucune section n'est active
-    const activeSection = document.querySelector('.content-section.active-section');
-    if (!activeSection) {
-        console.log('Aucune section active, affichage du dashboard par défaut');
-        showSection('dashboard');
-    } else if (activeSection.id === 'section-dashboard' && typeof loadDashboardStats === 'function') {
-        // Stats jamais chargées sinon (dashboard déjà active au premier rendu)
-        loadDashboardStats();
-    }
-    
-    // Charger les données au démarrage
-    console.log('🔄 Chargement des données initiales...');
-    loadHomepageData();
-    loadSkills();
-    loadPartners();
-    loadProjects();
-    loadServices();
-    loadContacts();
 });
 
 // ========== Fonctions utilitaires ==========
@@ -419,10 +386,9 @@ function displayPartners(partners) {
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    ${partner.image ? `<img src="/static/${partner.image}" alt="${partner.name}" style="width: 60px; height: auto;">` : ''}
                     <div>
                         <h3>${partner.name || 'Sans nom'}</h3>
-                        <p style="color: var(--gray); font-size: 0.9rem;"><strong>Ordre:</strong> ${partner.order || 0}</p>
+                        <p style="color: var(--gray); font-size: 0.9rem;">${partner.period || ''} · ordre ${partner.order || 0}</p>
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">

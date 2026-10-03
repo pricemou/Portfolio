@@ -1,36 +1,40 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ lang|default('fr') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="Pricemou claude">
-    <meta name="keywords" content="Développeur Full-Stack, Data Science, Python, React, Node.js, Machine Learning, Web Development, Data Analytics">
-    <meta name="description" content="Développeur Full-Stack & Data Science passionné, spécialisé dans la création d'applications web complètes et l'analyse de données.">
+    <meta name="author" content="Claude Pricemou">
+    <meta name="keywords" content="Claude Pricemou, Développeur Full Stack, Science des données, Flask, React, Python, Trois-Rivières, Québec">
+    <meta name="description" content="{% block meta_description %}Claude Pricemou — Développeur Full Stack & Science des données à Trois-Rivières. Applications web, automatisation et analyse de données.{% endblock %}">
     <meta name="theme-color" content="#2D2E32">
+    <link rel="canonical" href="{% block canonical %}https://claude225.pythonanywhere.com/{% endblock %}">
+    <link rel="alternate" hreflang="fr" href="{{ request.base_url }}">
+    <link rel="alternate" hreflang="en" href="{{ request.base_url }}">
     
-    <meta property="og:site_name" content="Pricemou - Développeur Full-Stack & Data Science">
-    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="Claude Pricemou">
+    <meta property="og:locale" content="{{ 'en_CA' if lang == 'en' else 'fr_CA' }}">
     <meta property="og:type" content="website"/>
-    <meta property="og:title" content="Pricemou - Développeur Full-Stack & Data Science"/>
-    <meta property="og:image" content="{{ url_for('static', filename='images/blaiti.png') }}"/>
+    <meta property="og:title" content="{% block og_title %}Claude Pricemou — Développeur Full Stack & Science des données{% endblock %}"/>
+    <meta property="og:description" content="{% block og_description %}Développeur Full Stack freelance à Trois-Rivières. Flask, React, data science.{% endblock %}"/>
+    <meta property="og:url" content="{% block og_url %}https://claude225.pythonanywhere.com/{% endblock %}"/>
+    <meta property="og:image" content="{{ url_for('static', filename='images/claude-pricemou.svg', _external=True) }}"/>
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Claude Pricemou — Full Stack & Data Science">
     
-    <title>{% block title %}Pricemou - Développeur Full-Stack & Data Science{% endblock %}</title>
+    <title>{% block title %}Claude Pricemou — Développeur Full Stack & Science des données{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/globals.css') }}">
     <script src="{{ url_for('static', filename='js/theme.js') }}" defer></script>
     <script>
-        // Fonction pour tracker les vues de projets
         function trackProjectView(projectId) {
             fetch('/api/analytics/track-project-view', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ project_id: projectId })
-            }).catch(err => console.debug('Erreur tracking projet:', err));
+            }).catch(function () {});
         }
 
-        // Tracker les vues de pages publiques
         (function trackPageView() {
             try {
                 var path = window.location.pathname || '/';
@@ -44,24 +48,19 @@
             } catch (e) {}
         })();
         
-        // Menu mobile - Fonction globale
         function toggleMobileMenu() {
             const menu = document.querySelector('.nav-menu');
             const toggle = document.querySelector('.mobile-menu-toggle');
             const overlay = document.querySelector('.nav-menu-overlay');
             const body = document.body;
-            
             if (menu && toggle) {
                 const isActive = menu.classList.contains('active');
-                
                 if (isActive) {
-                    // Fermer le menu
                     menu.classList.remove('active');
                     toggle.classList.remove('active');
                     if (overlay) overlay.classList.remove('active');
                     body.style.overflow = '';
                 } else {
-                    // Ouvrir le menu
                     menu.classList.add('active');
                     toggle.classList.add('active');
                     if (overlay) overlay.classList.add('active');
@@ -70,86 +69,59 @@
             }
         }
         
-        // Initialisation au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
-            // Fermer le menu en cliquant sur l'overlay
             const overlay = document.querySelector('.nav-menu-overlay');
-            if (overlay) {
-                overlay.addEventListener('click', function() {
-                    toggleMobileMenu();
-                });
-            }
-            
-            // Fermer le menu en cliquant sur un lien
-            const navLinks = document.querySelectorAll('.nav-menu a');
-            navLinks.forEach(link => {
+            if (overlay) overlay.addEventListener('click', toggleMobileMenu);
+            document.querySelectorAll('.nav-menu a').forEach(function(link) {
                 link.addEventListener('click', function() {
-                    // Petit délai pour permettre la navigation
                     setTimeout(function() {
-                        toggleMobileMenu();
+                        const menu = document.querySelector('.nav-menu');
+                        if (menu && menu.classList.contains('active')) toggleMobileMenu();
                     }, 200);
                 });
             });
-            
-            // Fermer le menu avec la touche Escape
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     const menu = document.querySelector('.nav-menu');
-                    if (menu && menu.classList.contains('active')) {
-                        toggleMobileMenu();
-                    }
+                    if (menu && menu.classList.contains('active')) toggleMobileMenu();
                 }
             });
         });
         
-        // Exposer la fonction globalement pour onclick
         window.toggleMobileMenu = toggleMobileMenu;
         
-        // Modal pour l'image header-image (blaiti.png)
         function openHeaderImageModal() {
             const modal = document.getElementById('headerImageModal');
-            const body = document.body;
             if (modal) {
                 modal.style.display = 'flex';
-                modal.style.opacity = '1';
                 modal.classList.add('active');
-                body.style.overflow = 'hidden';
+                document.body.style.overflow = 'hidden';
             }
         }
         
         function closeHeaderImageModal() {
             const modal = document.getElementById('headerImageModal');
-            const body = document.body;
             if (modal) {
                 modal.style.display = 'none';
-                modal.style.opacity = '0';
                 modal.classList.remove('active');
-                body.style.overflow = '';
+                document.body.style.overflow = '';
             }
         }
         
-        // Exposer les fonctions globalement
         window.openHeaderImageModal = openHeaderImageModal;
         window.closeHeaderImageModal = closeHeaderImageModal;
         
-        // Fermer la modal en cliquant sur l'overlay ou Escape
         document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('headerImageModal');
             const overlay = modal ? modal.querySelector('.header-image-modal-overlay') : null;
-            
             if (overlay) {
                 overlay.addEventListener('click', function(e) {
-                    if (e.target === overlay) {
-                        closeHeaderImageModal();
-                    }
+                    if (e.target === overlay) closeHeaderImageModal();
                 });
             }
-            
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    if (modal && modal.classList.contains('active')) {
-                        closeHeaderImageModal();
-                    }
+                if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
+                    closeHeaderImageModal();
                 }
             });
         });
@@ -158,16 +130,14 @@
 <body>
     {% block content %}{% endblock %}
     
-    <!-- Modal pour l'image header-image -->
     <div id="headerImageModal" class="header-image-modal">
         <div class="header-image-modal-overlay"></div>
         <div class="header-image-modal-content">
-            <button class="header-image-modal-close" onclick="closeHeaderImageModal()" aria-label="Fermer">
+            <button class="header-image-modal-close" onclick="closeHeaderImageModal()" aria-label="{{ t('close') }}">
                 <span>&times;</span>
             </button>
-            <img src="{{ url_for('static', filename='images/blaiti.png') }}" alt="blaiti" class="header-image-modal-img" />
+            <img src="{{ url_for('static', filename='images/claude-pricemou.svg') }}" alt="Portrait de Claude Pricemou, développeur full stack" class="header-image-modal-img" />
         </div>
     </div>
 </body>
 </html>
-

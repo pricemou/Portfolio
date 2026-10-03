@@ -74,10 +74,11 @@ app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
 app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
 
 # Variables personnalisées pour le portfolio
-app.config['PORTFOLIO_NAME'] = os.getenv('PORTFOLIO_NAME', 'Pricemou claude')
-app.config['PORTFOLIO_TITLE'] = os.getenv('PORTFOLIO_TITLE', 'Développeur Full-Stack & Data Science')
-app.config['PORTFOLIO_EMAIL'] = os.getenv('PORTFOLIO_EMAIL', 'contact@example.com')
-app.config['PORTFOLIO_DESCRIPTION'] = os.getenv('PORTFOLIO_DESCRIPTION', 'Développeur Full-Stack & Data Science passionné')
+app.config['PORTFOLIO_NAME'] = os.getenv('PORTFOLIO_NAME', 'Claude Pricemou')
+app.config['PORTFOLIO_TITLE'] = os.getenv('PORTFOLIO_TITLE', 'Développeur Full Stack & Science des données')
+app.config['PORTFOLIO_EMAIL'] = os.getenv('PORTFOLIO_EMAIL', 'pricemoufromon97@gmail.com')
+app.config['PORTFOLIO_DESCRIPTION'] = os.getenv('PORTFOLIO_DESCRIPTION', 'Développeur Full Stack freelance à Trois-Rivières')
+app.config['SITE_URL'] = os.getenv('SITE_URL', 'https://claude225.pythonanywhere.com')
 
 # Clé d'administration
 app.config['ADMIN_KEY'] = os.getenv('ADMIN_KEY', 'admin-secret-key-change-me')
@@ -163,6 +164,54 @@ if init_database():
 else:
     print("⚠️  Erreur lors de l'initialisation de la base de données SQLite")
 
+from utils.i18n import get_lang, translate
+from utils.security import generate_csrf_token
+
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(get_remote_address, app=app, default_limits=[])
+except Exception:
+    limiter = None
+
+def _limit_contact(fn):
+    if limiter is None:
+        return fn
+    return limiter.limit("5 per hour")(fn)
+
+@app.context_processor
+def inject_i18n():
+    lang = get_lang(request)
+    return {
+        'lang': lang,
+        't': lambda key: translate(key, lang),
+    }
+
+@app.route('/lang/<lang>')
+def set_language(lang):
+    if lang not in ('fr', 'en'):
+        lang = 'fr'
+    dest = request.args.get('next') or request.referrer or url_for('index')
+    resp = redirect(dest)
+    resp.set_cookie('lang', lang, max_age=60 * 60 * 24 * 365, samesite='Lax')
+    return resp
+
+def get_key_stats():
+    years = max(1, datetime.now().year - 2019)
+    stats = {'projects': 0, 'years': years, 'services': 0}
+    try:
+        with get_db() as conn:
+            if conn is None:
+                return stats
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM projects WHERE status = 'published'")
+            stats['projects'] = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM services')
+            stats['services'] = cursor.fetchone()[0]
+    except Exception as e:
+        app.logger.error(f"Erreur key_stats: {e}")
+    return stats
+
 def ensure_db_connection():
     """
     Retourne une connexion à la base de données SQLite
@@ -230,39 +279,24 @@ def index():
     # Valeurs par défaut si la base de données n'est pas disponible
     if not homepage_data:
         homepage_data = {
-            "badge": app.config['PORTFOLIO_TITLE'],
-            "title_line1": "De l'idée à la donnée.",
-            "title_line2": "Du code à l'insight !",
+            "badge": "Disponible en freelance · Trois-Rivières (Québec)",
+            "title_line1": "Du besoin métier",
+            "title_line2": "au produit et à la donnée.",
             "description": app.config['PORTFOLIO_DESCRIPTION'],
             "email": app.config['PORTFOLIO_EMAIL'],
-            "cta_text": "Discutons !",
+            "cta_text": "Discutons d'un mandat",
             "about_title": "Présentation",
             "about_name": app.config['PORTFOLIO_NAME'],
-            "about_subtitle": "Développeur Full-Stack & Data Science passionné par l'innovation et l'excellence technique.",
-            "about_description": "Je suis un développeur Full-Stack et Data Scientist avec une passion pour créer des solutions technologiques complètes et performantes."
+            "about_subtitle": app.config['PORTFOLIO_TITLE'],
+            "about_description": "Baccalauréat en informatique (science des données) à l'UQTR.",
         }
-    
-    if not skills:
-        skills = [
-            {"title": "Full-Stack Development", "icon": "icons/code.svg", "description": "Développement d'applications web complètes, du frontend au backend, avec les dernières technologies.", "projects_count": 15},
-            {"title": "Data Science", "icon": "icons/design.svg", "description": "Analyse de données, machine learning et visualisation pour extraire des insights précieux.", "projects_count": 12},
-            {"title": "Architecture & DevOps", "icon": "icons/phone.svg", "description": "Conception d'architectures scalables et déploiement avec les meilleures pratiques DevOps.", "projects_count": 8}
-        ]
-    
-    if not partners:
-        partners = [
-            {"name": "wallety", "image": "images/partners/wallety.png"},
-            {"name": "artisty", "image": "images/partners/artisty.png"},
-            {"name": "khedma-lik", "image": "images/partners/khedma-lik.png"},
-            {"name": "directy", "image": "images/partners/directy.png"},
-            {"name": "telefy", "image": "images/partners/telefy.png"}
-        ]
     
     return render_template('index.html', 
                          current_year=current_year,
                          homepage_data=homepage_data,
                          skills=skills,
-                         partners=partners)
+                         partners=partners,
+                         key_stats=get_key_stats())
 
 @app.route('/works')
 def works():
@@ -290,22 +324,28 @@ def works():
                 # Convertir id en string pour compatibilité et nettoyer les données
                 for project in projects:
                     project['_id'] = str(project['id'])
-                    # Convertir featured en booléen
                     project['featured'] = bool(project.get('featured', 0))
-                    # S'assurer que additional_images est une chaîne (None -> '')
+                    project['category'] = project.get('category') or 'pro'
                     if project.get('additional_images') is None:
                         project['additional_images'] = ''
-                    elif 'additional_images' not in project:
-                        project['additional_images'] = ''
+                    raw_results = project.get('results') or '[]'
+                    try:
+                        project['results_list'] = json.loads(raw_results) if isinstance(raw_results, str) else raw_results
+                    except (TypeError, ValueError):
+                        project['results_list'] = [raw_results] if raw_results else []
     except Exception as e:
         app.logger.error(f"Erreur lors de la récupération des projets: {e}")
         import traceback
         app.logger.error(traceback.format_exc())
-    
-    app.logger.info(f"Retour de {len(projects)} projets au template")
+
+    category_order = {'pro': 0, 'data': 1, 'academic': 2}
+    projects.sort(key=lambda p: (category_order.get(p.get('category'), 9), p.get('order_index') or 0))
+    active_cat = request.args.get('cat', 'all')
     return render_template('works.html', 
                          current_year=current_year,
-                         projects=projects)
+                         projects=projects,
+                         homepage_data=get_homepage_data(),
+                         active_cat=active_cat)
 
 @app.route('/services')
 def services():
@@ -327,32 +367,111 @@ def services():
     except Exception as e:
         app.logger.error(f"Erreur lors de la récupération des services: {e}")
     
-    return render_template('services.html', current_year=current_year, services=services_list)
+    return render_template('services.html', current_year=current_year, services=services_list, homepage_data=get_homepage_data())
+
+@app.route('/parcours')
+def parcours():
+    """Page parcours / chronologie"""
+    current_year = datetime.now().year
+    items = []
+    try:
+        with get_db() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM career ORDER BY order_index ASC')
+                items = rows_to_list(cursor.fetchall())
+    except Exception as e:
+        app.logger.error(f"Erreur parcours: {e}")
+    return render_template('parcours.html', current_year=current_year, career=items, homepage_data=get_homepage_data())
+
+@app.route('/cv')
+def download_cv():
+    from flask import send_from_directory
+    docs = os.path.join(app.root_path, 'static', 'docs')
+    filename = 'cv-claude-pricemou.pdf'
+    path = os.path.join(docs, filename)
+    if not os.path.exists(path):
+        flash('CV temporairement indisponible', 'error')
+        return redirect(url_for('index'))
+    return send_from_directory(docs, filename, as_attachment=True)
+
+@app.route('/sitemap.xml')
+def sitemap():
+    pages = [
+        url_for('index', _external=True),
+        url_for('parcours', _external=True),
+        url_for('works', _external=True),
+        url_for('services', _external=True),
+        url_for('contact', _external=True),
+    ]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for page in pages:
+        xml.append(f'<url><loc>{page}</loc></url>')
+    xml.append('</urlset>')
+    return app.response_class('\n'.join(xml), mimetype='application/xml')
+
+@app.route('/robots.txt')
+def robots():
+    body = (
+        'User-agent: *\n'
+        'Allow: /\n'
+        'Disallow: /admin\n'
+        'Disallow: /api/\n'
+        f"Sitemap: {app.config['SITE_URL']}/sitemap.xml\n"
+    )
+    return app.response_class(body, mimetype='text/plain')
 
 @app.route('/contact')
 def contact():
     """Page de contact"""
     current_year = datetime.now().year
-    portfolio_email = app.config.get('PORTFOLIO_EMAIL', 'contact@example.com')
-    return render_template('contact.html', current_year=current_year, portfolio_email=portfolio_email)
+    homepage_data = get_homepage_data()
+    portfolio_email = (homepage_data or {}).get('email') or app.config.get('PORTFOLIO_EMAIL')
+    if not session.get('csrf_token'):
+        session['csrf_token'] = generate_csrf_token()
+    service = request.args.get('service', '')
+    subject = ''
+    if service:
+        subject = f"Devis — {service.replace('-', ' ')}"
+    return render_template(
+        'contact.html',
+        current_year=current_year,
+        portfolio_email=portfolio_email,
+        homepage_data=homepage_data,
+        csrf_token=session.get('csrf_token'),
+        preset_subject=subject,
+    )
 
 @app.route('/api/contact', methods=['POST'])
 @app.route('/contact/submit', methods=['POST'])
+@_limit_contact
 def contact_submit():
     """Reçoit et stocke un message de contact"""
     try:
-        # Accepter à la fois JSON et form-data
+        # Honeypot anti-spam
+        honeypot = ''
         if request.is_json:
-            data = request.get_json()
+            data = request.get_json() or {}
+            honeypot = (data.get('website') or '').strip()
             name = data.get('name', '').strip()
             email = data.get('email', '').strip()
             subject = data.get('subject', '').strip()
             message = data.get('message', '').strip()
+            token = data.get('csrf_token', '')
         else:
+            honeypot = (request.form.get('website') or '').strip()
             name = request.form.get('name', '').strip()
             email = request.form.get('email', '').strip()
             subject = request.form.get('subject', '').strip()
             message = request.form.get('message', '').strip()
+            token = request.form.get('csrf_token', '')
+
+        if honeypot:
+            return jsonify({'success': True, 'message': 'Votre message a été envoyé avec succès.'}), 200
+
+        if token != session.get('csrf_token'):
+            return jsonify({'success': False, 'error': 'Session expirée. Rechargez la page.'}), 400
         
         # Validation des champs requis
         required_fields = {
@@ -621,7 +740,7 @@ def admin_login():
                         session['admin_logged_in'] = True
                         session['admin_username'] = username
                         session['admin_id'] = str(admin_user_dict['id'])
-                        return redirect(url_for('admin'))
+                        return redirect(url_for('admin_section', section='dashboard'))
                 
                 # Si on arrive ici, les identifiants sont incorrects
                 # Enregistrer la tentative échouée dans l'historique
@@ -643,7 +762,7 @@ def admin_login():
     
     # Si déjà connecté, rediriger vers admin
     if 'admin_logged_in' in session and session.get('admin_logged_in'):
-        return redirect(url_for('admin'))
+        return redirect(url_for('admin_section', section='dashboard'))
     
     return render_template('admin_login.html')
 
@@ -654,11 +773,37 @@ def admin_logout():
     flash('Vous avez été déconnecté avec succès', 'success')
     return redirect(url_for('admin_login'))
 
+ADMIN_SECTIONS = {
+    'dashboard': 'Tableau de bord',
+    'homepage': "Page d'accueil",
+    'skills': 'Compétences',
+    'partners': 'Partenaires',
+    'projects': 'Projets',
+    'services': 'Services',
+    'contacts': 'Contacts',
+    'profile': 'Profil',
+    'admins': 'Administrateurs',
+}
+
 @app.route('/admin')
 @login_required
 def admin():
-    """Page d'administration"""
-    return render_template('admin.html', admin_username=session.get('admin_username', 'Admin'))
+    """Redirige vers le tableau de bord admin"""
+    return redirect(url_for('admin_section', section='dashboard'))
+
+@app.route('/admin/<section>')
+@login_required
+def admin_section(section):
+    """Page d'administration pour une section donnée"""
+    if section not in ADMIN_SECTIONS:
+        flash('Section introuvable', 'error')
+        return redirect(url_for('admin_section', section='dashboard'))
+    return render_template(
+        'admin.html',
+        admin_username=session.get('admin_username', 'Admin'),
+        active_section=section,
+        section_title=ADMIN_SECTIONS[section],
+    )
 
 # ========== Routes API Analytics (tracking public) ==========
 def _client_ip():
@@ -791,16 +936,16 @@ def get_homepage_api():
         else:
             # Retourner des données par défaut si aucune donnée
             data = {
-                "badge": app.config['PORTFOLIO_TITLE'],
-                "title_line1": "De l'idée à la donnée.",
-                "title_line2": "Du code à l'insight !",
+                "badge": "Disponible en freelance · Trois-Rivières (Québec)",
+                "title_line1": "Du besoin métier",
+                "title_line2": "au produit et à la donnée.",
                 "description": app.config['PORTFOLIO_DESCRIPTION'],
                 "email": app.config['PORTFOLIO_EMAIL'],
-                "cta_text": "Discutons !",
+                "cta_text": "Discutons d'un mandat",
                 "about_title": "Présentation",
                 "about_name": app.config['PORTFOLIO_NAME'],
-                "about_subtitle": "Développeur Full-Stack & Data Science passionné par l'innovation et l'excellence technique.",
-                "about_description": "Je suis un développeur Full-Stack et Data Scientist avec une passion pour créer des solutions technologiques complètes et performantes."
+                "about_subtitle": app.config['PORTFOLIO_TITLE'],
+                "about_description": "Baccalauréat en informatique (science des données) à l'UQTR."
             }
         return jsonify(data or {})
     except Exception as e:
@@ -1080,7 +1225,7 @@ def create_partner_api():
             return jsonify({'error': 'Données JSON manquantes'}), 400
         
         # Validation des champs requis
-        required_fields = ['name', 'logo']
+        required_fields = ['name']
         validation_errors = validate_required(data, required_fields)
         if validation_errors:
             return jsonify({'error': '; '.join(validation_errors)}), 400

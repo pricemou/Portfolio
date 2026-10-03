@@ -1,218 +1,86 @@
 {% extends "base.html" %}
 
-{% block title %}Contact - Pricemou{% endblock %}
+{% block title %}{{ t('contact_title') }} — Claude Pricemou{% endblock %}
+{% block meta_description %}Contacter Claude Pricemou pour un mandat freelance à Trois-Rivières.{% endblock %}
+{% block og_title %}Contact — Claude Pricemou{% endblock %}
+{% block canonical %}https://claude225.pythonanywhere.com/contact{% endblock %}
+{% block og_url %}https://claude225.pythonanywhere.com/contact{% endblock %}
 
 {% block content %}
-    <!-- Header -->
     {% include 'components/page_header.html' %}
-
     <main>
-        <!-- Contact Section -->
-        <section id="contact" class="dark-bg" style="padding: 4rem 2rem;">
-            <div style="max-width: 800px; margin: 0 auto;">
-                <h2 style="text-align: center; color: var(--white, #FFFFFF); margin-bottom: 3rem; font-size: 2.5rem;">
-                    Contactez-moi
-                </h2>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-bottom: 3rem;">
+        <section id="contact" class="dark-bg contact-section">
+            <div class="contact-wrap">
+                <div class="contact-grid">
                     <div>
-                        <h3 style="color: var(--green, #4DBA87); margin-bottom: 1rem;">Informations de contact</h3>
-                        <div style="color: var(--gray, #8B8B8B); line-height: 2;">
-                            <p><strong>Email:</strong> {{ portfolio_email or 'contact@example.com' }}</p>
-                            <p style="margin-top: 1rem;">N'hésitez pas à me contacter pour discuter de vos projets, collaborations ou opportunités.</p>
-                        </div>
+                        <h3 class="green">{{ t('contact_info') }}</h3>
+                        <p class="gray"><strong>Email :</strong> {{ portfolio_email }}</p>
+                        <p class="gray">{{ t('availability_text') }}</p>
                     </div>
                     <div>
-                        <h3 style="color: var(--green, #4DBA87); margin-bottom: 1rem;">Disponibilité</h3>
-                        <div style="color: var(--gray, #8B8B8B); line-height: 2;">
-                            <p>Je réponds généralement sous 24-48h.</p>
-                            <p style="margin-top: 1rem;">Pour les projets urgents, n'hésitez pas à mentionner-le dans votre message.</p>
-                        </div>
+                        <h3 class="green">{{ t('availability') }}</h3>
+                        <p class="gray">{{ (homepage_data.availability if homepage_data else t('hero_badge')) }}</p>
+                        <a class="cv-btn" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
                     </div>
                 </div>
 
-                <div class="contact-form-container" style="background: var(--light-bg, #2D2E32); padding: 2rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <form id="contact-form" method="POST" action="{{ url_for('contact_submit') }}">
-                        <div style="display: grid; gap: 1.5rem;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                                <div class="form-group">
-                                    <label for="name" style="display: block; margin-bottom: 0.5rem; color: var(--white, #FFFFFF); font-weight: 600;">
-                                        Nom complet *
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="name" 
-                                        name="name" 
-                                        required 
-                                        maxlength="100"
-                                        style="width: 100%; padding: 0.75rem; background: var(--dark-bg, #25262A); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--white, #FFFFFF); font-family: 'Roboto Mono', monospace;"
-                                        placeholder="Votre nom"
-                                    >
-                                </div>
-                                <div class="form-group">
-                                    <label for="email" style="display: block; margin-bottom: 0.5rem; color: var(--white, #FFFFFF); font-weight: 600;">
-                                        Email *
-                                    </label>
-                                    <input 
-                                        type="email" 
-                                        id="email" 
-                                        name="email" 
-                                        required 
-                                        maxlength="200"
-                                        style="width: 100%; padding: 0.75rem; background: var(--dark-bg, #25262A); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--white, #FFFFFF); font-family: 'Roboto Mono', monospace;"
-                                        placeholder="votre@email.com"
-                                    >
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="subject" style="display: block; margin-bottom: 0.5rem; color: var(--white, #FFFFFF); font-weight: 600;">
-                                    Sujet *
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="subject" 
-                                    name="subject" 
-                                    required 
-                                    maxlength="200"
-                                    style="width: 100%; padding: 0.75rem; background: var(--dark-bg, #25262A); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--white, #FFFFFF); font-family: 'Roboto Mono', monospace;"
-                                    placeholder="Sujet de votre message"
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="message" style="display: block; margin-bottom: 0.5rem; color: var(--white, #FFFFFF); font-weight: 600;">
-                                    Message *
-                                </label>
-                                <textarea 
-                                    id="message" 
-                                    name="message" 
-                                    required 
-                                    rows="6"
-                                    maxlength="2000"
-                                    style="width: 100%; padding: 0.75rem; background: var(--dark-bg, #25262A); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: var(--white, #FFFFFF); font-family: 'Roboto Mono', monospace; resize: vertical;"
-                                    placeholder="Votre message..."
-                                ></textarea>
-                                <small style="color: var(--gray, #8B8B8B); font-size: 0.85rem;">Maximum 2000 caractères</small>
-                            </div>
-                            
-                            <div id="form-message" style="display: none; padding: 1rem; border-radius: 8px; margin-top: 1rem; min-height: 50px;"></div>
-                            
-                            <button 
-                                type="submit" 
-                                id="submit-btn"
-                                style="width: 100%; padding: 1rem; background: var(--green, #4DBA87); color: var(--white, #FFFFFF); border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Roboto Mono', monospace;"
-                                onmouseover="this.style.background='#3da870'; this.style.transform='translateY(-2px)';"
-                                onmouseout="this.style.background='var(--green, #4DBA87)'; this.style.transform='translateY(0)';"
-                            >
-                                Envoyer le message
-                            </button>
+                <form id="contact-form" class="contact-form-container light-bg" method="POST" action="{{ url_for('contact_submit') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="hp-field" aria-hidden="true">
+                        <label for="website">Site web</label>
+                        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">{{ t('form_name') }} *</label>
+                            <input type="text" id="name" name="name" required maxlength="100">
                         </div>
-                    </form>
-                </div>
+                        <div class="form-group">
+                            <label for="email">{{ t('form_email') }} *</label>
+                            <input type="email" id="email" name="email" required maxlength="200">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">{{ t('form_subject') }} *</label>
+                        <input type="text" id="subject" name="subject" required maxlength="200" value="{{ preset_subject or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">{{ t('form_message') }} *</label>
+                        <textarea id="message" name="message" required rows="6" maxlength="2000"></textarea>
+                    </div>
+                    <div id="form-message" hidden></div>
+                    <button type="submit" id="submit-btn">{{ t('form_send') }}</button>
+                </form>
             </div>
         </section>
     </main>
-
-    <!-- Footer -->
     {% set year = current_year %}
     {% include 'components/footer.html' %}
-
     <script>
-        // Gestion du formulaire de contact - Attendre que le DOM soit chargé
-        document.addEventListener('DOMContentLoaded', function() {
-            const contactForm = document.getElementById('contact-form');
-            if (!contactForm) {
-                console.error('Formulaire de contact non trouvé');
-                return;
-            }
-            
-            contactForm.addEventListener('submit', async function(e) {
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('contact-form');
+            if (!form) return;
+            form.addEventListener('submit', async function (e) {
                 e.preventDefault();
-                
-                const submitBtn = document.getElementById('submit-btn');
-                const messageDiv = document.getElementById('form-message');
-                
-                if (!submitBtn || !messageDiv) {
-                    console.error('Éléments du formulaire non trouvés');
-                    return;
-                }
-                
-                const formData = new FormData(this);
-                
-                // Désactiver le bouton pendant l'envoi
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Envoi en cours...';
-                messageDiv.style.display = 'none';
-                messageDiv.textContent = '';
-                
+                var btn = document.getElementById('submit-btn');
+                var box = document.getElementById('form-message');
+                btn.disabled = true;
+                btn.textContent = {{ t('form_sending')|tojson }};
+                box.hidden = false;
                 try {
-                    const response = await fetch('{{ url_for("contact_submit") }}', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    // Vérifier si la réponse est OK avant de parser JSON
-                    let result;
-                    try {
-                        result = await response.json();
-                    } catch (jsonError) {
-                        console.error('Erreur lors du parsing JSON:', jsonError);
-                        throw new Error('Réponse invalide du serveur');
-                    }
-                    
-                    console.log('Réponse du serveur:', result);
-                    
-                    if (response.ok && result.success) {
-                        // Message de succès
-                        messageDiv.style.display = 'block';
-                        messageDiv.style.background = 'rgba(77, 186, 135, 0.15)';
-                        messageDiv.style.border = '2px solid #4DBA87';
-                        messageDiv.style.borderRadius = '8px';
-                        messageDiv.style.color = '#4DBA87';
-                        messageDiv.style.padding = '1rem';
-                        messageDiv.style.marginTop = '1rem';
-                        messageDiv.style.fontWeight = '500';
-                        messageDiv.innerHTML = '<strong>✓</strong> ' + (result.message || 'Message envoyé avec succès ! Je vous répondrai dans les plus brefs délais.');
-                        this.reset();
-                        
-                        // Faire défiler vers le message
-                        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    } else {
-                        // Message d'erreur
-                        messageDiv.style.display = 'block';
-                        messageDiv.style.background = 'rgba(220, 53, 69, 0.15)';
-                        messageDiv.style.border = '2px solid #dc3545';
-                        messageDiv.style.borderRadius = '8px';
-                        messageDiv.style.color = '#dc3545';
-                        messageDiv.style.padding = '1rem';
-                        messageDiv.style.marginTop = '1rem';
-                        messageDiv.style.fontWeight = '500';
-                        messageDiv.innerHTML = '<strong>✗</strong> ' + (result.error || 'Erreur lors de l\'envoi du message. Veuillez réessayer.');
-                        
-                        // Faire défiler vers le message
-                        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                } catch (error) {
-                    console.error('Erreur lors de l\'envoi:', error);
-                    messageDiv.style.display = 'block';
-                    messageDiv.style.background = 'rgba(220, 53, 69, 0.15)';
-                    messageDiv.style.border = '2px solid #dc3545';
-                    messageDiv.style.borderRadius = '8px';
-                    messageDiv.style.color = '#dc3545';
-                    messageDiv.style.padding = '1rem';
-                    messageDiv.style.marginTop = '1rem';
-                    messageDiv.style.fontWeight = '500';
-                    messageDiv.innerHTML = '<strong>✗</strong> Erreur de connexion. Veuillez réessayer plus tard.';
-                    
-                    // Faire défiler vers le message
-                    messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    var response = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+                    var result = await response.json();
+                    box.textContent = result.success ? (result.message || {{ t('form_success')|tojson }}) : (result.error || 'Erreur');
+                    box.className = result.success ? 'form-ok' : 'form-err';
+                    if (result.success) form.reset();
+                } catch (err) {
+                    box.textContent = 'Erreur de connexion.';
+                    box.className = 'form-err';
                 } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Envoyer le message';
+                    btn.disabled = false;
+                    btn.textContent = {{ t('form_send')|tojson }};
                 }
             });
         });
     </script>
 {% endblock %}
-

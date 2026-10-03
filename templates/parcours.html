@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('career_title') }} — Claude Pricemou{% endblock %}
+{% block meta_description %}Parcours de Claude Pricemou : freelance, stages et encadrement d'équipe.{% endblock %}
+{% block og_title %}Parcours — Claude Pricemou{% endblock %}
+{% block canonical %}https://claude225.pythonanywhere.com/parcours{% endblock %}
+{% block og_url %}https://claude225.pythonanywhere.com/parcours{% endblock %}
+
+{% block content %}
+    {% include 'components/page_header.html' %}
+    <main>
+        <section class="dark-bg career-section">
+            <ol class="timeline">
+                {% for item in career %}
+                <li class="timeline-item light-bg">
+                    <span class="timeline-kind green">{{ t('kind_' + (item.kind or 'emploi')) }}</span>
+                    <h2 class="white">{{ item.title }}</h2>
+                    <p class="green">{{ item.org }}{% if item.location %} · {{ item.location }}{% endif %}</p>
+                    <p class="gray">
+                        {{ item.start or '' }}
+                        {% if item.end %} — {{ item.end }}{% elif item.start %} — {{ t('present') }}{% endif %}
+                    </p>
+                    {% if item.bullets %}
+                    <p class="gray timeline-bullets">{{ item.bullets }}</p>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+        </section>
+    </main>
+    {% set year = current_year %}
+    {% include 'components/footer.html' %}
+{% endblock %}

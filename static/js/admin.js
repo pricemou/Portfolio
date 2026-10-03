@@ -28,22 +28,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Navigation menu items
+    // Navigation menu: les liens /admin/<section> naviguent normalement (routes serveur)
     const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            // Don't prevent default for external links
-            if (this.getAttribute('href') && this.getAttribute('href').startsWith('#')) {
-                e.preventDefault();
+        item.addEventListener('click', function() {
+            const href = this.getAttribute('href') || '';
+            // Ne pas forcer l'état actif sur les liens externes (retour site)
+            if (href.startsWith('/admin')) {
+                menuItems.forEach(mi => mi.classList.remove('active'));
+                this.classList.add('active');
             }
-            
-            // Update active state
-            menuItems.forEach(mi => mi.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update page title
-            const pageTitle = this.getAttribute('aria-label') || 'Dashboard';
-            document.getElementById('current-page').textContent = pageTitle;
         });
     });
     

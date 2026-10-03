@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="463" height="513" viewBox="0 0 463 513" role="img" aria-label="Portrait de Claude Pricemou">
+  <rect width="463" height="513" fill="#2D2E32"/>
+  <circle cx="231.5" cy="210" r="92" fill="#4dba87"/>
+  <text x="231.5" y="228" text-anchor="middle" font-family="Georgia, serif" font-size="72" fill="#1a1b1e">CP</text>
+  <text x="231.5" y="360" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#FFFFFF">Claude Pricemou</text>
+  <text x="231.5" y="392" text-anchor="middle" font-family="monospace" font-size="14" fill="#9a9a9a">Full Stack &amp; Data Science</text>
+</svg>

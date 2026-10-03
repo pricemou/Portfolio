@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Projets - Pricemou{% endblock %}
+{% block title %}{{ t('works_title') }} — Claude Pricemou{% endblock %}
+{% block meta_description %}Projets professionnels, data science et académiques de Claude Pricemou.{% endblock %}
+{% block og_title %}Projets — Claude Pricemou{% endblock %}
+{% block canonical %}https://claude225.pythonanywhere.com/works{% endblock %}
+{% block og_url %}https://claude225.pythonanywhere.com/works{% endblock %}
 
 {% block content %}
-    <!-- Header -->
     {% include 'components/page_header.html' %}
-
     <main>
-        <!-- Works -->
         {% include 'components/works.html' %}
     </main>
-
-    <!-- Footer -->
     {% set year = current_year %}
     {% include 'components/footer.html' %}
 {% endblock %}
-
