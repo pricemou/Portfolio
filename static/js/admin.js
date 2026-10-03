@@ -375,7 +375,10 @@ function renderSimpleChart(container, data, key, title) {
 // ============================================
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
-    if (!container) return;
+    if (!container) {
+        console.log(`[${(type || 'info').toUpperCase()}] ${message}`);
+        return;
+    }
     
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
@@ -387,10 +390,13 @@ function showToast(message, type = 'info') {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
         setTimeout(() => {
-            container.removeChild(toast);
+            if (toast.parentNode === container) {
+                container.removeChild(toast);
+            }
         }, 300);
     }, 3000);
 }
+window.showToast = showToast;
 
 // ============================================
 // Loading Overlay

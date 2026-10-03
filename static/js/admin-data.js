@@ -139,6 +139,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!activeSection) {
         console.log('Aucune section active, affichage du dashboard par défaut');
         showSection('dashboard');
+    } else if (activeSection.id === 'section-dashboard' && typeof loadDashboardStats === 'function') {
+        // Stats jamais chargées sinon (dashboard déjà active au premier rendu)
+        loadDashboardStats();
     }
     
     // Charger les données au démarrage
@@ -152,15 +155,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========== Fonctions utilitaires ==========
-function showToast(message, type = 'info') {
-    // Utiliser la fonction showToast de admin.js si disponible
-    if (typeof window.showToast === 'function') {
-        window.showToast(message, type);
-            return;
-        }
-        
-    // Fallback si showToast n'est pas disponible
-    console.log(`[${type.toUpperCase()}] ${message}`);
+// showToast est défini dans admin.js (chargé avant ce fichier).
+// Ne pas le redéfinir avec le même nom : sinon window.showToast s'appelle lui-même → stack overflow.
+if (typeof window.showToast !== 'function') {
+    window.showToast = function (message, type = 'info') {
+        console.log(`[${(type || 'info').toUpperCase()}] ${message}`);
+    };
 }
 
 // Fonction pour gérer les erreurs 401 (session expirée)
@@ -444,25 +444,44 @@ function editPartner(partnerId) {
     showToast('Fonctionnalité à implémenter', 'info');
 }
 
-function deletePartner(partnerId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce partenaire ?')) {
-        fetch(`${API_BASE}/partners/${partnerId}`, {
+async function deletePartner(partnerId) {
+    if (!partnerId) {
+        showToast('ID partenaire invalide', 'error');
+        return;
+    }
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce partenaire ?')) {
+        return;
+    }
+    try {
+        const response = await fetch(`${API_BASE}/partners/${partnerId}`, {
             method: 'DELETE',
-            headers: getHeaders()
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Partenaire supprimé', 'success');
-                loadPartners();
-            } else {
-                showToast(data.error || 'Erreur lors de la suppression', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            showToast('Erreur lors de la suppression', 'error');
+            headers: getHeaders(),
+            credentials: 'same-origin'
         });
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (_) {
+            data = {};
+        }
+        if (response.ok && data.success) {
+            showToast('Partenaire supprimé', 'success');
+            loadPartners();
+            return;
+        }
+        if (response.status === 401) {
+            await handle401Error();
+            return;
+        }
+        if (response.status === 404) {
+            showToast(data.error || 'Partenaire introuvable (peut-être déjà supprimé)', 'error');
+            loadPartners();
+            return;
+        }
+        showToast(data.error || `Erreur lors de la suppression (${response.status})`, 'error');
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la suppression', 'error');
     }
 }
 

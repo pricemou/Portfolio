@@ -29,6 +29,20 @@
                 body: JSON.stringify({ project_id: projectId })
             }).catch(err => console.debug('Erreur tracking projet:', err));
         }
+
+        // Tracker les vues de pages publiques
+        (function trackPageView() {
+            try {
+                var path = window.location.pathname || '/';
+                if (path.indexOf('/admin') === 0) return;
+                fetch('/api/analytics/track-page', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page_path: path }),
+                    keepalive: true
+                }).catch(function () {});
+            } catch (e) {}
+        })();
         
         // Menu mobile - Fonction globale
         function toggleMobileMenu() {

@@ -541,7 +541,8 @@ def admin_required(f):
         if admin_key and admin_key == expected_key:
             return f(*args, **kwargs)
         
-        if request.is_json:
+        # Les routes API doivent toujours renvoyer du JSON (DELETE sans body inclus)
+        if request.is_json or request.path.startswith('/api/'):
             return jsonify({'error': 'Non authentifié. Veuillez vous connecter.'}), 401
         return redirect(url_for('admin_login'))
     return decorated_function
@@ -658,6 +659,64 @@ def admin_logout():
 def admin():
     """Page d'administration"""
     return render_template('admin.html', admin_username=session.get('admin_username', 'Admin'))
+
+# ========== Routes API Analytics (tracking public) ==========
+def _client_ip():
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or ''
+
+@app.route('/api/analytics/track-page', methods=['POST'])
+def track_page_api():
+    """Enregistre une vue de page + visiteur (public)"""
+    try:
+        data = request.get_json(silent=True) or {}
+        page_path = sanitize_input(data.get('page_path') or request.path or '/', max_length=500)
+        # Ne pas tracker l'admin / les assets
+        if page_path.startswith('/admin') or page_path.startswith('/static') or page_path.startswith('/api'):
+            return jsonify({'success': True, 'skipped': True}), 200
+
+        ip_address = _client_ip()
+        user_agent = request.headers.get('User-Agent', '')
+        referer = request.headers.get('Referer', '')
+
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'success': False, 'error': 'DB unavailable'}), 503
+            from utils.analytics import track_page_view, track_visitor
+            track_page_view(conn, page_path, ip_address, user_agent, referer)
+            track_visitor(conn, ip_address, user_agent, page_path)
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        app.logger.error(f"Erreur track_page_api: {e}")
+        return jsonify({'success': False}), 500
+
+@app.route('/api/analytics/track-project-view', methods=['POST'])
+def track_project_view_api():
+    """Enregistre une vue de projet (public)"""
+    try:
+        data = request.get_json(silent=True) or {}
+        project_id = data.get('project_id')
+        if project_id is None or str(project_id).strip() == '':
+            return jsonify({'error': 'project_id requis'}), 400
+        try:
+            int(project_id)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'project_id invalide'}), 400
+
+        ip_address = _client_ip()
+        user_agent = request.headers.get('User-Agent', '')
+
+        with get_db() as conn:
+            if conn is None:
+                return jsonify({'success': False, 'error': 'DB unavailable'}), 503
+            from utils.analytics import track_project_view
+            track_project_view(conn, project_id, ip_address, user_agent)
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        app.logger.error(f"Erreur track_project_view_api: {e}")
+        return jsonify({'success': False}), 500
 
 # ========== Route API pour les Statistiques ==========
 @app.route('/api/analytics/stats', methods=['GET'])
@@ -1111,17 +1170,23 @@ def update_partner_api(partner_id):
 def delete_partner_api(partner_id):
     """Supprime un partenaire"""
     try:
+        try:
+            pid = int(partner_id)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'ID partenaire invalide'}), 400
+
         with get_db() as conn:
             if conn is None:
                 return jsonify({'error': 'Base de données non disponible'}), 503
             
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM partners WHERE id = ?', (int(partner_id),))
+            cursor.execute('SELECT id FROM partners WHERE id = ?', (pid,))
+            if cursor.fetchone() is None:
+                return jsonify({'error': 'Partenaire non trouvé'}), 404
+
+            cursor.execute('DELETE FROM partners WHERE id = ?', (pid,))
             conn.commit()
-            
-            if cursor.rowcount > 0:
-                return jsonify({'success': True, 'message': 'Partenaire supprimé'})
-            return jsonify({'error': 'Partenaire non trouvé'}), 404
+            return jsonify({'success': True, 'message': 'Partenaire supprimé'})
     except Exception as e:
         app.logger.error(f"Erreur delete_partner_api: {e}")
         return jsonify({'error': str(e)}), 500
