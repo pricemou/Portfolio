@@ -1217,13 +1217,16 @@ async function handleProjectSubmit(event) {
         const response = await fetch(url, {
             method: method,
             headers: getHeaders(),
+            credentials: 'include',
             body: JSON.stringify(requestData)
         });
         
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         
         if (!response.ok) {
-            showToast(data.error || (projectId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création'), 'error');
+            const errMsg = data.error || data.message || (projectId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création');
+            console.error('Projet API', response.status, errMsg, requestData);
+            showToast(errMsg, 'error');
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalBtnText;

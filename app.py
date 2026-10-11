@@ -35,10 +35,13 @@ mail = None
 try:
     from utils.validators import (
         validate_email, validate_url, validate_required,
-        sanitize_input, validate_date, validate_integer
+        sanitize_input, validate_date, validate_integer,
+        valid_project_image_path,
     )
 except ImportError:
     # Fallback si le module n'existe pas encore
+    from urllib.parse import urlparse
+
     def validate_email(email):
         if not email:
             return False
@@ -48,8 +51,25 @@ except ImportError:
     def validate_url(url):
         if not url:
             return True
-        pattern = r'^https?://(?:[-\w.])+(?:[:\d]+)?(?:/(?:[\w/_.])*)?(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?$'
-        return re.match(pattern, url) is not None
+        try:
+            parsed = urlparse(str(url).strip())
+        except Exception:
+            return False
+        return parsed.scheme in ('http', 'https') and bool(parsed.netloc)
+
+    def valid_project_image_path(path):
+        if not path:
+            return True
+        p = str(path).strip()
+        if not p:
+            return True
+        if validate_url(p):
+            return True
+        if p.startswith('/static/'):
+            p = p[len('/static/'):]
+        elif p.startswith('static/'):
+            p = p[len('static/'):]
+        return p.startswith('images/') or p.startswith('uploads/')
     
     def validate_required(data, fields):
         errors = []
@@ -1584,19 +1604,12 @@ def create_project_api():
         
         if cleaned_data['github_link'] and not validate_url(cleaned_data['github_link']):
             return jsonify({'error': 'Format d\'URL GitHub invalide'}), 400
-        
-        def _valid_project_image_path(path):
-            if not path:
-                return True
-            if validate_url(path):
-                return True
-            return path.startswith('images/') or path.startswith('uploads/')
 
-        if cleaned_data['image'] and not _valid_project_image_path(cleaned_data['image']):
+        if cleaned_data['image'] and not valid_project_image_path(cleaned_data['image']):
             return jsonify({'error': 'Format d\'URL d\'image invalide'}), 400
 
         for img_path in (p.strip() for p in (cleaned_data.get('additional_images') or '').split(',')):
-            if img_path and not _valid_project_image_path(img_path):
+            if img_path and not valid_project_image_path(img_path):
                 return jsonify({'error': 'Format d\'image supplémentaire invalide'}), 400
         
         # Valider le statut
@@ -1675,17 +1688,31 @@ def update_project_api(project_id):
                     updates.append('featured = ?')
                     values.append(1 if bool(value) else 0)
             
-            # Valider les URLs
+            # Valider les URLs / chemins média
             if 'link' in data and data['link'] and not validate_url(data['link']):
                 return jsonify({'error': 'Format d\'URL de lien invalide'}), 400
             if 'github_link' in data and data['github_link'] and not validate_url(data['github_link']):
                 return jsonify({'error': 'Format d\'URL GitHub invalide'}), 400
+            if 'image' in data and data['image'] and not valid_project_image_path(data['image']):
+                return jsonify({'error': 'Format d\'URL d\'image invalide'}), 400
+            if 'additional_images' in data and data['additional_images']:
+                for img_path in (p.strip() for p in str(data['additional_images']).split(',')):
+                    if img_path and not valid_project_image_path(img_path):
+                        return jsonify({'error': 'Format d\'image supplémentaire invalide'}), 400
             if 'status' in data:
                 valid_statuses = ['draft', 'published', 'archived']
                 if data['status'] not in valid_statuses:
-                    updates.append('status = ?')
-                    values.append('published')
+                    # Corriger la valeur déjà poussée dans updates si présent
+                    try:
+                        status_idx = updates.index('status = ?')
+                        values[status_idx] = 'published'
+                    except ValueError:
+                        updates.append('status = ?')
+                        values.append('published')
             
+            if not updates:
+                return jsonify({'error': 'Aucune donnée à mettre à jour'}), 400
+
             updates.append('updated_at = ?')
             values.append(datetime.now())
             values.append(int(project_id))

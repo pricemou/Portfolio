@@ -3,6 +3,7 @@ Module de validation pour les formulaires et données
 """
 import re
 from datetime import datetime
+from urllib.parse import urlparse
 
 def validate_email(email):
     """Valide le format d'un email"""
@@ -12,11 +13,34 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 def validate_url(url):
-    """Valide le format d'une URL"""
+    """Valide le format d'une URL http(s) (chemins Unsplash, query strings, etc.)."""
     if not url:
         return True  # URL optionnelle
-    pattern = r'^https?://(?:[-\w.])+(?:[:\d]+)?(?:/(?:[\w/_.])*)?(?:\?(?:[\w&=%.])*)?(?:#(?:[\w.])*)?$'
-    return re.match(pattern, url) is not None
+    try:
+        parsed = urlparse(str(url).strip())
+    except Exception:
+        return False
+    if parsed.scheme not in ('http', 'https'):
+        return False
+    if not parsed.netloc:
+        return False
+    return True
+
+
+def valid_project_image_path(path):
+    """Accepte URL http(s), chemins locaux images/ ou uploads/ (éventuellement préfixés static/)."""
+    if not path:
+        return True
+    p = str(path).strip()
+    if not p:
+        return True
+    if validate_url(p):
+        return True
+    if p.startswith('/static/'):
+        p = p[len('/static/'):]
+    elif p.startswith('static/'):
+        p = p[len('static/'):]
+    return p.startswith('images/') or p.startswith('uploads/')
 
 def validate_required(data, fields):
     """Valide que les champs requis sont présents et non vides"""
