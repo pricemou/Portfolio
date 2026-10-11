@@ -248,7 +248,7 @@ if (!window.worksScriptLoaded) {
                 if (gallery.length) {
                     html += '<div class="project-gallery">';
                     html += '<div class="project-detail-hero" id="project-gallery-hero">';
-                    html += '<img id="project-gallery-active" src="' + escapeHtml(gallery[0]) + '" alt="' + escapeHtml(project.title || '') + '" loading="lazy">';
+                    html += '<img id="project-gallery-active" src="' + escapeHtml(gallery[0]) + '" alt="' + escapeHtml(project.title || '') + '">';
                     html += '</div>';
                     if (gallery.length > 1) {
                         html += '<div class="project-gallery-strip" role="listbox" aria-label="Images du projet">';
@@ -257,7 +257,7 @@ if (!window.worksScriptLoaded) {
                             html += ' role="option" aria-selected="' + (index === 0 ? 'true' : 'false') + '"';
                             html += ' data-src="' + escapeHtml(src) + '"';
                             html += ' aria-label="Image ' + (index + 1) + '">';
-                            html += '<img src="' + escapeHtml(src) + '" alt="" loading="lazy">';
+                            html += '<img src="' + escapeHtml(src) + '" alt="">';
                             html += '</button>';
                         });
                         html += '</div>';
