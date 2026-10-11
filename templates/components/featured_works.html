@@ -1,0 +1,86 @@
+{% if featured_projects %}
+<section id="featured-works" class="dark-bg featured-works featured-works--home" aria-labelledby="featured-works-title">
+    <div class="featured-works-head">
+        <h2 id="featured-works-title" class="white">{{ t('featured_home_title') }}</h2>
+        <p class="gray featured-works-intro">{{ t('featured_home_intro') }}</p>
+    </div>
+
+    {% set lead = featured_projects[0] %}
+    {% set rest = featured_projects[1:] %}
+
+    {% if lead %}
+    <article class="featured-spotlight{% if lead.image %} has-media{% endif %}">
+        {% if lead.image %}
+        <div class="featured-spotlight-media" aria-hidden="true">
+            <img
+                src="{{ url_for('static', filename=lead.image) if not lead.image.startswith('http') else lead.image }}"
+                alt=""
+                loading="lazy"
+                width="1400"
+                height="780"
+            >
+        </div>
+        {% endif %}
+        <div class="featured-spotlight-content">
+            <span class="featured-card-meta">{{ lead.category or 'pro' }}{% if lead.period %} · {{ lead.period }}{% endif %}</span>
+            <h3 class="white">{{ lead.title }}</h3>
+            <p class="featured-spotlight-desc">{{ lead.description }}</p>
+            {% if lead.technologies %}
+            <ul class="featured-tech-list" aria-label="Technologies">
+                {% for tech in lead.technologies.split(',') %}
+                {% set tname = tech.strip() %}
+                {% if tname %}<li>{{ tname }}</li>{% endif %}
+                {% endfor %}
+            </ul>
+            {% endif %}
+            <a class="hero-btn hero-btn--primary featured-spotlight-cta" href="{{ url_for('works') }}?cat={{ lead.category or 'all' }}">
+                {{ t('see_detail') }} <span aria-hidden="true">→</span>
+            </a>
+        </div>
+    </article>
+    {% endif %}
+
+    {% if rest %}
+    <div class="featured-works-grid">
+        {% for project in rest %}
+        <article class="featured-card{% if project.image %} has-media{% endif %}">
+            {% if project.image %}
+            <a class="featured-card-media" href="{{ url_for('works') }}?cat={{ project.category or 'all' }}" tabindex="-1" aria-hidden="true">
+                <img
+                    src="{{ url_for('static', filename=project.image) if not project.image.startswith('http') else project.image }}"
+                    alt=""
+                    loading="lazy"
+                    width="720"
+                    height="450"
+                >
+            </a>
+            {% endif %}
+            <div class="featured-card-body">
+                <div class="featured-card-top">
+                    <span class="featured-card-meta">{{ project.category or 'pro' }}{% if project.period %} · {{ project.period }}{% endif %}</span>
+                </div>
+                <h3 class="white">{{ project.title }}</h3>
+                <p class="gray featured-card-desc">{{ project.description }}</p>
+                {% if project.technologies %}
+                <ul class="featured-tech-list" aria-label="Technologies">
+                    {% for tech in project.technologies.split(',') %}
+                    {% set tname = tech.strip() %}
+                    {% if tname %}<li>{{ tname }}</li>{% endif %}
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                <a class="featured-card-link" href="{{ url_for('works') }}?cat={{ project.category or 'all' }}">
+                    {{ t('see_detail') }}
+                    <span aria-hidden="true">→</span>
+                </a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="featured-works-cta">
+        <a class="hero-btn hero-btn--outline" href="{{ url_for('works') }}">{{ t('see_all_projects') }} <span aria-hidden="true">→</span></a>
+    </div>
+</section>
+{% endif %}

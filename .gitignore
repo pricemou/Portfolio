@@ -63,3 +63,11 @@ backups/
 *.sql
 *.sqlite
 *.sqlite3
+
+# Uploads utilisateur
+static/uploads/*
+!static/uploads/.gitkeep
+cyber_monitoring/uploads/*
+!cyber_monitoring/uploads/.gitkeep
+dashboard/_uploads/
+dashboard/_check_csv.py

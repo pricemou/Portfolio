@@ -1,0 +1,300 @@
+<section id="certifications" class="dark-bg certs-section">
+    <div class="certs-toolbar">
+        <div class="project-filters certs-mode" role="tablist" aria-label="{{ t('certs_title') }}">
+            <button type="button" class="filter-btn active" data-certs-mode="featured">{{ t('certs_featured') }}</button>
+            <button type="button" class="filter-btn" data-certs-mode="all">{{ t('certs_all') }}</button>
+        </div>
+        <div class="project-filters certs-domains" id="certsDomainFilters" hidden>
+            <button type="button" class="filter-btn active" data-certs-domain="all">{{ t('filter_all') }}</button>
+            {% for key, label in (certs.filter_domains or certs.domains).items() %}
+            <button type="button" class="filter-btn" data-certs-domain="{{ key }}" title="{{ certs.domains[key] }}">{{ label }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="certs-grid" id="certsGrid">
+        {% for cert in certs['items'] %}
+        <article
+            class="cert-card"
+            data-domain="{{ cert.domain }}"
+            data-featured="{{ '1' if cert.featured else '0' }}"
+            data-title="{{ cert.title|e }}"
+            data-skill="{{ cert.skill|e }}"
+            data-domain-label="{{ cert.domain_label|e }}"
+            data-code="{{ cert.code|e }}"
+            data-url="{{ cert.url|e }}"
+            data-verify-url="{{ cert.verify_url|e }}"
+            data-image="{{ cert.image or '' }}"
+            {% if not cert.featured %}hidden{% endif %}
+        >
+            <a class="cert-card-open" href="{{ cert.url }}" target="_blank" rel="noopener noreferrer" onclick="return openCertModal(this.closest('.cert-card'), event)">
+                <div class="cert-thumb{% if not cert.image %} is-fallback{% endif %}">
+                    {% if cert.image %}
+                    <img
+                        class="cert-thumb-img"
+                        src="{{ cert.image }}"
+                        alt="Certificat Coursera : {{ cert.title }}"
+                        loading="lazy"
+                        width="640"
+                        height="480"
+                        onerror="this.parentElement.classList.add('is-fallback'); this.remove();"
+                    >
+                    {% endif %}
+                    <div class="cert-thumb-fallback" aria-hidden="true">
+                        <span>Coursera</span>
+                        <strong>{{ cert.title }}</strong>
+                    </div>
+                </div>
+                <div class="cert-card-body">
+                    <p class="cert-domain">{{ cert.domain_label }}</p>
+                    <h3>{{ cert.title }}</h3>
+                    <p class="cert-skill">{{ cert.skill }}</p>
+                    <span class="cert-card-link">{{ t('certs_view') }} <span aria-hidden="true">→</span></span>
+                </div>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    <p class="gray certs-empty" id="certsEmpty" hidden>{{ t('certs_empty') }}</p>
+    <nav class="certs-pagination" id="certsPagination" aria-label="Pagination des certifications" hidden>
+        <button type="button" class="certs-page-btn" id="certsPagePrev">{{ t('certs_page_prev') }}</button>
+        <p class="certs-page-status" id="certsPageStatus"></p>
+        <div class="certs-page-numbers" id="certsPageNumbers"></div>
+        <button type="button" class="certs-page-btn" id="certsPageNext">{{ t('certs_page_next') }}</button>
+    </nav>
+</section>
+
+<div id="certModal" class="cert-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="certModalTitle">
+    <div class="cert-modal-overlay" onclick="closeCertModal()"></div>
+    <div class="cert-modal-content">
+        <button type="button" class="cert-modal-close" onclick="closeCertModal()" aria-label="{{ t('close') }}">&times;</button>
+        <div class="cert-full">
+            <div class="cert-full-media">
+                <img id="certModalImage" class="cert-full-img" src="" alt="" hidden>
+                <div id="certModalFallback" class="cert-full-fallback" hidden>
+                    <span>Coursera</span>
+                    <strong id="certModalFallbackTitle"></strong>
+                    <p>{{ t('certs_open_coursera') }}</p>
+                </div>
+            </div>
+            <div class="cert-full-meta">
+                <p class="cert-domain" id="certModalDomain"></p>
+                <h2 id="certModalTitle"></h2>
+                <p class="cert-full-skill" id="certModalSkill"></p>
+                <p class="cert-preview-code">
+                    <span>{{ t('certs_code') }}</span>
+                    <code id="certModalCode"></code>
+                </p>
+                <div class="cert-full-actions">
+                    <a id="certModalLink" class="hero-btn hero-btn--primary" href="#" target="_blank" rel="noopener noreferrer">{{ t('certs_open_coursera') }} <span aria-hidden="true">→</span></a>
+                    <a id="certModalVerify" class="hero-btn hero-btn--outline" href="#" target="_blank" rel="noopener noreferrer">{{ t('certs_verify') }} <span aria-hidden="true">→</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.certsScriptLoaded) {
+    window.certsScriptLoaded = true;
+    (function () {
+        var mode = 'featured';
+        var domain = 'all';
+        var currentPage = 1;
+        var perPage = 9; // 3 colonnes × 3 lignes
+        var modeButtons = document.querySelectorAll('[data-certs-mode]');
+        var domainWrap = document.getElementById('certsDomainFilters');
+        var domainButtons = document.querySelectorAll('[data-certs-domain]');
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.cert-card'));
+        var empty = document.getElementById('certsEmpty');
+        var pagination = document.getElementById('certsPagination');
+        var prevBtn = document.getElementById('certsPagePrev');
+        var nextBtn = document.getElementById('certsPageNext');
+        var statusEl = document.getElementById('certsPageStatus');
+        var numbersEl = document.getElementById('certsPageNumbers');
+        var pageOfTemplate = {{ t('certs_page_of')|tojson }};
+
+        function setActive(buttons, attr, value) {
+            buttons.forEach(function (btn) {
+                btn.classList.toggle('active', btn.getAttribute(attr) === value);
+            });
+        }
+
+        function matchesFilter(card) {
+            var isFeatured = card.getAttribute('data-featured') === '1';
+            var cardDomain = card.getAttribute('data-domain');
+            if (mode === 'featured') return isFeatured;
+            return domain === 'all' || cardDomain === domain;
+        }
+
+        function renderPagination(totalPages) {
+            if (!pagination) return;
+            var showPager = totalPages > 1;
+            pagination.hidden = !showPager;
+            if (!showPager) return;
+
+            if (statusEl) {
+                statusEl.textContent = pageOfTemplate
+                    .replace('{current}', String(currentPage))
+                    .replace('{total}', String(totalPages));
+            }
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+            if (numbersEl) {
+                numbersEl.innerHTML = '';
+                var maxButtons = 7;
+                var start = Math.max(1, currentPage - 2);
+                var end = Math.min(totalPages, start + maxButtons - 1);
+                start = Math.max(1, end - maxButtons + 1);
+
+                for (var i = start; i <= end; i += 1) {
+                    (function (page) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'certs-page-num' + (page === currentPage ? ' is-active' : '');
+                        btn.textContent = String(page);
+                        btn.setAttribute('aria-label', 'Page ' + page);
+                        if (page === currentPage) btn.setAttribute('aria-current', 'page');
+                        btn.addEventListener('click', function () {
+                            currentPage = page;
+                            applyFilters();
+                            scrollToCerts();
+                        });
+                        numbersEl.appendChild(btn);
+                    })(i);
+                }
+            }
+        }
+
+        function scrollToCerts() {
+            var grid = document.getElementById('certsGrid');
+            if (grid && typeof grid.scrollIntoView === 'function') {
+                grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function applyFilters() {
+            var matched = cards.filter(matchesFilter);
+            var total = matched.length;
+            var totalPages = Math.max(1, Math.ceil(total / perPage) || 1);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            var start = (currentPage - 1) * perPage;
+            var end = start + perPage;
+
+            cards.forEach(function (card) {
+                card.setAttribute('hidden', '');
+                card.hidden = true;
+            });
+            matched.forEach(function (card, index) {
+                var visible = index >= start && index < end;
+                if (visible) {
+                    card.removeAttribute('hidden');
+                    card.hidden = false;
+                }
+            });
+
+            if (empty) {
+                if (total > 0) {
+                    empty.setAttribute('hidden', '');
+                    empty.hidden = true;
+                } else {
+                    empty.removeAttribute('hidden');
+                    empty.hidden = false;
+                }
+            }
+            if (domainWrap) {
+                domainWrap.hidden = mode !== 'all';
+                if (mode !== 'all') domainWrap.setAttribute('hidden', '');
+                else domainWrap.removeAttribute('hidden');
+            }
+            renderPagination(total > 0 ? totalPages : 0);
+        }
+
+        modeButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                mode = btn.getAttribute('data-certs-mode') || 'featured';
+                if (mode === 'featured') domain = 'all';
+                currentPage = 1;
+                setActive(modeButtons, 'data-certs-mode', mode);
+                setActive(domainButtons, 'data-certs-domain', domain);
+                applyFilters();
+            });
+        });
+
+        domainButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                domain = btn.getAttribute('data-certs-domain') || 'all';
+                currentPage = 1;
+                setActive(domainButtons, 'data-certs-domain', domain);
+                applyFilters();
+            });
+        });
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage -= 1;
+                    applyFilters();
+                    scrollToCerts();
+                }
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function () {
+                currentPage += 1;
+                applyFilters();
+                scrollToCerts();
+            });
+        }
+
+        applyFilters();
+    })();
+
+    window.openCertModal = function (card, event) {
+        if (!card) return true;
+        if (event) event.preventDefault();
+        var title = card.getAttribute('data-title') || '';
+        var image = card.getAttribute('data-image') || '';
+        document.getElementById('certModalDomain').textContent = card.getAttribute('data-domain-label') || '';
+        document.getElementById('certModalTitle').textContent = title;
+        document.getElementById('certModalSkill').textContent = card.getAttribute('data-skill') || '';
+        document.getElementById('certModalCode').textContent = card.getAttribute('data-code') || '';
+        var img = document.getElementById('certModalImage');
+        var fallback = document.getElementById('certModalFallback');
+        if (image) {
+            img.hidden = false;
+            fallback.hidden = true;
+            img.src = image;
+            img.alt = 'Certificat Coursera : ' + title;
+            img.onerror = function () {
+                img.hidden = true;
+                fallback.hidden = false;
+                document.getElementById('certModalFallbackTitle').textContent = title;
+            };
+        } else {
+            img.removeAttribute('src');
+            img.hidden = true;
+            fallback.hidden = false;
+            document.getElementById('certModalFallbackTitle').textContent = title;
+        }
+        document.getElementById('certModalLink').href = card.getAttribute('data-url') || '#';
+        document.getElementById('certModalVerify').href = card.getAttribute('data-verify-url') || '#';
+        document.getElementById('certModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        return false;
+    };
+
+    window.closeCertModal = function () {
+        var modal = document.getElementById('certModal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeCertModal();
+    });
+}
+</script>

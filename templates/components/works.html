@@ -11,7 +11,7 @@
             {% for project in projects %}
             {% if active_cat == 'all' or project.category == active_cat %}
             {% set shown.n = shown.n + 1 %}
-            <article class="work-card light-bg" data-project-id="{{ project._id }}" data-category="{{ project.category }}">
+            <article class="work-card" data-project-id="{{ project._id }}" data-category="{{ project.category }}">
                 {% if project.image %}
                 <div class="work-card-image">
                     <img src="{{ url_for('static', filename=project.image) if not project.image.startswith('http') else project.image }}"
@@ -20,35 +20,31 @@
                          loading="lazy">
                 </div>
                 {% endif %}
-                <div class="work-card-header">
-                    <h3 class="white">{{ project.title }}</h3>
-                    <span class="cat-badge">{{ project.category }}</span>
+                <div class="work-card-body">
+                    <div class="work-card-header">
+                        <h3>{{ project.title }}</h3>
+                        <span class="cat-badge">{{ project.category }}</span>
+                    </div>
+                    {% if project.technologies %}
+                    <ul class="work-tech-list" aria-label="Technologies">
+                        {% for tech in project.technologies.split(',') %}
+                        {% set tname = tech.strip() %}
+                        {% if tname %}<li>{{ tname }}</li>{% endif %}
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% if project.period %}
+                    <p class="work-period">{{ project.period }}</p>
+                    {% endif %}
+                    <p class="work-card-summary">{{ project.description }}</p>
                 </div>
-                <span class="gray work-tech">{{ project.technologies }}</span>
-                {% if project.role %}
-                <p class="gray"><strong class="green">{{ t('role') }} :</strong> {{ project.role }}</p>
-                {% endif %}
-                {% if project.context %}
-                <p class="gray"><strong class="green">{{ t('context') }} :</strong> {{ project.context }}</p>
-                {% endif %}
-                <p class="gray">{{ project.description }}</p>
-                {% if project.results_list %}
-                <ul class="result-list">
-                    {% for metric in project.results_list[:4] %}
-                    <li class="green">{{ metric }}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
-                {% if project.measurement %}
-                <p class="gray measurement"><em>{{ t('measurement') }} :</em> {{ project.measurement }}</p>
-                {% endif %}
                 <div class="work-actions">
                     <button type="button" class="work-detail-btn" onclick="openProjectDetail('{{ project._id }}')">{{ t('see_detail') }}</button>
                     {% if project.link and project.link.startswith('http') %}
-                    <a href="{{ project.link }}" target="_blank" rel="noopener noreferrer" class="work-link green" onclick="trackProjectView('{{ project._id }}')">{{ t('see_project') }} →</a>
+                    <a href="{{ project.link }}" target="_blank" rel="noopener noreferrer" class="work-link" onclick="trackProjectView('{{ project._id }}')">{{ t('see_project') }} <span aria-hidden="true">→</span></a>
                     {% endif %}
                     {% if project.github_link and project.github_link.startswith('http') %}
-                    <a href="{{ project.github_link }}" target="_blank" rel="noopener noreferrer" class="work-link green">GitHub →</a>
+                    <a href="{{ project.github_link }}" target="_blank" rel="noopener noreferrer" class="work-link">GitHub <span aria-hidden="true">→</span></a>
                     {% endif %}
                 </div>
             </article>
@@ -56,11 +52,17 @@
             {% endfor %}
         {% endif %}
         {% if shown.n == 0 %}
-            <div class="work-card light-bg" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+            <div class="work-card light-bg works-empty" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                 <p class="gray">{{ t('no_projects') }}</p>
             </div>
         {% endif %}
     </div>
+    <nav class="works-pagination" id="worksPagination" aria-label="Pagination des projets" hidden>
+        <button type="button" class="works-page-btn" id="worksPagePrev">{{ t('certs_page_prev') }}</button>
+        <p class="works-page-status" id="worksPageStatus"></p>
+        <div class="works-page-numbers" id="worksPageNumbers"></div>
+        <button type="button" class="works-page-btn" id="worksPageNext">{{ t('certs_page_next') }}</button>
+    </nav>
 </section>
 
 <div id="projectDetailModal" class="project-modal" style="display: none;">
@@ -74,30 +76,207 @@
 <script>
 if (!window.worksScriptLoaded) {
     window.worksScriptLoaded = true;
+
+    (function () {
+        var currentPage = 1;
+        var perPage = 9; // 3 colonnes × 3 lignes
+        var cards = Array.prototype.slice.call(
+            document.querySelectorAll('#works .works-grid > article.work-card[data-project-id]')
+        );
+        var pagination = document.getElementById('worksPagination');
+        var prevBtn = document.getElementById('worksPagePrev');
+        var nextBtn = document.getElementById('worksPageNext');
+        var statusEl = document.getElementById('worksPageStatus');
+        var numbersEl = document.getElementById('worksPageNumbers');
+        var pageOfTemplate = {{ t('certs_page_of')|tojson }};
+
+        function renderPagination(totalPages) {
+            if (!pagination) return;
+            var showPager = totalPages > 1;
+            pagination.hidden = !showPager;
+            if (!showPager) return;
+
+            if (statusEl) {
+                statusEl.textContent = pageOfTemplate
+                    .replace('{current}', String(currentPage))
+                    .replace('{total}', String(totalPages));
+            }
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+            if (numbersEl) {
+                numbersEl.innerHTML = '';
+                var maxButtons = 7;
+                var start = Math.max(1, currentPage - 2);
+                var end = Math.min(totalPages, start + maxButtons - 1);
+                start = Math.max(1, end - maxButtons + 1);
+
+                for (var i = start; i <= end; i += 1) {
+                    (function (page) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'works-page-num' + (page === currentPage ? ' is-active' : '');
+                        btn.textContent = String(page);
+                        btn.setAttribute('aria-label', 'Page ' + page);
+                        if (page === currentPage) btn.setAttribute('aria-current', 'page');
+                        btn.addEventListener('click', function () {
+                            currentPage = page;
+                            applyPagination();
+                            scrollToWorks();
+                        });
+                        numbersEl.appendChild(btn);
+                    })(i);
+                }
+            }
+        }
+
+        function scrollToWorks() {
+            var grid = document.querySelector('#works .works-grid');
+            if (grid && typeof grid.scrollIntoView === 'function') {
+                grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function applyPagination() {
+            var total = cards.length;
+            var totalPages = Math.max(1, Math.ceil(total / perPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            var start = (currentPage - 1) * perPage;
+            var end = start + perPage;
+
+            cards.forEach(function (card, index) {
+                card.hidden = !(index >= start && index < end);
+            });
+
+            renderPagination(total > 0 ? totalPages : 0);
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage -= 1;
+                    applyPagination();
+                    scrollToWorks();
+                }
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function () {
+                var totalPages = Math.max(1, Math.ceil(cards.length / perPage));
+                if (currentPage < totalPages) {
+                    currentPage += 1;
+                    applyPagination();
+                    scrollToWorks();
+                }
+            });
+        }
+
+        applyPagination();
+    })();
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderParagraphs(text) {
+        return String(text || '')
+            .split(/\n+/)
+            .map(function (part) { return part.trim(); })
+            .filter(Boolean)
+            .map(function (part) {
+                return '<p class="project-detail-text">' + escapeHtml(part) + '</p>';
+            })
+            .join('');
+    }
+
     function openProjectDetail(projectId) {
         fetch('/api/projects/' + projectId)
             .then(function (r) { return r.json(); })
             .then(function (project) {
                 var content = document.getElementById('projectDetailContent');
                 var results = [];
-                try { results = typeof project.results === 'string' ? JSON.parse(project.results) : (project.results || []); } catch (e) {}
-                content.innerHTML =
-                    '<h2>' + (project.title || '') + '</h2>' +
-                    '<p class="gray">' + (project.technologies || '') + '</p>' +
-                    (project.role ? '<p><strong>Rôle :</strong> ' + project.role + '</p>' : '') +
-                    (project.context ? '<p><strong>Contexte :</strong> ' + project.context + '</p>' : '') +
-                    '<p>' + (project.description || '') + '</p>' +
-                    (results.length ? '<ul>' + results.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul>' : '') +
-                    (project.measurement ? '<p><em>' + project.measurement + '</em></p>' : '');
+                try {
+                    results = typeof project.results === 'string'
+                        ? JSON.parse(project.results)
+                        : (project.results || []);
+                } catch (e) {}
+
+                var fullText = project.long_description || project.description || '';
+                var html = '<div class="project-detail">';
+                html += '<header class="project-detail-header">';
+                html += '<h2>' + escapeHtml(project.title || '') + '</h2>';
+                html += '<div class="project-detail-meta">';
+                if (project.period) {
+                    html += '<span class="project-detail-chip">' + escapeHtml(project.period) + '</span>';
+                }
+                if (project.category) {
+                    html += '<span class="project-detail-chip project-detail-chip--cat">' + escapeHtml(project.category) + '</span>';
+                }
+                html += '</div>';
+                if (project.technologies) {
+                    html += '<ul class="project-detail-tech">';
+                    String(project.technologies).split(',').forEach(function (tech) {
+                        tech = tech.trim();
+                        if (tech) html += '<li>' + escapeHtml(tech) + '</li>';
+                    });
+                    html += '</ul>';
+                }
+                html += '</header>';
+
+                if (project.image) {
+                    var imgSrc = String(project.image).indexOf('http') === 0
+                        ? project.image
+                        : '/static/' + project.image.replace(/^\/?static\//, '');
+                    html += '<div class="project-detail-hero"><img src="' + escapeHtml(imgSrc) + '" alt="" loading="lazy"></div>';
+                }
+
+                if (project.role) {
+                    html += '<section class="project-detail-section"><h3>Rôle</h3><p class="project-detail-text">' + escapeHtml(project.role) + '</p></section>';
+                }
+                if (project.context) {
+                    html += '<section class="project-detail-section"><h3>Contexte</h3>' + renderParagraphs(project.context) + '</section>';
+                }
+                html += '<section class="project-detail-section"><h3>Description</h3>' + renderParagraphs(fullText) + '</section>';
+                if (results.length) {
+                    html += '<section class="project-detail-section"><h3>Résultats</h3><ul class="result-list">';
+                    results.forEach(function (metric) {
+                        html += '<li>' + escapeHtml(metric) + '</li>';
+                    });
+                    html += '</ul></section>';
+                }
+                if (project.measurement) {
+                    html += '<section class="project-detail-section"><h3>Mesure</h3><p class="project-detail-text"><em>' + escapeHtml(project.measurement) + '</em></p></section>';
+                }
+                var links = '';
+                if (project.link && String(project.link).indexOf('http') === 0) {
+                    links += '<a href="' + escapeHtml(project.link) + '" target="_blank" rel="noopener noreferrer" class="hero-btn hero-btn--primary">Voir le projet <span aria-hidden="true">→</span></a>';
+                }
+                if (project.github_link && String(project.github_link).indexOf('http') === 0) {
+                    links += '<a href="' + escapeHtml(project.github_link) + '" target="_blank" rel="noopener noreferrer" class="hero-btn hero-btn--outline">GitHub <span aria-hidden="true">→</span></a>';
+                }
+                if (links) {
+                    html += '<div class="project-links">' + links + '</div>';
+                }
+                html += '</div>';
+
+                content.innerHTML = html;
                 document.getElementById('projectDetailModal').style.display = 'flex';
                 document.body.style.overflow = 'hidden';
                 if (typeof trackProjectView === 'function') trackProjectView(projectId);
             });
     }
+
     function closeProjectDetail() {
         var modal = document.getElementById('projectDetailModal');
         if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
     }
+
     window.openProjectDetail = openProjectDetail;
     window.closeProjectDetail = closeProjectDetail;
     document.addEventListener('keydown', function (e) {

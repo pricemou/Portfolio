@@ -7,6 +7,22 @@
     <meta name="keywords" content="Claude Pricemou, Développeur Full Stack, Science des données, Flask, React, Python, Trois-Rivières, Québec">
     <meta name="description" content="{% block meta_description %}Claude Pricemou — Développeur Full Stack & Science des données à Trois-Rivières. Applications web, automatisation et analyse de données.{% endblock %}">
     <meta name="theme-color" content="#2D2E32">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t !== 'light' && t !== 'dark') {
+                    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+                        ? 'light' : 'dark';
+                }
+                document.documentElement.setAttribute('data-theme', t);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', t === 'light' ? '#c5ccd6' : '#2D2E32');
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="canonical" href="{% block canonical %}https://claude225.pythonanywhere.com/{% endblock %}">
     <link rel="alternate" hreflang="fr" href="{{ request.base_url }}">
     <link rel="alternate" hreflang="en" href="{{ request.base_url }}">
@@ -15,9 +31,9 @@
     <meta property="og:locale" content="{{ 'en_CA' if lang == 'en' else 'fr_CA' }}">
     <meta property="og:type" content="website"/>
     <meta property="og:title" content="{% block og_title %}Claude Pricemou — Développeur Full Stack & Science des données{% endblock %}"/>
-    <meta property="og:description" content="{% block og_description %}Développeur Full Stack freelance à Trois-Rivières. Flask, React, data science.{% endblock %}"/>
+    <meta property="og:description" content="{% block og_description %}Développeur Full Stack et science des données à Trois-Rivières. Flask, React, data science.{% endblock %}"/>
     <meta property="og:url" content="{% block og_url %}https://claude225.pythonanywhere.com/{% endblock %}"/>
-    <meta property="og:image" content="{{ url_for('static', filename='images/claude-pricemou.svg', _external=True) }}"/>
+    <meta property="og:image" content="{{ url_for('static', filename='images/claude-pricemou.png', _external=True) }}"/>
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Claude Pricemou — Full Stack & Data Science">
     
@@ -26,6 +42,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/globals.css') }}">
     <script src="{{ url_for('static', filename='js/theme.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/counters.js') }}" defer></script>
     <script>
         function trackProjectView(projectId) {
             fetch('/api/analytics/track-project-view', {
@@ -136,7 +153,7 @@
             <button class="header-image-modal-close" onclick="closeHeaderImageModal()" aria-label="{{ t('close') }}">
                 <span>&times;</span>
             </button>
-            <img src="{{ url_for('static', filename='images/claude-pricemou.svg') }}" alt="Portrait de Claude Pricemou, développeur full stack" class="header-image-modal-img" />
+            <img src="{{ url_for('static', filename='images/claude-pricemou.png') }}" alt="Portrait de diplomation de Claude Pricemou, diplôme UQTR Informatique" class="header-image-modal-img" />
         </div>
     </div>
 </body>

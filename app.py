@@ -12,7 +12,7 @@ if sys.platform == 'win32':
         pass
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from database import get_db, init_database, row_to_dict, rows_to_list
 from functools import wraps
@@ -21,6 +21,9 @@ import json
 import hashlib
 import re
 from werkzeug.exceptions import BadRequest, InternalServerError
+from utils.hardening import configure_session_security, register_security_headers
+from utils.privacy import client_ip_from_request, hash_ip
+from utils.security_log import log_security_event, log_error_event
 
 # Flask-Mail sera importé après la création de l'app Flask
 FLASK_MAIL_AVAILABLE = False
@@ -72,12 +75,14 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
 app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
+configure_session_security(app)
+register_security_headers(app)
 
 # Variables personnalisées pour le portfolio
 app.config['PORTFOLIO_NAME'] = os.getenv('PORTFOLIO_NAME', 'Claude Pricemou')
 app.config['PORTFOLIO_TITLE'] = os.getenv('PORTFOLIO_TITLE', 'Développeur Full Stack & Science des données')
 app.config['PORTFOLIO_EMAIL'] = os.getenv('PORTFOLIO_EMAIL', 'pricemoufromon97@gmail.com')
-app.config['PORTFOLIO_DESCRIPTION'] = os.getenv('PORTFOLIO_DESCRIPTION', 'Développeur Full Stack freelance à Trois-Rivières')
+app.config['PORTFOLIO_DESCRIPTION'] = os.getenv('PORTFOLIO_DESCRIPTION', 'Développeur Full Stack et science des données à Trois-Rivières')
 app.config['SITE_URL'] = os.getenv('SITE_URL', 'https://claude225.pythonanywhere.com')
 
 # Clé d'administration
@@ -93,7 +98,8 @@ try:
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
     app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
-    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
+    # Les mots de passe d'application Gmail sont souvent collés avec des espaces
+    app.config['MAIL_PASSWORD'] = (os.getenv('MAIL_PASSWORD', '') or '').replace(' ', '')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', '')
     
     # Initialiser Flask-Mail
@@ -179,6 +185,11 @@ def _limit_contact(fn):
         return fn
     return limiter.limit("5 per hour")(fn)
 
+def _limit_login(fn):
+    if limiter is None:
+        return fn
+    return limiter.limit("5 per 15 minutes", methods=["POST"])(fn)
+
 @app.context_processor
 def inject_i18n():
     lang = get_lang(request)
@@ -198,7 +209,7 @@ def set_language(lang):
 
 def get_key_stats():
     years = max(1, datetime.now().year - 2019)
-    stats = {'projects': 0, 'years': years, 'services': 0}
+    stats = {'projects': 0, 'years': years, 'certs': 0}
     try:
         with get_db() as conn:
             if conn is None:
@@ -206,8 +217,8 @@ def get_key_stats():
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM projects WHERE status = 'published'")
             stats['projects'] = cursor.fetchone()[0]
-            cursor.execute('SELECT COUNT(*) FROM services')
-            stats['services'] = cursor.fetchone()[0]
+        from utils.certifications import get_certifications_for_lang
+        stats['certs'] = get_certifications_for_lang('fr').get('total', 0)
     except Exception as e:
         app.logger.error(f"Erreur key_stats: {e}")
     return stats
@@ -279,24 +290,42 @@ def index():
     # Valeurs par défaut si la base de données n'est pas disponible
     if not homepage_data:
         homepage_data = {
-            "badge": "Disponible en freelance · Trois-Rivières (Québec)",
-            "title_line1": "Du besoin métier",
-            "title_line2": "au produit et à la donnée.",
+            "badge": "Ouvert aux opportunités · Trois-Rivières (Québec)",
+            "title_line1": "Développeur Full Stack",
+            "title_line2": "& science des données.",
             "description": app.config['PORTFOLIO_DESCRIPTION'],
             "email": app.config['PORTFOLIO_EMAIL'],
-            "cta_text": "Discutons d'un mandat",
+            "cta_text": "Me contacter",
             "about_title": "Présentation",
             "about_name": app.config['PORTFOLIO_NAME'],
             "about_subtitle": app.config['PORTFOLIO_TITLE'],
             "about_description": "Baccalauréat en informatique (science des données) à l'UQTR.",
         }
     
-    return render_template('index.html', 
+    featured_projects = []
+    try:
+        with get_db() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT id, title, technologies, description, category, period, featured, image, link
+                    FROM projects
+                    WHERE status = 'published' AND featured = 1
+                      AND (deleted_at IS NULL OR deleted_at = '')
+                    ORDER BY order_index ASC
+                    LIMIT 4
+                ''')
+                featured_projects = rows_to_list(cursor.fetchall())
+    except Exception as e:
+        app.logger.error(f"Erreur featured projects: {e}")
+
+    return render_template('index.html',
                          current_year=current_year,
                          homepage_data=homepage_data,
                          skills=skills,
                          partners=partners,
-                         key_stats=get_key_stats())
+                         key_stats=get_key_stats(),
+                         featured_projects=featured_projects)
 
 @app.route('/works')
 def works():
@@ -314,7 +343,7 @@ def works():
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT * FROM projects 
-                    WHERE status = ? 
+                    WHERE status = ? AND (deleted_at IS NULL OR deleted_at = '')
                     ORDER BY order_index ASC, created_at DESC
                 ''', ('published',))
                 rows = cursor.fetchall()
@@ -378,11 +407,35 @@ def parcours():
         with get_db() as conn:
             if conn:
                 cursor = conn.cursor()
-                cursor.execute('SELECT * FROM career ORDER BY order_index ASC')
+                cursor.execute('''
+                    SELECT * FROM career
+                    WHERE (deleted_at IS NULL OR deleted_at = '')
+                      AND (status IS NULL OR status = 'published' OR status = '')
+                    ORDER BY order_index ASC
+                ''')
                 items = rows_to_list(cursor.fetchall())
     except Exception as e:
         app.logger.error(f"Erreur parcours: {e}")
     return render_template('parcours.html', current_year=current_year, career=items, homepage_data=get_homepage_data())
+
+
+@app.route('/certifications')
+def certifications():
+    """Page des certifications Coursera."""
+    from utils.certifications import get_certifications_for_lang
+    current_year = datetime.now().year
+    lang = get_lang(request)
+    try:
+        certs = get_certifications_for_lang(lang)
+    except Exception as e:
+        app.logger.error(f"Erreur certifications: {e}")
+        certs = {"domains": {}, "items": [], "featured": [], "total": 0}
+    return render_template(
+        'certifications.html',
+        current_year=current_year,
+        certs=certs,
+        homepage_data=get_homepage_data(),
+    )
 
 @app.route('/cv')
 def download_cv():
@@ -401,8 +454,10 @@ def sitemap():
         url_for('index', _external=True),
         url_for('parcours', _external=True),
         url_for('works', _external=True),
-        url_for('services', _external=True),
+        url_for('certifications', _external=True),
         url_for('contact', _external=True),
+        url_for('page_confidentialite', _external=True),
+        url_for('page_mentions', _external=True),
     ]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
@@ -418,6 +473,7 @@ def robots():
         'Allow: /\n'
         'Disallow: /admin\n'
         'Disallow: /api/\n'
+        'Disallow: /services\n'
         f"Sitemap: {app.config['SITE_URL']}/sitemap.xml\n"
     )
     return app.response_class(body, mimetype='text/plain')
@@ -430,17 +486,13 @@ def contact():
     portfolio_email = (homepage_data or {}).get('email') or app.config.get('PORTFOLIO_EMAIL')
     if not session.get('csrf_token'):
         session['csrf_token'] = generate_csrf_token()
-    service = request.args.get('service', '')
-    subject = ''
-    if service:
-        subject = f"Devis — {service.replace('-', ' ')}"
     return render_template(
         'contact.html',
         current_year=current_year,
         portfolio_email=portfolio_email,
         homepage_data=homepage_data,
         csrf_token=session.get('csrf_token'),
-        preset_subject=subject,
+        preset_subject='',
     )
 
 @app.route('/api/contact', methods=['POST'])
@@ -646,21 +698,23 @@ def login_required(f):
     return decorated_function
 
 def admin_required(f):
-    """Décorateur pour protéger les routes admin (compatibilité avec l'ancien système)"""
+    """Protège les routes admin : session obligatoire (plus de bypass par clé)."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Vérifier d'abord la session
         if 'admin_logged_in' in session and session.get('admin_logged_in'):
             return f(*args, **kwargs)
-        
-        # Fallback sur l'ancien système de clé pour compatibilité API
-        admin_key = request.headers.get('X-Admin-Key') or request.args.get('admin_key')
-        expected_key = app.config.get('ADMIN_KEY', 'admin-secret-key-change-me')
-        
-        if admin_key and admin_key == expected_key:
-            return f(*args, **kwargs)
-        
-        # Les routes API doivent toujours renvoyer du JSON (DELETE sans body inclus)
+        try:
+            with get_db() as conn:
+                log_security_event(
+                    conn,
+                    'admin_route_denied',
+                    severity='warning',
+                    path=request.path,
+                    ip_address=client_ip_from_request(request),
+                    details={'endpoint': request.endpoint},
+                )
+        except Exception:
+            pass
         if request.is_json or request.path.startswith('/api/'):
             return jsonify({'error': 'Non authentifié. Veuillez vous connecter.'}), 401
         return redirect(url_for('admin_login'))
@@ -673,31 +727,26 @@ def json_serial(obj):
     raise TypeError(f"Type {type(obj)} not serializable")
 
 @app.route('/admin/login', methods=['GET', 'POST'])
+@_limit_login
 def admin_login():
     """Page de connexion administrateur"""
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        ip_addr = client_ip_from_request(request)
+        ua = request.headers.get('User-Agent', '')[:500]
         
-        # Validation des champs
         if not username or not password:
             flash('Veuillez remplir tous les champs', 'error')
             return render_template('admin_login.html')
         
-        # Nettoyer et valider les entrées
         username = sanitize_input(username, max_length=50)
         password = password.strip() if password else ''
         
-        # Validation basique
-        if len(username) < 3:
-            flash('Le nom d\'utilisateur doit contenir au moins 3 caractères', 'error')
+        if len(username) < 3 or len(password) < 6:
+            flash('Identifiants invalides', 'error')
             return render_template('admin_login.html')
         
-        if len(password) < 6:
-            flash('Le mot de passe doit contenir au moins 6 caractères', 'error')
-            return render_template('admin_login.html')
-        
-        # Vérifier les identifiants dans SQLite
         try:
             with get_db() as conn:
                 if conn is None:
@@ -710,61 +759,158 @@ def admin_login():
                 
                 if admin_user:
                     admin_user_dict = row_to_dict(admin_user)
-                    # Utiliser check_password pour gérer bcrypt et migration depuis SHA256
                     stored_password = admin_user_dict['password']
                     
-                    # Vérifier avec bcrypt
                     if check_password(password, stored_password):
-                        # Si le mot de passe est en SHA256 (ancien système), le migrer vers bcrypt
                         if len(stored_password) == 64 and re.match(r'^[a-f0-9]{64}$', stored_password):
-                            # Migration automatique vers bcrypt
                             new_hash = hash_password(password)
-                            cursor.execute('UPDATE admin_users SET password = ? WHERE id = ?', 
+                            cursor.execute('UPDATE admin_users SET password = ? WHERE id = ?',
                                          (new_hash, admin_user_dict['id']))
+                        if admin_user_dict.get('totp_enabled'):
+                            session.clear()
+                            session.permanent = True
+                            session['pending_2fa_admin_id'] = str(admin_user_dict['id'])
+                            session['pending_2fa_username'] = username
                             conn.commit()
-                        # Mettre à jour la dernière connexion
+                            return redirect(url_for('admin_2fa_challenge'))
                         cursor.execute('''
-                            UPDATE admin_users 
-                            SET last_login = ? 
+                            UPDATE admin_users
+                            SET last_login = ?
                             WHERE username = ?
                         ''', (datetime.now(), username))
-                        conn.commit()
-                        
-                        # Enregistrer dans l'historique
                         cursor.execute('''
                             INSERT INTO login_history (username, success, ip_address, user_agent)
                             VALUES (?, ?, ?, ?)
-                        ''', (username, 1, request.remote_addr, request.headers.get('User-Agent', '')[:500]))
+                        ''', (username, 1, hash_ip(ip_addr), ua))
+                        log_security_event(
+                            conn, 'login_success', severity='info',
+                            path='/admin/login', ip_address=ip_addr,
+                            details={'username': username[:50]},
+                        )
                         conn.commit()
-                        
+                        session.clear()
+                        session.permanent = True
                         session['admin_logged_in'] = True
                         session['admin_username'] = username
                         session['admin_id'] = str(admin_user_dict['id'])
                         return redirect(url_for('admin_section', section='dashboard'))
                 
-                # Si on arrive ici, les identifiants sont incorrects
-                # Enregistrer la tentative échouée dans l'historique
                 try:
                     cursor.execute('''
                         INSERT INTO login_history (username, success, ip_address, user_agent)
                         VALUES (?, ?, ?, ?)
-                    ''', (username, 0, request.remote_addr, request.headers.get('User-Agent', '')[:500]))
+                    ''', (username[:50], 0, hash_ip(ip_addr), ua))
+                    log_security_event(
+                        conn, 'login_failed', severity='warning',
+                        path='/admin/login', ip_address=ip_addr,
+                        details={'username': username[:50]},
+                    )
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM login_history
+                        WHERE success = 0 AND login_time >= datetime('now', '-15 minutes')
+                        """
+                    )
+                    fails = cursor.fetchone()[0]
                     conn.commit()
-                except:
-                    pass  # Ignorer les erreurs d'historique
+                    if fails >= 5:
+                        try:
+                            from utils.alerts import send_security_alert
+                            send_security_alert(
+                                'Tentatives de connexion répétées',
+                                f'{fails} échecs de connexion admin en 15 minutes.',
+                                dedupe_key='login_fail_burst',
+                            )
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
                 
-                flash('Nom d\'utilisateur ou mot de passe incorrect', 'error')
+                flash('Identifiants invalides', 'error')
                 return render_template('admin_login.html')
         except Exception as e:
             app.logger.error(f"Erreur lors de la connexion: {e}")
             flash('Erreur lors de la connexion. Veuillez réessayer.', 'error')
             return render_template('admin_login.html')
     
-    # Si déjà connecté, rediriger vers admin
     if 'admin_logged_in' in session and session.get('admin_logged_in'):
         return redirect(url_for('admin_section', section='dashboard'))
     
     return render_template('admin_login.html')
+
+@app.route('/admin/2fa', methods=['GET', 'POST'])
+@_limit_login
+def admin_2fa_challenge():
+    """Deuxième étape de connexion si 2FA activée."""
+    pending_id = session.get('pending_2fa_admin_id')
+    pending_user = session.get('pending_2fa_username')
+    if not pending_id or not pending_user:
+        return redirect(url_for('admin_login'))
+    if request.method == 'GET':
+        return render_template('admin_2fa.html', username=pending_user)
+    code = sanitize_input(request.form.get('code'), 20)
+    ip_addr = client_ip_from_request(request)
+    try:
+        from utils.totp_2fa import unseal_secret, verify_totp, consume_backup_code
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT * FROM admin_users WHERE id = ?',
+                (pending_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                session.clear()
+                flash('Session expirée', 'error')
+                return redirect(url_for('admin_login'))
+            user = row_to_dict(row)
+            ok = False
+            if user.get('totp_secret') and verify_totp(unseal_secret(user['totp_secret']), code):
+                ok = True
+            elif user.get('backup_codes'):
+                matched, remaining = consume_backup_code(user['backup_codes'], code)
+                if matched:
+                    ok = True
+                    cursor.execute(
+                        'UPDATE admin_users SET backup_codes = ? WHERE id = ?',
+                        (remaining, pending_id),
+                    )
+            if not ok:
+                log_security_event(
+                    conn, '2fa_failed', severity='warning',
+                    path='/admin/2fa', ip_address=ip_addr,
+                    details={'username': pending_user},
+                )
+                conn.commit()
+                flash('Code invalide', 'error')
+                return render_template('admin_2fa.html', username=pending_user)
+            cursor.execute(
+                'UPDATE admin_users SET last_login = ? WHERE id = ?',
+                (datetime.now(), pending_id),
+            )
+            cursor.execute(
+                '''
+                INSERT INTO login_history (username, success, ip_address, user_agent)
+                VALUES (?, ?, ?, ?)
+                ''',
+                (pending_user, 1, hash_ip(ip_addr), request.headers.get('User-Agent', '')[:500]),
+            )
+            log_security_event(
+                conn, 'login_success', severity='info',
+                path='/admin/2fa', ip_address=ip_addr,
+                details={'username': pending_user, '2fa': True},
+            )
+            conn.commit()
+            session.clear()
+            session.permanent = True
+            session['admin_logged_in'] = True
+            session['admin_username'] = pending_user
+            session['admin_id'] = str(pending_id)
+            return redirect(url_for('admin_section', section='dashboard'))
+    except Exception as e:
+        app.logger.error(f"2FA challenge: {e}")
+        flash('Erreur 2FA', 'error')
+        return redirect(url_for('admin_login'))
 
 @app.route('/admin/logout')
 def admin_logout():
@@ -779,8 +925,13 @@ ADMIN_SECTIONS = {
     'skills': 'Compétences',
     'partners': 'Partenaires',
     'projects': 'Projets',
-    'services': 'Services',
+    'career': 'Parcours',
+    'certifications': 'Certifications',
+    'media': 'Médiathèque',
+    'trash': 'Corbeille',
+    'audit': 'Journal d’audit',
     'contacts': 'Contacts',
+    'legal': 'Pages légales',
     'profile': 'Profil',
     'admins': 'Administrateurs',
 }
@@ -807,10 +958,7 @@ def admin_section(section):
 
 # ========== Routes API Analytics (tracking public) ==========
 def _client_ip():
-    forwarded = request.headers.get('X-Forwarded-For', '')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
-    return request.remote_addr or ''
+    return client_ip_from_request(request)
 
 @app.route('/api/analytics/track-page', methods=['POST'])
 def track_page_api():
@@ -896,6 +1044,28 @@ def get_analytics_stats():
             cursor.execute('SELECT COUNT(*) FROM contacts WHERE read = 0')
             unread_contacts = cursor.fetchone()[0]
             stats['unread_contacts'] = unread_contacts
+            try:
+                cursor.execute("SELECT COUNT(*) FROM error_logs WHERE resolved = 0")
+                stats['open_errors'] = cursor.fetchone()[0]
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) FROM login_history
+                    WHERE success = 0 AND login_time >= datetime('now', '-24 hours')
+                    """
+                )
+                stats['failed_logins_24h'] = cursor.fetchone()[0]
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) FROM security_events
+                    WHERE severity IN ('warning', 'critical')
+                      AND created_at >= datetime('now', '-24 hours')
+                    """
+                )
+                stats['security_alerts_24h'] = cursor.fetchone()[0]
+            except Exception:
+                stats['open_errors'] = 0
+                stats['failed_logins_24h'] = 0
+                stats['security_alerts_24h'] = 0
             
             # Ajouter les projets par statut
             cursor.execute('SELECT status, COUNT(*) FROM projects GROUP BY status')
@@ -936,12 +1106,12 @@ def get_homepage_api():
         else:
             # Retourner des données par défaut si aucune donnée
             data = {
-                "badge": "Disponible en freelance · Trois-Rivières (Québec)",
-                "title_line1": "Du besoin métier",
-                "title_line2": "au produit et à la donnée.",
+                "badge": "Ouvert aux opportunités · Trois-Rivières (Québec)",
+                "title_line1": "Développeur Full Stack",
+                "title_line2": "& science des données.",
                 "description": app.config['PORTFOLIO_DESCRIPTION'],
                 "email": app.config['PORTFOLIO_EMAIL'],
-                "cta_text": "Discutons d'un mandat",
+                "cta_text": "Me contacter",
                 "about_title": "Présentation",
                 "about_name": app.config['PORTFOLIO_NAME'],
                 "about_subtitle": app.config['PORTFOLIO_TITLE'],
@@ -1409,8 +1579,19 @@ def create_project_api():
         if cleaned_data['github_link'] and not validate_url(cleaned_data['github_link']):
             return jsonify({'error': 'Format d\'URL GitHub invalide'}), 400
         
-        if cleaned_data['image'] and not validate_url(cleaned_data['image']) and not cleaned_data['image'].startswith('images/'):
+        def _valid_project_image_path(path):
+            if not path:
+                return True
+            if validate_url(path):
+                return True
+            return path.startswith('images/') or path.startswith('uploads/')
+
+        if cleaned_data['image'] and not _valid_project_image_path(cleaned_data['image']):
             return jsonify({'error': 'Format d\'URL d\'image invalide'}), 400
+
+        for img_path in (p.strip() for p in (cleaned_data.get('additional_images') or '').split(',')):
+            if img_path and not _valid_project_image_path(img_path):
+                return jsonify({'error': 'Format d\'image supplémentaire invalide'}), 400
         
         # Valider le statut
         valid_statuses = ['draft', 'published', 'archived']
@@ -1551,18 +1732,27 @@ def get_project_api(project_id):
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
 @admin_required
 def delete_project_api(project_id):
-    """Supprime un projet"""
+    """Soft-delete d'un projet (corbeille)."""
     try:
         with get_db() as conn:
             if conn is None:
                 return jsonify({'error': 'Base de données non disponible'}), 503
             
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM projects WHERE id = ?', (int(project_id),))
+            cursor.execute(
+                '''
+                UPDATE projects
+                SET deleted_at = CURRENT_TIMESTAMP, status = 'archived', updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND (deleted_at IS NULL OR deleted_at = '')
+                ''',
+                (int(project_id),),
+            )
+            from utils.audit import log_audit
+            log_audit(conn, session.get('admin_id'), 'soft_delete', 'projects', project_id)
             conn.commit()
             
             if cursor.rowcount > 0:
-                return jsonify({'success': True, 'message': 'Projet supprimé'})
+                return jsonify({'success': True, 'message': 'Projet déplacé dans la corbeille'})
             return jsonify({'error': 'Projet non trouvé'}), 404
     except Exception as e:
         app.logger.error(f"Erreur delete_project_api: {e}")
@@ -2280,10 +2470,28 @@ def mongo_status_api():
             'error': str(e)
         }), 500
 
+from register_extra_routes import register_extra_routes
+from register_advanced_routes import register_advanced_routes
+register_extra_routes(app, admin_required, sanitize_input)
+register_advanced_routes(app, admin_required, sanitize_input)
+
 # ========== Handlers d'erreur ==========
 @app.errorhandler(404)
 def not_found_error(error):
     """Gère les erreurs 404"""
+    suspicious = any(
+        token in (request.path or '').lower()
+        for token in ('wp-admin', '.env', 'phpmyadmin', '.git', 'xmlrpc')
+    )
+    if suspicious:
+        try:
+            with get_db() as conn:
+                log_security_event(
+                    conn, 'scan_detected', severity='warning',
+                    path=request.path, ip_address=_client_ip(),
+                )
+        except Exception:
+            pass
     if request.is_json or request.path.startswith('/api/'):
         return jsonify({'error': 'Ressource non trouvée'}), 404
     return render_template('errors/404.html'), 404
@@ -2292,6 +2500,15 @@ def not_found_error(error):
 def internal_error(error):
     """Gère les erreurs 500"""
     app.logger.error(f'Erreur serveur: {error}', exc_info=True)
+    try:
+        with get_db() as conn:
+            log_error_event(
+                conn, source='server', level='error',
+                message=str(error), path=request.path,
+                user_agent=request.headers.get('User-Agent', '')[:500],
+            )
+    except Exception:
+        pass
     if request.is_json or request.path.startswith('/api/'):
         return jsonify({'error': 'Erreur interne du serveur'}), 500
     return render_template('errors/500.html'), 500

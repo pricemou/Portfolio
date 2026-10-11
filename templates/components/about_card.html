@@ -1,12 +1,16 @@
 {% macro about_card(title, icon, description, projects=None) %}
-<div class="light-bg about-card">
-    <div class="flex justify-space">
-        <h3 class="green">{{ title }}</h3>
-        <img src="{{ url_for('static', filename=icon) }}" width="28" height="28" alt="" />
+<article class="about-card">
+    <div class="about-card-head">
+        <h3>{{ title }}</h3>
+        {% if icon %}
+        <span class="about-card-icon" aria-hidden="true">
+            <img src="{{ url_for('static', filename=icon) }}" width="22" height="22" alt="" />
+        </span>
+        {% endif %}
     </div>
-    <p class="white">{{ description }}</p>
+    <p>{{ description }}</p>
     {% if projects is not none and projects != '' %}
-    <span class="gray">{{ projects }}</span>
+    <span class="about-card-tag">{{ projects }}</span>
     {% endif %}
-</div>
+</article>
 {% endmacro %}

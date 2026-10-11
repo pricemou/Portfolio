@@ -26,9 +26,9 @@
                 {% if request.endpoint == 'works' %}&lt; {{ t('nav_projects') }} /&gt;{% else %}{{ t('nav_projects') }}.{% endif %}
             </a>
         </li>
-        <li class="{% if request.endpoint == 'services' %}green{% endif %}">
-            <a href="{{ url_for('services') }}">
-                {% if request.endpoint == 'services' %}&lt; {{ t('nav_services') }} /&gt;{% else %}{{ t('nav_services') }}.{% endif %}
+        <li class="{% if request.endpoint == 'certifications' %}green{% endif %}">
+            <a href="{{ url_for('certifications') }}">
+                {% if request.endpoint == 'certifications' %}&lt; {{ t('nav_certifications') }} /&gt;{% else %}{{ t('nav_certifications') }}.{% endif %}
             </a>
         </li>
         <li class="{% if request.endpoint == 'contact' %}green{% endif %}">
@@ -42,8 +42,16 @@
             <a href="{{ url_for('set_language', lang='en') }}" class="{% if lang == 'en' %}green{% endif %}" hreflang="en" lang="en">EN</a>
         </li>
         <li>
-            <button id="theme-toggle" class="theme-toggle" aria-label="{{ t('nav_theme') }}" title="{{ t('nav_theme') }}">
-                <span id="theme-icon">🌙</span>
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="{{ t('nav_theme') }}" title="{{ t('nav_theme') }}" aria-pressed="false">
+                <span class="theme-icon" id="theme-icon" aria-hidden="true">
+                    <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+                    </svg>
+                    <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5z"></path>
+                    </svg>
+                </span>
             </button>
         </li>
     </ul>

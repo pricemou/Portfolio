@@ -3,7 +3,7 @@
 Site : [https://claude225.pythonanywhere.com/](https://claude225.pythonanywhere.com/)  
 Code : [https://github.com/pricemou/Portfolio](https://github.com/pricemou/Portfolio)
 
-Portfolio de **Claude Pricemou**, développeur Full Stack & science des données, freelance à Trois-Rivières (Québec).
+Portfolio de **Claude Pricemou**, développeur Full Stack & science des données, basé à Trois-Rivières (Québec).
 
 ## Stack
 
@@ -32,7 +32,7 @@ Ouvrir `http://127.0.0.1:5000`.
 | `/` | Accueil, à propos, chiffres, références |
 | `/parcours` | Chronologie |
 | `/works` | Projets (filtres Pro / Data / Académique) |
-| `/services` | Offres et devis |
+| `/certifications` | Certifications Coursera |
 | `/contact` | Formulaire (anti-spam) |
 | `/cv` | Téléchargement du CV |
 | `/admin` | Administration (non listée dans le menu public) |
@@ -41,7 +41,7 @@ Ouvrir `http://127.0.0.1:5000`.
 
 Remplacer ces fichiers par de vraies captures après déploiement :
 
-- Accueil : `static/images/claude-pricemou.svg` (placeholder tant qu’une photo pro n’est pas fournie)
+- Accueil : `static/images/claude-pricemou.png`
 - Projets et services : pages `/works` et `/services`
 
 ## Sécurité

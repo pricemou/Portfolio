@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} — Claude Pricemou{% endblock %}
+{% block meta_description %}{{ page.title }} — portfolio Claude Pricemou.{% endblock %}
+
+{% block content %}
+    {% include 'components/navbar.html' %}
+    <main>
+        <section class="dark-bg legal-section">
+            <div class="legal-wrap">
+                <h1 class="white">{{ page.title }}</h1>
+                <div class="gray legal-body">
+                    {{ (page.body or '') | replace('\n', '<br/>') | safe }}
+                </div>
+                <p style="margin-top: 2rem;">
+                    <a class="green" href="{{ url_for('contact') }}">{{ t('nav_contact') }}</a>
+                </p>
+            </div>
+        </section>
+    </main>
+    {% set year = current_year %}
+    {% include 'components/footer.html' %}
+{% endblock %}

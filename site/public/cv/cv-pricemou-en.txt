@@ -1,0 +1,77 @@
+PRICEMOU FROMON CLAUDE
+Data Scientist & Full Stack Developer | Machine Learning | Python & SQL
+Trois-Rivieres, Quebec, Canada
+Phone: (438) 458-3813
+Email: pricemoufromon97@gmail.com
+LinkedIn: https://www.linkedin.com/in/pricemou-f-claude/
+GitHub: https://github.com/pricemou/
+
+PROFILE
+Data scientist with hands-on experience in Python, SQL, exploratory analysis,
+statistics and Machine Learning. Full Stack developer (React, Node.js, Express, REST API).
+Requirement framing with BI, business and technical teams. Git, tests, documentation.
+Fluent French, professional English.
+
+KEYWORDS
+Python, SQL, Pandas, NumPy, Scikit-learn, Machine Learning, EDA, PostgreSQL, MongoDB,
+React, Node.js, Express.js, REST API, Git, tests, data science, full stack
+
+EXPERIENCE
+Software and data development intern | Network Pro Service | January 2026 – April 2026
+I connected a business need to Python data processing, PostgreSQL and a web application.
+Done by me:
+- I turned concrete problems into automated data processing in Python.
+- I extracted, cleaned, transformed and validated data from online sources before integration.
+- I loaded the processed data into a PostgreSQL database.
+- I built features for a management web app with React, Node.js, Express.js and a REST API, using tests and sound coding practices.
+- I documented the data processing I delivered.
+With the teams:
+- I framed requirements with business teams.
+- I contributed to data quality and consistency reviews.
+Technologies: Python, PostgreSQL, React, Node.js, Express.js, REST API, tests
+
+Software developer | Groupe CERCO | 2019 – 2021
+I designed, built, tested and fixed software features from business needs.
+Done by me:
+- I designed software solutions from analyzed business needs.
+- I developed and maintained software features.
+- I ran functional and technical tests.
+- I diagnosed and fixed technical defects.
+With the teams:
+- I analyzed business needs and designed solutions with stakeholders.
+- I communicated results to the relevant teams.
+
+PROJECTS
+Student performance and success analysis
+I analyzed academic data to identify success factors and student profiles.
+Technologies: Python, Pandas, Scikit-learn
+
+Anomaly detection in data
+I detected anomalies to improve data reliability.
+Technologies: Python, statistics, Machine Learning
+
+Vector search and data analysis
+I built similarity search from text embeddings.
+Technologies: Python, Sentence Transformers, MongoDB Atlas
+
+Management application (Full Stack case study)
+I contributed to a management app connected to data processing and PostgreSQL.
+
+EDUCATION
+Bachelor in Computer Science, Data Science | Université du Québec à Trois-Rivières (UQTR) | 2023 – 2026
+Licence in Software Engineering, software development | Haute École du Commerce (HEC), Côte d'Ivoire | 2018 – 2019
+Canadian equivalency: bachelor level in computer science.
+Big Data Specialization | University of California San Diego (Coursera)
+
+CERTIFICATIONS (47 Coursera)
+- Python Data Structures | https://www.coursera.org/account/accomplishments/certificate/9QSS4JFWLJPR
+- Python Data Analysis | https://www.coursera.org/account/accomplishments/certificate/CUPVATWCLRYM
+- Introduction to Data Science in Python | https://www.coursera.org/account/accomplishments/certificate/NQSD2JWXFTYT
+- Applied Plotting, Charting & Data Representation in Python | https://www.coursera.org/account/accomplishments/certificate/MBRGMG4EKZKH
+- Neural Networks and Deep Learning | https://www.coursera.org/account/accomplishments/certificate/WG37MGDQ74DS
+- Structuring Machine Learning Projects | https://www.coursera.org/account/accomplishments/certificate/KKA925D6P5FP
+- Machine Learning With Big Data | https://www.coursera.org/account/accomplishments/certificate/YPMJFMZNVPWT
+- Foundations for Big Data Analysis with SQL | https://www.coursera.org/account/accomplishments/certificate/JF3NJSYQAKNE
+- Introduction to Front-end Development with ReactJS | https://www.coursera.org/account/accomplishments/certificate/FQ3PXJFKXZUK
+- Server-side Development with NodeJS, Express and MongoDB | https://www.coursera.org/account/accomplishments/certificate/FJTK7BD4BNW3
+(Full list available on the portfolio website.)

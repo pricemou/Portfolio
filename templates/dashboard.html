@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring cybersécurité — Claude Pricemou{% endblock %}
+{% block meta_description %}Tableau de bord interactif de monitoring cybersécurité (données simulées) — Streamlit / Plotly, portfolio Claude Pricemou.{% endblock %}
+{% block og_title %}Monitoring cybersécurité — portfolio{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cyber-dashboard.css') }}">
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+{% endblock %}
+
+{% block content %}
+{% include 'components/navbar.html' %}
+<section class="cyber-dash" id="cyber-dashboard" aria-labelledby="cyber-dash-title">
+    <div class="cyber-dash-layout">
+        <aside class="cyber-dash-sidebar" aria-label="Filtres">
+            <h2>Filtres</h2>
+            <p class="cyber-note-side">Données <strong>simulées</strong> (IP RFC 5737). Aucune donnée personnelle réelle.</p>
+
+            <label class="cyber-label">Téléverser un CSV
+                <input type="file" id="cyber-upload" accept=".csv,text/csv">
+            </label>
+            <button type="button" class="cyber-btn ghost" id="cyber-reset-csv">Revenir aux données par défaut</button>
+            <p class="cyber-upload-status" id="cyber-upload-status" hidden></p>
+
+            <label class="cyber-label">Période (début)
+                <input type="date" id="f-debut">
+            </label>
+            <label class="cyber-label">Période (fin)
+                <input type="date" id="f-fin">
+            </label>
+
+            <label class="cyber-label">Pays
+                <select id="f-pays" multiple size="5"></select>
+            </label>
+            <label class="cyber-label">Type d’activité
+                <select id="f-activite" multiple size="5"></select>
+            </label>
+            <label class="cyber-label">Gravité
+                <select id="f-gravite" multiple size="4"></select>
+            </label>
+            <label class="cyber-label">Type d’utilisateur
+                <select id="f-utilisateur" multiple size="3"></select>
+            </label>
+            <label class="cyber-label">Service cible
+                <select id="f-service" multiple size="4"></select>
+            </label>
+
+            <button type="button" class="cyber-btn" id="cyber-apply">Appliquer les filtres</button>
+        </aside>
+
+        <div class="cyber-dash-main">
+            <header class="cyber-dash-header">
+                <div>
+                    <p class="cyber-eyebrow">Portfolio · Démonstration</p>
+                    <h1 id="cyber-dash-title">Monitoring cybersécurité</h1>
+                    <p class="cyber-lead">Tableau de bord interactif (Plotly) — 50&nbsp;000 événements simulés sur 30 jours.</p>
+                </div>
+                <a class="cyber-btn ghost" href="{{ url_for('works') }}">← Projets</a>
+            </header>
+
+            <div class="cyber-alert" role="status">
+                <strong>Note :</strong> données entièrement fictives. Adresses IP des plages de documentation
+                (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24).
+            </div>
+
+            <div class="cyber-kpis" id="cyber-kpis" aria-live="polite">
+                <div class="cyber-kpi"><span class="cyber-kpi-label">Événements</span><strong id="kpi-total">—</strong></div>
+                <div class="cyber-kpi"><span class="cyber-kpi-label">IP uniques</span><strong id="kpi-ips">—</strong></div>
+                <div class="cyber-kpi"><span class="cyber-kpi-label">Taux d’échec</span><strong id="kpi-echec">—</strong></div>
+                <div class="cyber-kpi"><span class="cyber-kpi-label">Alertes critiques</span><strong id="kpi-crit">—</strong></div>
+                <div class="cyber-kpi"><span class="cyber-kpi-label">Pays</span><strong id="kpi-pays">—</strong></div>
+            </div>
+
+            <div class="cyber-grid-2">
+                <article class="cyber-card">
+                    <h3>Carte des origines</h3>
+                    <div id="chart-carte" class="cyber-chart"></div>
+                </article>
+                <article class="cyber-card">
+                    <h3>Évolution temporelle</h3>
+                    <div class="cyber-toolbar">
+                        <label><input type="radio" name="granularite" value="heure" checked> Heure</label>
+                        <label><input type="radio" name="granularite" value="jour"> Jour</label>
+                    </div>
+                    <div id="chart-temporel" class="cyber-chart"></div>
+                </article>
+            </div>
+
+            <div class="cyber-grid-2">
+                <article class="cyber-card">
+                    <h3>Top 10</h3>
+                    <div class="cyber-toolbar">
+                        <select id="top-dim">
+                            <option value="ip">Adresses IP</option>
+                            <option value="compte">Comptes visés</option>
+                            <option value="pays">Pays</option>
+                            <option value="service">Services cibles</option>
+                        </select>
+                    </div>
+                    <div id="chart-top10" class="cyber-chart"></div>
+                </article>
+                <article class="cyber-card">
+                    <h3>Répartition</h3>
+                    <div class="cyber-toolbar">
+                        <label><input type="radio" name="donut" value="utilisateur" checked> Type d’utilisateur</label>
+                        <label><input type="radio" name="donut" value="activite"> Type d’activité</label>
+                    </div>
+                    <div id="chart-donut" class="cyber-chart"></div>
+                </article>
+            </div>
+
+            <article class="cyber-card">
+                <h3>Activité par heure et jour</h3>
+                <div id="chart-heatmap" class="cyber-chart cyber-chart--wide"></div>
+            </article>
+
+            <article class="cyber-card">
+                <h3>IP les plus actives</h3>
+                <p class="cyber-caption">Cliquez sur les en-têtes pour trier.</p>
+                <div class="cyber-table-wrap">
+                    <table class="cyber-table" id="cyber-ip-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="ip">IP</th>
+                                <th data-sort="pays">Pays</th>
+                                <th data-sort="service_vise">Service visé</th>
+                                <th data-sort="compte_vise">Compte visé</th>
+                                <th data-sort="tentatives">Tentatives</th>
+                                <th data-sort="dernier_evenement">Dernier événement</th>
+                                <th data-sort="niveau_risque">Niveau de risque</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+{% set year = current_year %}
+{% include 'components/footer.html' %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/cyber-dashboard.js') }}" defer></script>
+{% endblock %}

@@ -153,7 +153,7 @@ function closeConfirmModal() {
 }
 
 // ========== Pagination ==========
-function createPagination(currentPage, totalPages, onPageChange, containerId) {
+function createPagination(currentPage, totalPages, onPageChange, containerId, extraArgs = null) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
@@ -161,12 +161,18 @@ function createPagination(currentPage, totalPages, onPageChange, containerId) {
         container.innerHTML = '';
         return;
     }
+
+    const call = (page) => (
+        extraArgs != null && extraArgs !== ''
+            ? `${onPageChange}(${extraArgs}, ${page})`
+            : `${onPageChange}(${page})`
+    );
     
     let paginationHTML = '<div class="pagination">';
     
     // Bouton Précédent
     if (currentPage > 1) {
-        paginationHTML += `<button class="pagination-btn" onclick="${onPageChange}(${currentPage - 1})">‹ Précédent</button>`;
+        paginationHTML += `<button class="pagination-btn" onclick="${call(currentPage - 1)}">‹ Précédent</button>`;
     } else {
         paginationHTML += `<button class="pagination-btn" disabled>‹ Précédent</button>`;
     }
@@ -181,7 +187,7 @@ function createPagination(currentPage, totalPages, onPageChange, containerId) {
     }
     
     if (startPage > 1) {
-        paginationHTML += `<button class="pagination-btn" onclick="${onPageChange}(1)">1</button>`;
+        paginationHTML += `<button class="pagination-btn" onclick="${call(1)}">1</button>`;
         if (startPage > 2) {
             paginationHTML += `<span class="pagination-ellipsis">...</span>`;
         }
@@ -191,7 +197,7 @@ function createPagination(currentPage, totalPages, onPageChange, containerId) {
         if (i === currentPage) {
             paginationHTML += `<button class="pagination-btn pagination-btn-active">${i}</button>`;
         } else {
-            paginationHTML += `<button class="pagination-btn" onclick="${onPageChange}(${i})">${i}</button>`;
+            paginationHTML += `<button class="pagination-btn" onclick="${call(i)}">${i}</button>`;
         }
     }
     
@@ -199,12 +205,12 @@ function createPagination(currentPage, totalPages, onPageChange, containerId) {
         if (endPage < totalPages - 1) {
             paginationHTML += `<span class="pagination-ellipsis">...</span>`;
         }
-        paginationHTML += `<button class="pagination-btn" onclick="${onPageChange}(${totalPages})">${totalPages}</button>`;
+        paginationHTML += `<button class="pagination-btn" onclick="${call(totalPages)}">${totalPages}</button>`;
     }
     
     // Bouton Suivant
     if (currentPage < totalPages) {
-        paginationHTML += `<button class="pagination-btn" onclick="${onPageChange}(${currentPage + 1})">Suivant ›</button>`;
+        paginationHTML += `<button class="pagination-btn" onclick="${call(currentPage + 1)}">Suivant ›</button>`;
     } else {
         paginationHTML += `<button class="pagination-btn" disabled>Suivant ›</button>`;
     }
@@ -213,6 +219,142 @@ function createPagination(currentPage, totalPages, onPageChange, containerId) {
     
     container.innerHTML = paginationHTML;
 }
+
+// ========== Listes admin : vue liste/grille + pagination ==========
+window.AdminListViews = window.AdminListViews || {};
+
+function getAdminListController(key, options = {}) {
+    if (!window.AdminListViews[key]) {
+        let saved = options.defaultView === 'grid' ? 'grid' : 'list';
+        try {
+            const v = localStorage.getItem(`admin-list-view-${key}`);
+            if (v === 'grid' || v === 'list') saved = v;
+        } catch (_) { /* ignore */ }
+        window.AdminListViews[key] = {
+            key,
+            items: [],
+            page: 1,
+            view: saved,
+            perPage: options.perPage || 9,
+            listId: options.listId,
+            paginationId: options.paginationId,
+            countId: options.countId,
+            listBtnId: options.listBtnId,
+            gridBtnId: options.gridBtnId,
+            emptyHtml: options.emptyHtml || '<p class="admin-empty">Aucun élément.</p>',
+            countLabel: options.countLabel || ((n) => (n === 1 ? '1 élément' : `${n} éléments`)),
+            listClass: options.listClass || 'admin-list',
+            gridClass: options.gridClass || 'admin-list admin-items-grid',
+            renderList: options.renderList,
+            renderGrid: options.renderGrid,
+            resetPageOnSet: options.resetPageOnSet !== false,
+        };
+    } else {
+        const ctrl = window.AdminListViews[key];
+        Object.assign(ctrl, {
+            perPage: options.perPage || ctrl.perPage,
+            listId: options.listId || ctrl.listId,
+            paginationId: options.paginationId || ctrl.paginationId,
+            countId: options.countId || ctrl.countId,
+            listBtnId: options.listBtnId || ctrl.listBtnId,
+            gridBtnId: options.gridBtnId || ctrl.gridBtnId,
+            emptyHtml: options.emptyHtml || ctrl.emptyHtml,
+            countLabel: options.countLabel || ctrl.countLabel,
+            listClass: options.listClass || ctrl.listClass,
+            gridClass: options.gridClass || ctrl.gridClass,
+            renderList: options.renderList || ctrl.renderList,
+            renderGrid: options.renderGrid || ctrl.renderGrid,
+        });
+    }
+    return window.AdminListViews[key];
+}
+
+function syncAdminListViewToggle(ctrl) {
+    const listBtn = ctrl.listBtnId ? document.getElementById(ctrl.listBtnId) : null;
+    const gridBtn = ctrl.gridBtnId ? document.getElementById(ctrl.gridBtnId) : null;
+    if (listBtn) {
+        listBtn.classList.toggle('is-active', ctrl.view === 'list');
+        listBtn.setAttribute('aria-pressed', ctrl.view === 'list' ? 'true' : 'false');
+    }
+    if (gridBtn) {
+        gridBtn.classList.toggle('is-active', ctrl.view === 'grid');
+        gridBtn.setAttribute('aria-pressed', ctrl.view === 'grid' ? 'true' : 'false');
+    }
+}
+
+function setAdminListItems(key, items, options = {}) {
+    const ctrl = getAdminListController(key, options);
+    ctrl.items = Array.isArray(items) ? items : [];
+    if (ctrl.resetPageOnSet) ctrl.page = 1;
+    renderAdminList(key);
+}
+
+function setAdminListView(key, view) {
+    const ctrl = getAdminListController(key);
+    ctrl.view = view === 'grid' ? 'grid' : 'list';
+    try {
+        localStorage.setItem(`admin-list-view-${key}`, ctrl.view);
+    } catch (_) { /* ignore */ }
+    renderAdminList(key);
+}
+
+function goToAdminListPage(key, page) {
+    const ctrl = getAdminListController(key);
+    const totalPages = Math.max(1, Math.ceil(ctrl.items.length / ctrl.perPage));
+    ctrl.page = Math.min(Math.max(1, Number(page) || 1), totalPages);
+    renderAdminList(key);
+    const list = document.getElementById(ctrl.listId);
+    if (list) {
+        const shell = list.closest('.admin-panel, .admin-list-shell, .certs-shell, .contacts-inbox, .media-library-panel') || list;
+        shell.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function renderAdminList(key) {
+    const ctrl = getAdminListController(key);
+    const list = document.getElementById(ctrl.listId);
+    if (!list) return;
+
+    syncAdminListViewToggle(ctrl);
+
+    const countEl = ctrl.countId ? document.getElementById(ctrl.countId) : null;
+    if (countEl && typeof ctrl.countLabel === 'function') {
+        countEl.textContent = ctrl.countLabel(ctrl.items.length);
+    }
+
+    if (!ctrl.items.length) {
+        list.className = ctrl.listClass;
+        list.dataset.view = ctrl.view;
+        list.innerHTML = ctrl.emptyHtml;
+        const pagination = ctrl.paginationId ? document.getElementById(ctrl.paginationId) : null;
+        if (pagination) pagination.innerHTML = '';
+        return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(ctrl.items.length / ctrl.perPage));
+    if (ctrl.page > totalPages) ctrl.page = totalPages;
+    const start = (ctrl.page - 1) * ctrl.perPage;
+    const pageItems = ctrl.items.slice(start, start + ctrl.perPage);
+
+    list.dataset.view = ctrl.view;
+    list.className = ctrl.view === 'grid' ? ctrl.gridClass : ctrl.listClass;
+
+    const renderer = ctrl.view === 'grid' ? ctrl.renderGrid : ctrl.renderList;
+    list.innerHTML = pageItems.map((item) => {
+        if (typeof renderer === 'function') return renderer(item, ctrl.view);
+        return '';
+    }).join('');
+
+    if (ctrl.paginationId && typeof createPagination === 'function') {
+        createPagination(ctrl.page, totalPages, 'goToAdminListPage', ctrl.paginationId, `'${key}'`);
+    }
+}
+
+window.setAdminListView = setAdminListView;
+window.goToAdminListPage = goToAdminListPage;
+window.setAdminListItems = setAdminListItems;
+window.getAdminListController = getAdminListController;
+window.renderAdminList = renderAdminList;
 
 // Styles pour la pagination
 const paginationStyles = `

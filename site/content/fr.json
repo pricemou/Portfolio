@@ -1,0 +1,1018 @@
+{
+  "meta": {
+    "siteName": "Pricemou Fromon Claude",
+    "description": "J'analyse les données ET je livre une application qui les exploite.",
+    "email": "pricemoufromon97@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/pricemou-f-claude/",
+    "github": "https://github.com/pricemou/",
+    "locale": "fr_CA"
+  },
+  "nav": {
+    "about": "À propos",
+    "experience": "Expériences",
+    "projects": "Projets",
+    "skills": "Compétences",
+    "education": "Formation",
+    "contact": "Contact",
+    "downloadCv": "Télécharger mon CV",
+    "theme": "Thème"
+  },
+  "hero": {
+    "name": "Pricemou Fromon Claude",
+    "title": "Scientifique de données & Développeur Full Stack | Machine Learning | Python & SQL",
+    "location": "Trois-Rivières, Québec, Canada",
+    "tagline": "J'analyse les données ET je livre une application qui les exploite.",
+    "ctaExperience": "Expériences",
+    "ctaProjects": "Projets",
+    "ctaCv": "CV",
+    "ctaContact": "Contact",
+    "photoAlt": "Portrait de diplomation de Pricemou Fromon Claude, diplôme UQTR Informatique"
+  },
+  "about": {
+    "eyebrow": "À propos",
+    "lead": "Je suis scientifique de données et développeur Full Stack.",
+    "body": [
+      "J'utilise Python, SQL, l'analyse exploratoire, les statistiques et le Machine Learning sur des problèmes d'affaires concrets.",
+      "Je cadre des besoins ambigus avec des équipes BI, affaires et techniques, puis je les traduis en solutions mesurables.",
+      "Je livre aussi des applications web avec React, Node.js, Express et des API REST.",
+      "Je travaille avec Git, des tests et une documentation claire. Je vulgarise les résultats pour des personnes non techniques.",
+      "Je parle français couramment et anglais à niveau professionnel."
+    ]
+  },
+  "experiences": [
+    {
+      "id": "network-pro",
+      "role": "Stagiaire en développement logiciel et données",
+      "org": "Network Pro Service",
+      "period": "janvier 2026 – avril 2026",
+      "oneLiner": "J'ai relié le besoin d'affaires, le traitement des données en Python, PostgreSQL et une application web.",
+      "context": "On attendait de moi de transformer des besoins concrets en traitements de données fiables, puis de contribuer à une application de gestion.",
+      "soloLabel": "Réalisé par moi",
+      "collabLabel": "En collaboration",
+      "solo": [
+        "J'ai traduit des problématiques concrètes en traitements de données automatisés en Python.",
+        "J'ai extrait, nettoyé, transformé et validé des données provenant de sources en ligne avant leur intégration.",
+        "J'ai intégré les données traitées dans une base PostgreSQL.",
+        "J'ai développé des fonctionnalités d'une application web de gestion avec React, Node.js, Express.js et une API REST, en appliquant des tests et de bonnes pratiques de code.",
+        "J'ai documenté les traitements réalisés."
+      ],
+      "collab": [
+        "J'ai cadré les besoins avec les équipes d'affaires.",
+        "J'ai participé à l'analyse de la qualité et de la cohérence des données."
+      ],
+      "technologies": [
+        "Python",
+        "PostgreSQL",
+        "React",
+        "Node.js",
+        "Express.js",
+        "REST API",
+        "tests"
+      ],
+      "skillsShown": [
+        "Traitement de données de bout en bout",
+        "Livraison d'une fonctionnalité web testée",
+        "Cadrage avec des équipes d'affaires"
+      ]
+    },
+    {
+      "id": "cerco",
+      "role": "Développeur logiciel",
+      "org": "Groupe CERCO",
+      "period": "2019 – 2021",
+      "oneLiner": "J'ai conçu, développé, testé et corrigé des fonctionnalités logicielles à partir de besoins d'affaires.",
+      "context": "On attendait de moi de comprendre les besoins, de proposer des solutions, de les développer et d'assurer leur qualité.",
+      "soloLabel": "Réalisé par moi",
+      "collabLabel": "En collaboration",
+      "solo": [
+        "J'ai conçu des solutions logicielles à partir des besoins d'affaires analysés.",
+        "J'ai développé et maintenu des fonctionnalités logicielles.",
+        "J'ai réalisé des tests fonctionnels et techniques.",
+        "J'ai diagnostiqué et corrigé des anomalies techniques."
+      ],
+      "collab": [
+        "J'ai analysé les besoins d'affaires et conçu les solutions avec les parties prenantes.",
+        "J'ai communiqué les résultats aux équipes concernées."
+      ],
+      "technologies": [],
+      "skillsShown": [
+        "Conception à partir d'un besoin",
+        "Tests et correction d'anomalies",
+        "Communication avec les parties prenantes"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "slug": "reussite-etudiants",
+      "category": "data-science",
+      "title": "Analyse de la performance et de la réussite des étudiants",
+      "cardLines": [
+        "J'ai exploré des données académiques avec Python, Pandas et Scikit-learn.",
+        "J'ai cherché des facteurs de réussite et des profils d'étudiants.",
+        "J'ai rendu ces résultats compréhensibles pour des non-spécialistes."
+      ],
+      "impact": "Ce projet montre que je passe de la donnée brute à des profils utiles pour des enseignants ou des gestionnaires.",
+      "glance": "J'ai analysé des données académiques pour identifier des facteurs de réussite et des profils d'étudiants.",
+      "context": "La question était de comprendre ce qui favorise la réussite. Cela aide à soutenir les étudiants de façon ciblée.",
+      "data": "Les données étaient des informations académiques. Elles décrivent le parcours et les résultats des étudiants.",
+      "approach": [
+        "J'ai nettoyé et préparé les données pour l'analyse.",
+        "J'ai mené une analyse exploratoire (EDA). L'EDA consiste à résumer et visualiser les données pour les comprendre.",
+        "J'ai appliqué des méthodes statistiques et du Machine Learning avec Scikit-learn.",
+        "J'ai synthétisé des facteurs et des profils lisibles."
+      ],
+      "methods": [
+        "L'analyse exploratoire sert à voir les tendances avant de modéliser.",
+        "Les modèles de Machine Learning aident à regrouper ou à classer des profils à partir des données.",
+        "J'ai choisi ces méthodes pour passer du détail brut à une lecture compréhensible."
+      ],
+      "deliverables": [
+        "Notebooks et scripts Python",
+        "Analyses et visualisations",
+        "Synthèse des facteurs et profils"
+      ],
+      "demonstrates": [
+        "EDA, statistiques et Machine Learning appliqués",
+        "Vulgarisation pour un public non technique"
+      ],
+      "improvements": [
+        "Enrichir les données disponibles",
+        "Comparer d'autres modèles selon le besoin métier"
+      ],
+      "technologies": [
+        "Python",
+        "Pandas",
+        "Scikit-learn"
+      ],
+      "github": "https://github.com/pricemou/"
+    },
+    {
+      "slug": "detection-anomalies",
+      "category": "data-science",
+      "title": "Détection d'anomalies dans les données",
+      "cardLines": [
+        "J'ai cherché des observations atypiques dans des données.",
+        "J'ai combiné une approche statistique et une approche algorithmique.",
+        "Le but était de renforcer la fiabilité avant toute décision."
+      ],
+      "impact": "Ce projet montre que je sais repérer des données suspectes avant qu'elles n'orientent une mauvaise décision.",
+      "glance": "J'ai détecté des anomalies pour améliorer la fiabilité des données.",
+      "context": "Une anomalie est une observation inhabituelle. La repérer évite de décider sur des données trompeuses.",
+      "data": "Les données analysées contenaient des observations à vérifier. Certaines pouvaient s'écarter fortement du reste.",
+      "approach": [
+        "J'ai préparé les données pour la détection.",
+        "J'ai appliqué une méthode statistique pour signaler les écarts inhabituels.",
+        "J'ai appliqué une méthode algorithmique pour confirmer d'autres cas atypiques.",
+        "J'ai confronté les deux approches pour mieux cibler ce qui mérite attention."
+      ],
+      "methods": [
+        "L'approche statistique compare chaque point à la distribution générale.",
+        "L'approche algorithmique apprend des motifs et signale ce qui s'en éloigne.",
+        "Les combiner réduit le risque de manquer un cas ou de trop alerter."
+      ],
+      "deliverables": [
+        "Scripts de détection",
+        "Liste d'observations à examiner",
+        "Documentation de la démarche"
+      ],
+      "demonstrates": [
+        "Contrôle de la qualité des données",
+        "Usage raisonné de méthodes statistiques et algorithmiques"
+      ],
+      "improvements": [
+        "Affiner les seuils avec des experts métier",
+        "Automatiser un suivi régulier des alertes"
+      ],
+      "technologies": [
+        "Python",
+        "statistiques",
+        "Machine Learning"
+      ],
+      "github": "https://github.com/pricemou/"
+    },
+    {
+      "slug": "recherche-vectorielle",
+      "category": "ia",
+      "title": "Recherche vectorielle et analyse de données",
+      "cardLines": [
+        "J'ai généré des embeddings avec Sentence Transformers.",
+        "Un embedding transforme un texte en une série de nombres qui représente son sens.",
+        "J'ai stocké ces représentations dans MongoDB Atlas pour une recherche par similarité."
+      ],
+      "impact": "Ce projet montre que je sais passer d'une recherche par mots-clés à une recherche par sens.",
+      "glance": "J'ai mis en place une recherche par similarité à partir d'embeddings textuels.",
+      "context": "La recherche par mots-clés rate souvent des textes proches en sens. La recherche par similarité compare le sens des phrases.",
+      "data": "Les données étaient des textes à indexer et à comparer entre eux.",
+      "approach": [
+        "J'ai préparé les textes à analyser.",
+        "J'ai généré des embeddings avec Sentence Transformers.",
+        "J'ai stocké ces vecteurs dans MongoDB Atlas.",
+        "J'ai interrogé la base par similarité pour retrouver des textes proches."
+      ],
+      "methods": [
+        "Sentence Transformers produit une représentation numérique du sens d'une phrase.",
+        "La recherche par similarité compare ces représentations pour trouver les plus proches.",
+        "MongoDB Atlas sert de stockage pour ces vecteurs et les requêtes associées."
+      ],
+      "deliverables": [
+        "Pipeline d'embeddings",
+        "Stockage dans MongoDB Atlas",
+        "Requêtes de similarité"
+      ],
+      "demonstrates": [
+        "Traitement de texte et embeddings",
+        "Stockage et recherche dans MongoDB Atlas"
+      ],
+      "improvements": [
+        "Évaluer la pertinence des résultats avec des exemples annotés",
+        "Tester d'autres modèles d'embedding selon la langue des textes"
+      ],
+      "technologies": [
+        "Python",
+        "Sentence Transformers",
+        "MongoDB Atlas"
+      ],
+      "github": "https://github.com/pricemou/"
+    },
+    {
+      "slug": "app-gestion-fullstack",
+      "category": "fullstack",
+      "title": "Application de gestion (étude de cas Full Stack)",
+      "cardLines": [
+        "Cette étude de cas reprend mon stage chez Network Pro Service.",
+        "J'ai traité des données en Python et les ai intégrées dans PostgreSQL.",
+        "J'ai développé des fonctionnalités web avec React, Node.js, Express et une API REST."
+      ],
+      "impact": "Cette étude de cas montre que je livre le parcours complet besoin → données → application.",
+      "glance": "J'ai contribué à une application de gestion reliée à des traitements de données et à PostgreSQL.",
+      "context": "Le besoin était de fiabiliser les données et de les rendre utilisables dans une application de gestion.",
+      "data": "Les données provenaient de sources en ligne. Je les ai nettoyées et validées avant intégration.",
+      "approach": [
+        "J'ai cadré les besoins avec les équipes d'affaires.",
+        "J'ai automatisé l'extraction, le nettoyage et la validation en Python.",
+        "J'ai intégré les données dans PostgreSQL.",
+        "J'ai développé des fonctionnalités front et back avec tests et documentation."
+      ],
+      "methods": [
+        "Python sert aux traitements reproductibles.",
+        "PostgreSQL stocke les données validées.",
+        "React, Node.js, Express et une API REST exposent les fonctionnalités aux utilisateurs."
+      ],
+      "deliverables": [
+        "Traitements de données documentés",
+        "Intégration PostgreSQL",
+        "Fonctionnalités d'application web testées"
+      ],
+      "demonstrates": [
+        "Double compétence données et Full Stack",
+        "Travail avec tests, documentation et cadrage métier"
+      ],
+      "improvements": [
+        "Élargir la couverture de tests selon les nouvelles fonctionnalités",
+        "Poursuivre l'amélioration du suivi de qualité des données"
+      ],
+      "technologies": [
+        "Python",
+        "PostgreSQL",
+        "React",
+        "Node.js",
+        "Express.js",
+        "REST API",
+        "tests"
+      ],
+      "github": "https://github.com/pricemou/"
+    }
+  ],
+  "skills": [
+    {
+      "group": "Science des données",
+      "items": [
+        {
+          "name": "Python",
+          "proof": "Stage Network Pro Service ; projets d'analyse ; certifications Python"
+        },
+        {
+          "name": "SQL",
+          "proof": "Bases PostgreSQL en stage ; certification Big Data Analysis with SQL"
+        },
+        {
+          "name": "Pandas",
+          "proof": "Projets d'analyse ; certifications Python Data Analysis / Data Science"
+        },
+        {
+          "name": "NumPy",
+          "proof": "Projets de science des données en Python"
+        },
+        {
+          "name": "Analyse exploratoire (EDA)",
+          "proof": "Projet sur la réussite des étudiants"
+        },
+        {
+          "name": "Nettoyage et transformation des données",
+          "proof": "Stage Network Pro Service"
+        },
+        {
+          "name": "Statistiques",
+          "proof": "Projets d'analyse et de détection d'anomalies"
+        }
+      ]
+    },
+    {
+      "group": "Machine Learning",
+      "items": [
+        {
+          "name": "Scikit-learn",
+          "proof": "Projet réussite des étudiants"
+        },
+        {
+          "name": "Random Forest",
+          "proof": "Projets Machine Learning (classification / regroupement selon le besoin)"
+        },
+        {
+          "name": "Classification",
+          "proof": "Projets Machine Learning"
+        },
+        {
+          "name": "Régression",
+          "proof": "Projets Machine Learning"
+        },
+        {
+          "name": "K-Means",
+          "proof": "Projets de profils / regroupement"
+        },
+        {
+          "name": "Détection d'anomalies",
+          "proof": "Projet détection d'anomalies"
+        },
+        {
+          "name": "Évaluation et comparaison de modèles",
+          "proof": "Projets Machine Learning ; certification Structuring ML Projects"
+        }
+      ]
+    },
+    {
+      "group": "Développement orienté production",
+      "items": [
+        {
+          "name": "Git/GitHub",
+          "proof": "Pratique de versionnement ; profil GitHub"
+        },
+        {
+          "name": "Tests",
+          "proof": "Stage Network Pro Service"
+        },
+        {
+          "name": "Modularité",
+          "proof": "Développement d'application en stage"
+        },
+        {
+          "name": "Documentation",
+          "proof": "Documentation des traitements en stage"
+        },
+        {
+          "name": "Reproductibilité",
+          "proof": "Scripts et notebooks de projets"
+        },
+        {
+          "name": "Node.js",
+          "proof": "Stage Network Pro Service ; certification Node/Express/MongoDB"
+        },
+        {
+          "name": "Express.js",
+          "proof": "Stage Network Pro Service"
+        },
+        {
+          "name": "React",
+          "proof": "Stage Network Pro Service ; certifications React"
+        },
+        {
+          "name": "REST API",
+          "proof": "Stage Network Pro Service"
+        }
+      ]
+    },
+    {
+      "group": "Données",
+      "items": [
+        {
+          "name": "PostgreSQL",
+          "proof": "Stage Network Pro Service"
+        },
+        {
+          "name": "MongoDB",
+          "proof": "Certification Node/Express/MongoDB"
+        },
+        {
+          "name": "MongoDB Atlas",
+          "proof": "Projet recherche vectorielle"
+        },
+        {
+          "name": "Extraction et intégration de données",
+          "proof": "Stage Network Pro Service"
+        }
+      ]
+    },
+    {
+      "group": "Visualisation",
+      "items": [
+        {
+          "name": "Matplotlib",
+          "proof": "Projets d'analyse ; certification Applied Plotting"
+        },
+        {
+          "name": "Jupyter Notebook",
+          "proof": "Projets de science des données"
+        }
+      ]
+    }
+  ],
+  "education": [
+    {
+      "title": "Baccalauréat en informatique, science des données",
+      "school": "Université du Québec à Trois-Rivières (UQTR)",
+      "period": "2023 – 2026"
+    },
+    {
+      "title": "Licence en génie logiciel, développement logiciel",
+      "school": "Haute École du Commerce (HEC), Côte d'Ivoire",
+      "period": "2018 – 2019",
+      "note": "Équivalence canadienne : niveau baccalauréat en informatique."
+    },
+    {
+      "title": "Big Data Specialization",
+      "school": "University of California San Diego (Coursera)",
+      "period": ""
+    }
+  ],
+  "certifications": {
+    "domains": {
+      "python": {
+        "fr": "Python et programmation scientifique",
+        "en": "Python and scientific programming"
+      },
+      "data-ai": {
+        "fr": "Data Science, IA et Deep Learning",
+        "en": "Data Science, AI and Deep Learning"
+      },
+      "big-data": {
+        "fr": "Big Data",
+        "en": "Big Data"
+      },
+      "fullstack": {
+        "fr": "Développement Full Stack et Web",
+        "en": "Full Stack and Web development"
+      },
+      "uiux": {
+        "fr": "UI/UX et Design",
+        "en": "UI/UX and Design"
+      },
+      "security": {
+        "fr": "Cybersécurité et scripting",
+        "en": "Cybersecurity and scripting"
+      }
+    },
+    "items": [
+      {
+        "domain": "python",
+        "title": "Programming for Everybody (Getting Started with Python)",
+        "code": "LS3N5522C8SA",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/LS3N5522C8SA",
+        "skill": {
+          "fr": "Je démarre un programme Python et j'utilise les bases du langage.",
+          "en": "I write basic Python programs and use core language features."
+        },
+        "featured": false
+      },
+      {
+        "domain": "python",
+        "title": "Python Data Structures",
+        "code": "9QSS4JFWLJPR",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/9QSS4JFWLJPR",
+        "skill": {
+          "fr": "Je manipule listes, dictionnaires et structures de données en Python.",
+          "en": "I work with lists, dictionaries and other Python data structures."
+        },
+        "featured": true
+      },
+      {
+        "domain": "python",
+        "title": "Python Programming: A Concise Introduction",
+        "code": "QHZBTEXHKPGG",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/QHZBTEXHKPGG",
+        "skill": {
+          "fr": "J'écris des scripts Python clairs pour des tâches courtes.",
+          "en": "I write clear Python scripts for short tasks."
+        },
+        "featured": false
+      },
+      {
+        "domain": "python",
+        "title": "Python Functions, Files, and Dictionaries",
+        "code": "QYBBALCBMN5A",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/QYBBALCBMN5A",
+        "skill": {
+          "fr": "J'organise mon code avec des fonctions et je lis des fichiers.",
+          "en": "I organize code with functions and read files."
+        },
+        "featured": false
+      },
+      {
+        "domain": "python",
+        "title": "Python Data Analysis",
+        "code": "CUPVATWCLRYM",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/CUPVATWCLRYM",
+        "skill": {
+          "fr": "J'analyse des tableaux de données avec les outils Python adaptés.",
+          "en": "I analyze tabular data with Python tooling."
+        },
+        "featured": true
+      },
+      {
+        "domain": "python",
+        "title": "Introduction to Data Science in Python",
+        "code": "NQSD2JWXFTYT",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/NQSD2JWXFTYT",
+        "skill": {
+          "fr": "Je mène une analyse de données de bout en bout en Python.",
+          "en": "I run an end-to-end data analysis workflow in Python."
+        },
+        "featured": true
+      },
+      {
+        "domain": "python",
+        "title": "Applied Plotting, Charting & Data Representation in Python",
+        "code": "MBRGMG4EKZKH",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/MBRGMG4EKZKH",
+        "skill": {
+          "fr": "Je crée des graphiques pour rendre des résultats lisibles.",
+          "en": "I create charts that make results easy to read."
+        },
+        "featured": true
+      },
+      {
+        "domain": "python",
+        "title": "Capstone: Retrieving, Processing, and Visualizing Data with Python",
+        "code": "3JJKZCKJUMB5",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/3JJKZCKJUMB5",
+        "skill": {
+          "fr": "Je récupère, traite et visualise des données dans un projet complet.",
+          "en": "I retrieve, process and visualize data in a complete project."
+        },
+        "featured": false
+      },
+      {
+        "domain": "python",
+        "title": "Game Theory with Python",
+        "code": "TK2D3FAASVZZ",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/TK2D3FAASVZZ",
+        "skill": {
+          "fr": "Je modélise des situations de choix stratégiques avec Python.",
+          "en": "I model strategic choice situations with Python."
+        },
+        "featured": false
+      },
+      {
+        "domain": "python",
+        "title": "COVID-19 : Les séries temporelles avec Python et Pandas",
+        "code": "RZPA3AY9AEEM",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/RZPA3AY9AEEM",
+        "skill": {
+          "fr": "J'analyse des séries temporelles avec Python et Pandas.",
+          "en": "I analyze time series with Python and Pandas."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "The Data Scientist's Toolbox",
+        "code": "4WV5HKB38SQB",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/4WV5HKB38SQB",
+        "skill": {
+          "fr": "Je connais les outils de base du travail en science des données.",
+          "en": "I know the basic tools used in data science work."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "Data Science Math Skills",
+        "code": "GD33WYGX5CUM",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/GD33WYGX5CUM",
+        "skill": {
+          "fr": "J'applique les bases mathématiques utiles à l'analyse de données.",
+          "en": "I apply the math foundations useful for data analysis."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "Neural Networks and Deep Learning",
+        "code": "WG37MGDQ74DS",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/WG37MGDQ74DS",
+        "skill": {
+          "fr": "Je comprends le fonctionnement d'un réseau de neurones et je sais l'entraîner.",
+          "en": "I understand how a neural network works and how to train one."
+        },
+        "featured": true
+      },
+      {
+        "domain": "data-ai",
+        "title": "Structuring Machine Learning Projects",
+        "code": "KKA925D6P5FP",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/KKA925D6P5FP",
+        "skill": {
+          "fr": "J'organise un projet d'apprentissage automatique de façon méthodique.",
+          "en": "I structure a machine learning project in a methodical way."
+        },
+        "featured": true
+      },
+      {
+        "domain": "data-ai",
+        "title": "Sequence Models",
+        "code": "TJX6U2HZFLWX",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/TJX6U2HZFLWX",
+        "skill": {
+          "fr": "Je travaille avec des modèles adaptés aux séquences, comme le texte ou le temps.",
+          "en": "I work with models suited to sequences such as text or time."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "Sequences, Time Series and Prediction",
+        "code": "YDA2LK572VNS",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/YDA2LK572VNS",
+        "skill": {
+          "fr": "Je prépare des prévisions à partir de données ordonnées dans le temps.",
+          "en": "I build forecasts from data ordered over time."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "Introduction to TensorFlow for AI, ML and Deep Learning",
+        "code": "U82RZCH6A963",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/U82RZCH6A963",
+        "skill": {
+          "fr": "Je construis des modèles d'apprentissage avec TensorFlow.",
+          "en": "I build learning models with TensorFlow."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "Natural Language Processing in TensorFlow",
+        "code": "L3D555Q9SPCU",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/L3D555Q9SPCU",
+        "skill": {
+          "fr": "Je traite du texte avec des outils d'apprentissage automatique.",
+          "en": "I process text with machine learning tools."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "AI for Medical Diagnosis",
+        "code": "CLPA6M5NRVKX",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/CLPA6M5NRVKX",
+        "skill": {
+          "fr": "Je comprends comment l'IA peut soutenir un diagnostic médical.",
+          "en": "I understand how AI can support medical diagnosis."
+        },
+        "featured": false
+      },
+      {
+        "domain": "data-ai",
+        "title": "AI For Everyone",
+        "code": "5JNUET8JMWCL",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/5JNUET8JMWCL",
+        "skill": {
+          "fr": "J'explique les notions d'IA à un public non technique.",
+          "en": "I explain AI concepts to a non-technical audience."
+        },
+        "featured": false
+      },
+      {
+        "domain": "big-data",
+        "title": "Introduction to Big Data",
+        "code": "CXBDLPNX7A9G",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/CXBDLPNX7A9G",
+        "skill": {
+          "fr": "Je situe les enjeux du traitement de grands volumes de données.",
+          "en": "I understand the challenges of working with large data volumes."
+        },
+        "featured": false
+      },
+      {
+        "domain": "big-data",
+        "title": "Big Data Modeling and Management Systems",
+        "code": "JPH9FEQRBE3R",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/JPH9FEQRBE3R",
+        "skill": {
+          "fr": "Je modélise et j'organise des données à grande échelle.",
+          "en": "I model and organize large-scale data."
+        },
+        "featured": false
+      },
+      {
+        "domain": "big-data",
+        "title": "Big Data Integration and Processing",
+        "code": "TSUSP6Q86FYC",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/TSUSP6Q86FYC",
+        "skill": {
+          "fr": "J'intègre et je traite des flux de données volumineux.",
+          "en": "I integrate and process large data flows."
+        },
+        "featured": false
+      },
+      {
+        "domain": "big-data",
+        "title": "Machine Learning With Big Data",
+        "code": "YPMJFMZNVPWT",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/YPMJFMZNVPWT",
+        "skill": {
+          "fr": "J'applique l'apprentissage automatique sur de grands jeux de données.",
+          "en": "I apply machine learning to large datasets."
+        },
+        "featured": true
+      },
+      {
+        "domain": "big-data",
+        "title": "Graph Analytics for Big Data",
+        "code": "4RHG7NKRV3DD",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/4RHG7NKRV3DD",
+        "skill": {
+          "fr": "J'analyse des relations entre entités sous forme de graphe.",
+          "en": "I analyze relationships between entities as graphs."
+        },
+        "featured": false
+      },
+      {
+        "domain": "big-data",
+        "title": "Managing Big Data in Clusters and Cloud Storage",
+        "code": "2VUR92CVBZFF",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/2VUR92CVBZFF",
+        "skill": {
+          "fr": "Je gère le stockage de données sur des clusters et dans le nuage.",
+          "en": "I manage data storage on clusters and in the cloud."
+        },
+        "featured": false
+      },
+      {
+        "domain": "big-data",
+        "title": "Foundations for Big Data Analysis with SQL",
+        "code": "JF3NJSYQAKNE",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/JF3NJSYQAKNE",
+        "skill": {
+          "fr": "J'interroge de grands volumes de données avec SQL.",
+          "en": "I query large data volumes with SQL."
+        },
+        "featured": true
+      },
+      {
+        "domain": "big-data",
+        "title": "Big Data - Capstone Project",
+        "code": "4YBGRDR5G2PZ",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/4YBGRDR5G2PZ",
+        "skill": {
+          "fr": "Je mène un projet Big Data de bout en bout.",
+          "en": "I deliver an end-to-end Big Data project."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Modern JavaScript: ES6 Basics",
+        "code": "AWS7J8RR2DE3",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/AWS7J8RR2DE3",
+        "skill": {
+          "fr": "J'utilise les bases modernes de JavaScript (ES6).",
+          "en": "I use modern JavaScript (ES6) basics."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Programming Foundations with JavaScript, HTML and CSS",
+        "code": "6EPTLM477C2J",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/6EPTLM477C2J",
+        "skill": {
+          "fr": "Je construis des pages web avec HTML, CSS et JavaScript.",
+          "en": "I build web pages with HTML, CSS and JavaScript."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Introduction to Front-end Development with ReactJS",
+        "code": "FQ3PXJFKXZUK",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/FQ3PXJFKXZUK",
+        "skill": {
+          "fr": "Je crée des interfaces avec React.",
+          "en": "I build user interfaces with React."
+        },
+        "featured": true
+      },
+      {
+        "domain": "fullstack",
+        "title": "Front-End Web Development with React",
+        "code": "E9ZUAKNYDJL2",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/E9ZUAKNYDJL2",
+        "skill": {
+          "fr": "Je développe des applications front-end structurées avec React.",
+          "en": "I develop structured front-end apps with React."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Front-End Web UI Frameworks and Tools: Bootstrap 4",
+        "code": "6SADKNQDQK9L",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/6SADKNQDQK9L",
+        "skill": {
+          "fr": "Je compose des interfaces responsives avec Bootstrap.",
+          "en": "I build responsive interfaces with Bootstrap."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Server-side Development with NodeJS, Express and MongoDB",
+        "code": "FJTK7BD4BNW3",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/FJTK7BD4BNW3",
+        "skill": {
+          "fr": "Je crée un serveur web avec Node.js, Express et MongoDB.",
+          "en": "I build a web server with Node.js, Express and MongoDB."
+        },
+        "featured": true
+      },
+      {
+        "domain": "fullstack",
+        "title": "Multiplatform Mobile App Development with React Native",
+        "code": "54BHPUNMM8G3",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/54BHPUNMM8G3",
+        "skill": {
+          "fr": "Je développe une application mobile multiplateforme avec React Native.",
+          "en": "I develop a cross-platform mobile app with React Native."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Build a Full Website using WordPress",
+        "code": "3XR6CPHWE9KY",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/3XR6CPHWE9KY",
+        "skill": {
+          "fr": "Je mets en place un site complet avec WordPress.",
+          "en": "I set up a full website with WordPress."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Use WordPress to Create a Blog for your Business",
+        "code": "6LXU6U2T6LSX",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/6LXU6U2T6LSX",
+        "skill": {
+          "fr": "Je crée un blog professionnel avec WordPress.",
+          "en": "I create a business blog with WordPress."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Deploy a WordPress Website in AWS EC2",
+        "code": "XKTFVLWJBXBN",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/XKTFVLWJBXBN",
+        "skill": {
+          "fr": "Je déploie un site WordPress sur un serveur AWS EC2.",
+          "en": "I deploy a WordPress site on an AWS EC2 server."
+        },
+        "featured": false
+      },
+      {
+        "domain": "fullstack",
+        "title": "Using Efficient Sorting Algorithms in Java to Arrange Tax Data",
+        "code": "4W4ALAKMWJ7H",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/4W4ALAKMWJ7H",
+        "skill": {
+          "fr": "J'applique des algorithmes de tri efficaces en Java.",
+          "en": "I apply efficient sorting algorithms in Java."
+        },
+        "featured": false
+      },
+      {
+        "domain": "uiux",
+        "title": "UX Design Fundamentals",
+        "code": "BFG58WMXM4AV",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/BFG58WMXM4AV",
+        "skill": {
+          "fr": "Je conçois une expérience utilisateur claire et utile.",
+          "en": "I design clear and useful user experiences."
+        },
+        "featured": false
+      },
+      {
+        "domain": "uiux",
+        "title": "Visual Elements of User Interface Design",
+        "code": "GL9KADZLYY4T",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/GL9KADZLYY4T",
+        "skill": {
+          "fr": "Je compose une interface avec une hiérarchie visuelle lisible.",
+          "en": "I compose interfaces with a clear visual hierarchy."
+        },
+        "featured": false
+      },
+      {
+        "domain": "uiux",
+        "title": "Graphic Design",
+        "code": "F4DKZ6NFFSH2",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/F4DKZ6NFFSH2",
+        "skill": {
+          "fr": "J'applique les bases du design graphique à des supports numériques.",
+          "en": "I apply graphic design basics to digital materials."
+        },
+        "featured": false
+      },
+      {
+        "domain": "uiux",
+        "title": "Brand New Brand",
+        "code": "9R5E3A42HAL9",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/9R5E3A42HAL9",
+        "skill": {
+          "fr": "Je construis une identité visuelle cohérente pour un projet.",
+          "en": "I build a coherent visual identity for a project."
+        },
+        "featured": false
+      },
+      {
+        "domain": "security",
+        "title": "Introduction to Cybersecurity Tools & Cyber Attacks",
+        "code": "G2LHF6D87WDW",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/G2LHF6D87WDW",
+        "skill": {
+          "fr": "Je reconnais les types d'attaques et les outils de cybersécurité de base.",
+          "en": "I recognize basic cyber attacks and security tools."
+        },
+        "featured": false
+      },
+      {
+        "domain": "security",
+        "title": "Scripting Bash : Découverte du Langage de Programmation",
+        "code": "S3HNQ9DQULFU",
+        "url": "https://www.coursera.org/account/accomplishments/certificate/S3HNQ9DQULFU",
+        "skill": {
+          "fr": "J'écris des scripts Bash pour automatiser des tâches.",
+          "en": "I write Bash scripts to automate tasks."
+        },
+        "featured": false
+      }
+    ]
+  },
+  "ui": {
+    "filters": {
+      "all": "Tous",
+      "data-science": "Data Science",
+      "fullstack": "Full Stack",
+      "ia": "IA"
+    },
+    "seeAll": "Voir tout",
+    "seeLess": "Réduire",
+    "verify": "Vérifier le certificat",
+    "proof": "Preuve",
+    "impact": "Impact en une phrase",
+    "glance": "En un coup d'œil",
+    "context": "Contexte et problème",
+    "data": "Les données",
+    "approach": "Ma démarche",
+    "methods": "Les méthodes choisies",
+    "deliverables": "Ce que j'ai réalisé",
+    "demonstrates": "Ce que ce projet démontre",
+    "improvements": "Pistes d'amélioration",
+    "technologies": "Technologies",
+    "github": "GitHub",
+    "featuredCerts": "Certifications mises en avant",
+    "allCerts": "Toutes les certifications (45)",
+    "contactLead": "Écrivez-moi pour discuter d'un besoin en données ou en développement.",
+    "email": "Courriel",
+    "message": "Message",
+    "send": "Envoyer",
+    "name": "Nom",
+    "subject": "Sujet",
+    "footer": "Portfolio de Pricemou Fromon Claude",
+    "sectionExperience": "Expériences professionnelles",
+    "sectionProjects": "Projets",
+    "sectionSkills": "Compétences",
+    "sectionEducation": "Formation et certifications",
+    "sectionContact": "Contact",
+    "pipelineTitle": "Parcours de livraison",
+    "pipeline": [
+      "Besoin",
+      "Données",
+      "Traitement",
+      "Application"
+    ],
+    "caseStudy": "Étude de cas →"
+  }
+}

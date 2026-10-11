@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Vérification 2FA — Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <div class="login-container" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;">
+        <div class="login-card" style="max-width:420px;width:100%;padding:2rem;background:var(--light-bg,#2D2E32);border-radius:0.5rem;">
+            <h1 style="color:#fff;margin-top:0;">Authentification à deux facteurs</h1>
+            <p style="color:#777;">Compte : <strong style="color:#fff;">{{ username }}</strong></p>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="alert alert-{{ category }}" style="color:#dc3545;">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <form method="post" class="login-form">
+                <div class="form-group">
+                    <label for="code">Code TOTP ou code de secours</label>
+                    <input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="20" autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">Valider</button>
+            </form>
+            <p style="margin-top:1.5rem;"><a href="{{ url_for('admin_login') }}" style="color:#4dba87;">Retour à la connexion</a></p>
+        </div>
+    </div>
+</body>
+</html>

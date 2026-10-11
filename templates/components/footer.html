@@ -1,15 +1,30 @@
-<footer class="light-bg flex justify-space">
-    <span class="white">Copyright © {{ year }} <a href="{{ url_for('index') }}">Claude Pricemou</a> — {{ t('footer_rights') }}</span>
-    <ul class="flex">
-        <li>
-            <a href="https://www.linkedin.com/in/pricemou" target="_blank" rel="noopener noreferrer">
-                <img src="{{ url_for('static', filename='icons/linkedin.svg') }}" width="24" height="24" alt="LinkedIn de Claude Pricemou" />
-            </a>
-        </li>
-        <li>
-            <a href="https://github.com/pricemou" target="_blank" rel="noopener noreferrer">
-                <img src="{{ url_for('static', filename='icons/github.svg') }}" width="24" height="24" alt="GitHub de Claude Pricemou" />
-            </a>
-        </li>
-    </ul>
+<footer class="footer-bar">
+    <div class="footer-inner">
+        <div class="footer-main">
+            <div class="footer-copy">
+                <p class="footer-copyright">
+                    Copyright © {{ year }}
+                    <a href="{{ url_for('index') }}">Claude Pricemou</a>
+                    — {{ t('footer_rights') }}
+                </p>
+                <nav class="footer-legal" aria-label="{{ t('footer_legal') }}">
+                    <a href="{{ url_for('page_confidentialite') }}">{{ t('nav_privacy') }}</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="{{ url_for('page_mentions') }}">{{ t('nav_legal') }}</a>
+                </nav>
+            </div>
+            <ul class="footer-social">
+                <li>
+                    <a href="https://www.linkedin.com/in/pricemou" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                        <img src="{{ url_for('static', filename='icons/linkedin.svg') }}" width="20" height="20" alt="" />
+                    </a>
+                </li>
+                <li>
+                    <a href="https://github.com/pricemou" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                        <img src="{{ url_for('static', filename='icons/github.svg') }}" width="20" height="20" alt="" />
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
 </footer>

@@ -3,56 +3,74 @@
 <section id="about" class="dark-bg">
     {% if key_stats %}
     <div class="key-stats" aria-label="{{ t('stats_title') }}">
-        <div class="key-stat light-bg">
-            <p class="key-stat-value green">{{ key_stats.projects }}</p>
-            <p class="key-stat-label gray">{{ t('stats_projects') }}</p>
-        </div>
-        <div class="key-stat light-bg">
-            <p class="key-stat-value green">{{ key_stats.years }}+</p>
-            <p class="key-stat-label gray">{{ t('stats_years') }}</p>
-        </div>
-        <div class="key-stat light-bg">
-            <p class="key-stat-value green">{{ key_stats.services }}</p>
-            <p class="key-stat-label gray">{{ t('stats_services') }}</p>
-        </div>
+        <article class="key-stat">
+            <p class="key-stat-value" data-counter data-target="{{ key_stats.projects }}" data-suffix="">0</p>
+            <p class="key-stat-label">{{ t('stats_projects') }}</p>
+        </article>
+        <article class="key-stat">
+            <p class="key-stat-value" data-counter data-target="{{ key_stats.years }}" data-suffix="+">0</p>
+            <p class="key-stat-label">{{ t('stats_years') }}</p>
+        </article>
+        <article class="key-stat">
+            <p class="key-stat-value" data-counter data-target="{{ key_stats.certs }}" data-suffix="">0</p>
+            <p class="key-stat-label">{{ t('stats_certs') }}</p>
+        </article>
     </div>
     {% endif %}
 
-    <div class="flex about-layout">
-        <div class="flex-full">
+    <div class="about-layout">
+        <div class="about-skills">
             {% if skills %}
                 {% for skill in skills %}
                     {{ about_card(skill.title, skill.icon, skill.description, skill.get('label') or none) }}
                 {% endfor %}
             {% endif %}
         </div>
-        
-        <div class="flex-full about-text">
+
+        <div class="about-text">
             {% if homepage_data %}
-                <h5 class="gray">{{ homepage_data.about_title }}</h5>
-                <h1 class="white">{{ t('about_hello') }} {{ homepage_data.about_name }}</h1>
-                <h3 class="white">{{ homepage_data.about_subtitle }}</h3>
-                <p class="gray">{{ homepage_data.about_description | replace('\n', '<br/>') | safe }}</p>
+                <p class="about-eyebrow">{{ homepage_data.about_title }}</p>
+                <h2 class="white">{{ t('about_hello') }} {{ homepage_data.about_name }}</h2>
+                <h3 class="about-subtitle">{{ homepage_data.about_subtitle }}</h3>
+                <div class="about-body gray">{{ homepage_data.about_description | replace('\n', '<br/>') | safe }}</div>
             {% else %}
-                <h5 class="gray">{{ t('about_title') }}</h5>
-                <h1 class="white">{{ t('about_hello') }} Claude Pricemou</h1>
-                <h3 class="white">{{ t('about_subtitle') }}</h3>
-                <p class="gray">{{ t('about_body') | replace('\n', '<br/>') | safe }}</p>
+                <p class="about-eyebrow">{{ t('about_title') }}</p>
+                <h2 class="white">{{ t('about_hello') }} Claude Pricemou</h2>
+                <h3 class="about-subtitle">{{ t('about_subtitle') }}</h3>
+                <div class="about-body gray">{{ t('about_body') | replace('\n', '<br/>') | safe }}</div>
             {% endif %}
-            <a class="cv-btn" href="{{ url_for('download_cv') }}" style="margin-top: 1.5rem; display: inline-block;">{{ t('download_cv') }}</a>
+            <a class="hero-btn hero-btn--outline about-cv-btn" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
         </div>
     </div>
 
     <div class="references">
-        <h3 class="white references-title">{{ t('refs_title') }}</h3>
+        <div class="references-head">
+            <h3 class="white references-title">{{ t('refs_title') }}</h3>
+        </div>
         <ul class="references-list">
             {% if partners %}
                 {% for partner in partners %}
-                <li class="light-bg reference-chip">
-                    <strong class="white">{{ partner.name }}</strong>
-                    {% if partner.period %}
-                    <span class="gray">{{ partner.period }}</span>
+                <li class="reference-chip{% if partner.image %} has-media{% endif %}">
+                    {% if partner.image %}
+                    <div class="reference-chip-media" aria-hidden="true">
+                        <img
+                            src="{{ url_for('static', filename=partner.image) if not partner.image.startswith('http') else partner.image }}"
+                            alt=""
+                            loading="lazy"
+                            width="120"
+                            height="120"
+                            onerror="this.parentElement.outerHTML='<div class=&quot;reference-chip-mark&quot; aria-hidden=&quot;true&quot;>{{ partner.name[:1]|e }}</div>';"
+                        >
+                    </div>
+                    {% else %}
+                    <div class="reference-chip-mark" aria-hidden="true">{{ partner.name[:1] }}</div>
                     {% endif %}
+                    <div class="reference-chip-text">
+                        <strong>{{ partner.name }}</strong>
+                        {% if partner.period %}
+                        <span>{{ partner.period }}</span>
+                        {% endif %}
+                    </div>
                 </li>
                 {% endfor %}
             {% endif %}

@@ -1,3 +1,4 @@
+{% from 'macros/admin_nav_icons.html' import icon %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6,93 +7,68 @@
     <title>Admin - Pricemou</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <!-- Font Awesome - Utilisation locale ou alternative -->
-    <style>
-        /* Icônes de base pour l'admin si Font Awesome n'est pas disponible */
-        .fas, .fa {
-            font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", Arial, sans-serif;
-            font-weight: 900;
-            display: inline-block;
-        }
-        .fa-house::before { content: "🏠"; }
-        .fa-home::before { content: "🏡"; }
-        .fa-code::before { content: "💻"; }
-        .fa-handshake::before { content: "🤝"; }
-        .fa-folder::before { content: "📁"; }
-        .fa-user::before { content: "👤"; }
-        .fa-times::before { content: "✕"; }
-        .fa-search::before { content: "🔍"; }
-        .fa-globe::before { content: "🌐"; }
-        .fa-headset::before { content: "🎧"; }
-        .fa-chart-line::before { content: "📈"; }
-        .fa-chart-bar::before { content: "📊"; }
-        .fa-sync-alt::before { content: "🔄"; }
-        .fa-eye::before { content: "👁️"; }
-        .fa-users::before { content: "👥"; }
-        .fa-heart::before { content: "❤️"; }
-        .fa-clock::before { content: "⏰"; }
-        .fa-chevron-down::before { content: "▼"; }
-        .fa-chevron-left::before { content: "◄"; }
-        .fa-sign-out-alt::before { content: "🚪"; }
-        .fa-book::before { content: "📖"; }
-        .fa-info-circle::before { content: "ℹ️"; }
-        .fa-envelope::before { content: "✉️"; }
-        .fa-envelope-open::before { content: "📬"; }
-        .fa-reply::before { content: "↩️"; }
-        .fa-trash::before { content: "🗑️"; }
-        .fa-sync-alt::before { content: "🔄"; }
-        .fa-file-code::before { content: "📄"; }
-        .fa-file-csv::before { content: "📊"; }
-        .fa-bell::before { content: "🔔"; }
-        .fa-bell-slash::before { content: "🔕"; }
-    </style>
-    <!-- Tentative de chargement Font Awesome depuis CDN -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" onerror="this.onerror=null; console.log('Font Awesome non chargé, utilisation des icônes de base');">
+    <!-- Font Awesome pour le contenu des pages (pas la sidebar) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body data-active-section="{{ active_section|default('dashboard') }}">
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
-            <div class="sidebar-brand">
-                <i class="fas fa-code"></i>
+            <div class="sidebar-brand" aria-hidden="true">
+                {{ icon('brand') }}
             </div>
 
             <div class="sidebar-nav primary-nav">
-                <a href="{{ url_for('admin_section', section='dashboard') }}" class="nav-btn menu-item {% if active_section == 'dashboard' %}active{% endif %}" data-section="dashboard" aria-label="Tableau de bord">
-                    <i class="fas fa-chart-line"></i>
+                <a href="{{ url_for('admin_section', section='dashboard') }}" class="nav-btn menu-item {% if active_section == 'dashboard' %}active{% endif %}" data-section="dashboard" aria-label="Tableau de bord" title="Tableau de bord">
+                    {{ icon('dashboard') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='homepage') }}" class="nav-btn menu-item {% if active_section == 'homepage' %}active{% endif %}" data-section="homepage" aria-label="Page d'accueil">
-                    <i class="fas fa-home"></i>
+                <a href="{{ url_for('admin_section', section='homepage') }}" class="nav-btn menu-item {% if active_section == 'homepage' %}active{% endif %}" data-section="homepage" aria-label="Page d'accueil" title="Page d'accueil">
+                    {{ icon('home') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='skills') }}" class="nav-btn menu-item {% if active_section == 'skills' %}active{% endif %}" data-section="skills" aria-label="Compétences">
-                    <i class="fas fa-code"></i>
+                <a href="{{ url_for('admin_section', section='skills') }}" class="nav-btn menu-item {% if active_section == 'skills' %}active{% endif %}" data-section="skills" aria-label="Compétences" title="Compétences">
+                    {{ icon('skills') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='partners') }}" class="nav-btn menu-item {% if active_section == 'partners' %}active{% endif %}" data-section="partners" aria-label="Partenaires">
-                    <i class="fas fa-handshake"></i>
+                <a href="{{ url_for('admin_section', section='partners') }}" class="nav-btn menu-item {% if active_section == 'partners' %}active{% endif %}" data-section="partners" aria-label="Partenaires" title="Partenaires">
+                    {{ icon('partners') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='projects') }}" class="nav-btn menu-item {% if active_section == 'projects' %}active{% endif %}" data-section="projects" aria-label="Projets">
-                    <i class="fas fa-folder-open"></i>
+                <a href="{{ url_for('admin_section', section='projects') }}" class="nav-btn menu-item {% if active_section == 'projects' %}active{% endif %}" data-section="projects" aria-label="Projets" title="Projets">
+                    {{ icon('projects') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='services') }}" class="nav-btn menu-item {% if active_section == 'services' %}active{% endif %}" data-section="services" aria-label="Services">
-                    <i class="fas fa-cogs"></i>
+                <a href="{{ url_for('admin_section', section='career') }}" class="nav-btn menu-item {% if active_section == 'career' %}active{% endif %}" data-section="career" aria-label="Parcours" title="Parcours">
+                    {{ icon('career') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='contacts') }}" class="nav-btn menu-item {% if active_section == 'contacts' %}active{% endif %}" data-section="contacts" aria-label="Contacts">
-                    <i class="fas fa-envelope"></i>
+                <a href="{{ url_for('admin_section', section='certifications') }}" class="nav-btn menu-item {% if active_section == 'certifications' %}active{% endif %}" data-section="certifications" aria-label="Certifications" title="Certifications">
+                    {{ icon('certs') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='profile') }}" class="nav-btn menu-item {% if active_section == 'profile' %}active{% endif %}" data-section="profile" aria-label="Profil">
-                    <i class="fas fa-user-circle"></i>
+                <a href="{{ url_for('admin_section', section='contacts') }}" class="nav-btn menu-item {% if active_section == 'contacts' %}active{% endif %}" data-section="contacts" aria-label="Contacts" title="Contacts">
+                    {{ icon('contacts') }}
                 </a>
-                <a href="{{ url_for('admin_section', section='admins') }}" class="nav-btn menu-item {% if active_section == 'admins' %}active{% endif %}" data-section="admins" aria-label="Administrateurs">
-                    <i class="fas fa-users-cog"></i>
+                <a href="{{ url_for('admin_section', section='media') }}" class="nav-btn menu-item {% if active_section == 'media' %}active{% endif %}" data-section="media" aria-label="Médiathèque" title="Médiathèque">
+                    {{ icon('media') }}
                 </a>
-                <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site">
-                    <i class="fas fa-external-link-alt"></i>
+                <a href="{{ url_for('admin_section', section='trash') }}" class="nav-btn menu-item {% if active_section == 'trash' %}active{% endif %}" data-section="trash" aria-label="Corbeille" title="Corbeille">
+                    {{ icon('trash') }}
+                </a>
+                <a href="{{ url_for('admin_section', section='audit') }}" class="nav-btn menu-item {% if active_section == 'audit' %}active{% endif %}" data-section="audit" aria-label="Journal d'audit" title="Journal d'audit">
+                    {{ icon('audit') }}
+                </a>
+                <a href="{{ url_for('admin_section', section='legal') }}" class="nav-btn menu-item {% if active_section == 'legal' %}active{% endif %}" data-section="legal" aria-label="Pages légales" title="Pages légales">
+                    {{ icon('legal') }}
+                </a>
+                <a href="{{ url_for('admin_section', section='profile') }}" class="nav-btn menu-item {% if active_section == 'profile' %}active{% endif %}" data-section="profile" aria-label="Profil" title="Profil">
+                    {{ icon('profile') }}
+                </a>
+                <a href="{{ url_for('admin_section', section='admins') }}" class="nav-btn menu-item {% if active_section == 'admins' %}active{% endif %}" data-section="admins" aria-label="Administrateurs" title="Administrateurs">
+                    {{ icon('admins') }}
+                </a>
+                <a href="{{ url_for('index') }}" class="nav-btn menu-item" aria-label="Retour au site" title="Retour au site">
+                    {{ icon('external') }}
                 </a>
             </div>
 
             <div class="sidebar-nav secondary-nav">
                 <button class="nav-btn" id="supportBtn" aria-label="Support" title="Support">
-                    <i class="fas fa-headset"></i>
+                    {{ icon('support') }}
                 </button>
             </div>
         </nav>
@@ -107,9 +83,12 @@
                     </div>
                     <span class="logo-text">Admin Panel</span>
                 </div>
-                <div class="search-box large">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Rechercher un projet, un service...">
+                <div class="search-box large" role="search">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <input type="search" id="admin-global-search" placeholder="Rechercher un projet, un service..." autocomplete="off" spellcheck="false">
+                    <button type="button" class="search-clear" id="admin-search-clear" aria-label="Effacer la recherche" hidden>
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
                 </div>
                 
                 <div class="top-bar-actions">
@@ -142,254 +121,602 @@
                 <div class="dashboard-content">
                     <!-- Section Dashboard (stats/graphiques uniquement ici) -->
                     <div id="section-dashboard" class="content-section {% if active_section == 'dashboard' %}active-section{% endif %}">
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="fas fa-folder"></i>
+                        <header class="dashboard-header">
+                            <div>
+                                <h2 class="dashboard-title">Tableau de bord</h2>
+                                <p class="dashboard-subtitle">Vue d’ensemble de l’activité et de la sécurité du portfolio.</p>
+                            </div>
+                        </header>
+
+                        <section class="dashboard-block" aria-label="Indicateurs principaux">
+                            <div class="stats-grid dashboard-kpi-grid">
+                                <div class="stat-card">
+                                    <div class="stat-icon" aria-hidden="true">
+                                        <i class="fas fa-folder"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Total Projets</p>
+                                        <p class="stat-value" id="total-projects">0</p>
+                                    </div>
                                 </div>
-                                <div class="stat-info">
-                                    <p class="stat-label">Total Projets</p>
-                                    <p class="stat-value" id="total-projects">0</p>
+                                <div class="stat-card">
+                                    <div class="stat-icon" aria-hidden="true">
+                                        <i class="fas fa-eye"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Vues Total</p>
+                                        <p class="stat-value" id="total-views">0</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon" aria-hidden="true">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Visiteurs</p>
+                                        <p class="stat-value" id="total-visitors">0</p>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon" aria-hidden="true">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Taux Engagement</p>
+                                        <p class="stat-value" id="engagement-rate">0%</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="fas fa-eye"></i>
+                        </section>
+
+                        <section class="dashboard-block" aria-labelledby="dashboard-analytics-title">
+                            <h3 class="dashboard-section-title" id="dashboard-analytics-title">Analytics</h3>
+                            <div class="dashboard-charts">
+                                <div class="admin-card dashboard-panel">
+                                    <h3 class="dashboard-panel-title">Vues par jour (30 derniers jours)</h3>
+                                    <div id="views-chart" class="dashboard-chart"></div>
                                 </div>
-                                <div class="stat-info">
-                                    <p class="stat-label">Vues Total</p>
-                                    <p class="stat-value" id="total-views">0</p>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <p class="stat-label">Visiteurs</p>
-                                    <p class="stat-value" id="total-visitors">0</p>
+                                <div class="admin-card dashboard-panel">
+                                    <h3 class="dashboard-panel-title">Visiteurs par jour (30 derniers jours)</h3>
+                                    <div id="visitors-chart" class="dashboard-chart"></div>
                                 </div>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="fas fa-chart-line"></i>
+                            <div class="admin-card dashboard-panel">
+                                <h3 class="dashboard-panel-title">Top 5 Projets les plus vus</h3>
+                                <div id="top-projects-list" class="admin-list dashboard-list"></div>
+                            </div>
+                        </section>
+
+                        <section class="dashboard-block" aria-labelledby="dashboard-security-title">
+                            <h3 class="dashboard-section-title" id="dashboard-security-title">Sécurité</h3>
+                            <div class="stats-grid dashboard-kpi-grid dashboard-kpi-grid--security">
+                                <div class="stat-card stat-card--security">
+                                    <div class="stat-icon stat-icon--warn" aria-hidden="true">
+                                        <i class="fas fa-user-lock"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Connexions échouées (24 h)</p>
+                                        <p class="stat-value" id="failed-logins">0</p>
+                                    </div>
                                 </div>
-                                <div class="stat-info">
-                                    <p class="stat-label">Taux Engagement</p>
-                                    <p class="stat-value" id="engagement-rate">0%</p>
+                                <div class="stat-card stat-card--security">
+                                    <div class="stat-icon stat-icon--alert" aria-hidden="true">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Alertes sécurité (24 h)</p>
+                                        <p class="stat-value" id="security-alerts">0</p>
+                                    </div>
                                 </div>
+                                <div class="stat-card stat-card--security">
+                                    <div class="stat-icon stat-icon--danger" aria-hidden="true">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <div class="stat-info">
+                                        <p class="stat-label">Erreurs ouvertes</p>
+                                        <p class="stat-value" id="open-errors">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dashboard-logs">
+                                <div class="admin-card dashboard-panel">
+                                    <h3 class="dashboard-panel-title">Événements de sécurité récents</h3>
+                                    <div id="security-events-list" class="admin-list dashboard-list"></div>
+                                </div>
+                                <div class="admin-card dashboard-panel">
+                                    <h3 class="dashboard-panel-title">Erreurs récentes</h3>
+                                    <div id="error-logs-list" class="admin-list dashboard-list"></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="section-career" class="content-section {% if active_section == 'career' %}active-section{% endif %}">
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Parcours</h2>
+                                <p class="admin-section-subtitle">Expériences et étapes de carrière affichées sur le site.</p>
+                            </div>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openCareerModal()">+ Ajouter</button>
+                            </div>
+                        </header>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="career-count-label">0 entrée</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="career-view-list" onclick="setAdminListView('career', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="career-view-grid" onclick="setAdminListView('career', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
                             </div>
                         </div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="career-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="career-pagination" class="admin-list-pagination"></div>
+                    </div>
 
-                        <!-- Graphiques Analytics -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-                            <div class="admin-card">
-                                <h3 style="margin-top: 0; margin-bottom: 1rem;">Vues par jour (30 derniers jours)</h3>
-                                <div id="views-chart" style="min-height: 250px;"></div>
+                    <div id="section-certifications" class="content-section {% if active_section == 'certifications' %}active-section{% endif %}">
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Certifications</h2>
+                                <p class="admin-section-subtitle">Diplômes et certifications mis en avant sur le portfolio.</p>
                             </div>
-                            <div class="admin-card">
-                                <h3 style="margin-top: 0; margin-bottom: 1rem;">Visiteurs par jour (30 derniers jours)</h3>
-                                <div id="visitors-chart" style="min-height: 250px;"></div>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openCertModal()">+ Ajouter</button>
+                            </div>
+                        </header>
+                        <div class="certs-toolbar">
+                            <p class="certs-toolbar-count" id="certs-count-label">0 certification</p>
+                            <div class="certs-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="certs-view-btn is-active" id="certs-view-list" onclick="setCertsView('list')" title="Liste" aria-pressed="true">
+                                    <i class="fas fa-list"></i> Liste
+                                </button>
+                                <button type="button" class="certs-view-btn" id="certs-view-grid" onclick="setCertsView('grid')" title="Grille" aria-pressed="false">
+                                    <i class="fas fa-th-large"></i> Grille
+                                </button>
                             </div>
                         </div>
+                        <div class="certs-shell">
+                            <div id="certs-list" class="admin-list certs-list" data-view="list"></div>
+                        </div>
+                        <div id="certs-pagination" class="certs-pagination"></div>
+                    </div>
 
-                        <!-- Top Projets -->
-                        <div class="admin-card" style="margin-top: 2rem;">
-                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Top 5 Projets les plus vus</h3>
-                            <div id="top-projects-list" class="admin-list"></div>
+                    <div id="section-legal" class="content-section {% if active_section == 'legal' %}active-section{% endif %}">
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Pages légales</h2>
+                                <p class="admin-section-subtitle">Confidentialité et mentions légales du site public.</p>
+                            </div>
+                        </header>
+
+                        <div class="legal-tabs" role="tablist" aria-label="Choisir une page légale">
+                            <button type="button" class="legal-tab is-active" role="tab" aria-selected="true" data-legal-slug="confidentialite" onclick="selectLegalPage('confidentialite')">
+                                <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                                <span>Confidentialité</span>
+                            </button>
+                            <button type="button" class="legal-tab" role="tab" aria-selected="false" data-legal-slug="mentions" onclick="selectLegalPage('mentions')">
+                                <i class="fas fa-balance-scale" aria-hidden="true"></i>
+                                <span>Mentions légales</span>
+                            </button>
                         </div>
 
-                        <h2 style="margin-top: 2rem;">Gestion du Portfolio</h2>
-                        <p>Interface d'administration pour gérer les projets, services et contenus du portfolio.</p>
+                        <div class="legal-editor-layout">
+                            <form id="legal-form" class="admin-form legal-editor-form" onsubmit="return saveLegalPage(event)">
+                                <input type="hidden" id="legal-slug" value="confidentialite">
+                                <section class="legal-editor-panel">
+                                    <h3 class="admin-panel-title">Éditer</h3>
+                                    <div class="form-group">
+                                        <label for="legal-title">Titre</label>
+                                        <input type="text" id="legal-title" required placeholder="Titre de la page">
+                                    </div>
+                                    <div class="form-group legal-body-group">
+                                        <label for="legal-body">Contenu</label>
+                                        <textarea id="legal-body" rows="14" required placeholder="Rédigez le contenu affiché sur le site…"></textarea>
+                                        <small class="legal-body-hint">Texte simple : les sauts de ligne sont conservés dans l’aperçu.</small>
+                                    </div>
+                                    <div class="admin-sticky-actions">
+                                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                    </div>
+                                </section>
+                            </form>
+
+                            <aside class="legal-preview" aria-label="Aperçu de la page">
+                                <p class="legal-preview-label">Aperçu</p>
+                                <article class="legal-preview-card">
+                                    <p class="legal-preview-kicker" id="legal-preview-kicker">Confidentialité</p>
+                                    <h3 class="legal-preview-title" id="legal-preview-title">Titre de la page</h3>
+                                    <div class="legal-preview-body" id="legal-preview-body">Le contenu apparaîtra ici.</div>
+                                </article>
+                            </aside>
+                        </div>
+                    </div>
+
+                    <div id="section-media" class="content-section {% if active_section == 'media' %}active-section{% endif %}">
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Médiathèque</h2>
+                                <p class="admin-section-subtitle">Images et fichiers réutilisables dans le contenu du site.</p>
+                            </div>
+                        </header>
+                        <form id="media-upload-form" class="admin-form media-upload-panel" onsubmit="return uploadMedia(event)">
+                            <h3 class="admin-panel-title">Téléverser un fichier</h3>
+                            <label class="media-dropzone" for="media-file" id="media-dropzone">
+                                <input type="file" id="media-file" name="file" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,image/*,application/pdf" required hidden>
+                                <span class="media-dropzone-icon" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i></span>
+                                <span class="media-dropzone-title" id="media-dropzone-title">Glisser un fichier ici</span>
+                                <span class="media-dropzone-hint">ou cliquer pour parcourir · JPG, PNG, WEBP, GIF, PDF · max 2 Mo</span>
+                                <span class="media-dropzone-file" id="media-dropzone-file" hidden></span>
+                            </label>
+                            <div class="media-upload-meta">
+                                <div class="form-group">
+                                    <label for="media-alt">Texte alternatif</label>
+                                    <input type="text" id="media-alt" maxlength="200" placeholder="Description courte de l’image">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Téléverser</button>
+                            </div>
+                        </form>
+                        <section class="media-library-panel" aria-labelledby="media-files-title">
+                            <div class="admin-panel-head">
+                                <h3 class="admin-panel-title" id="media-files-title">Fichiers</h3>
+                                <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                    <button type="button" class="admin-view-btn" id="media-view-list" onclick="setAdminListView('media', 'list')" aria-pressed="false"><i class="fas fa-list"></i> Liste</button>
+                                    <button type="button" class="admin-view-btn is-active" id="media-view-grid" onclick="setAdminListView('media', 'grid')" aria-pressed="true"><i class="fas fa-th-large"></i> Grille</button>
+                                </div>
+                            </div>
+                            <p class="admin-view-count" id="media-count-label">0 fichier</p>
+                            <div id="media-list" class="media-grid" data-view="grid"></div>
+                            <div id="media-pagination" class="admin-list-pagination"></div>
+                        </section>
+                    </div>
+
+                    <div id="section-trash" class="content-section {% if active_section == 'trash' %}active-section{% endif %}">
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Corbeille</h2>
+                                <p class="admin-section-subtitle">Éléments soft-supprimés — restaurables ou purge définitive.</p>
+                            </div>
+                        </header>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="trash-count-label">0 élément</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="trash-view-list" onclick="setAdminListView('trash', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="trash-view-grid" onclick="setAdminListView('trash', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
+                        </div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="trash-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="trash-pagination" class="admin-list-pagination"></div>
+                    </div>
+
+                    <div id="section-audit" class="content-section {% if active_section == 'audit' %}active-section{% endif %}">
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Journal d’audit</h2>
+                                <p class="admin-section-subtitle">Historique des actions sensibles réalisées dans l’admin.</p>
+                            </div>
+                        </header>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="audit-list" class="admin-list"></div>
+                        </div>
                     </div>
 
                     <!-- Section Homepage -->
                     <div id="section-homepage" class="content-section {% if active_section == 'homepage' %}active-section{% endif %}">
-                        <h2>Page d'accueil</h2>
-                        <form id="homepage-form" class="admin-form">
-                            <div class="form-group">
-                                <label>Badge professionnel</label>
-                                <input type="text" id="homepage-badge" name="badge" placeholder="Développeur Full-Stack & Data Science">
+                        <header class="homepage-editor-header">
+                            <div>
+                                <h2 class="homepage-editor-title">Page d’accueil</h2>
+                                <p class="homepage-editor-subtitle">Contenu du hero et de la présentation affichés sur le site public.</p>
                             </div>
-                            <div class="form-group">
-                                <label>Titre ligne 1</label>
-                                <input type="text" id="homepage-title1" name="title_line1" placeholder="De l'idée à la donnée.">
-                            </div>
-                            <div class="form-group">
-                                <label>Titre ligne 2</label>
-                                <input type="text" id="homepage-title2" name="title_line2" placeholder="Du code à l'insight !">
-                            </div>
-                            <div class="form-group">
-                                <label>Description</label>
-                                <textarea id="homepage-description" name="description" rows="3"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Email de contact</label>
-                                <input type="email" id="homepage-email" name="email" placeholder="contact@example.com">
-                            </div>
-                            <div class="form-group">
-                                <label>Texte du bouton CTA</label>
-                                <input type="text" id="homepage-cta" name="cta_text" placeholder="Discutons !">
-                            </div>
-                            <h3 style="margin-top: 2rem;">Section À propos</h3>
-                            <div class="form-group">
-                                <label>Titre de section</label>
-                                <input type="text" id="homepage-about-title" name="about_title" placeholder="Présentation">
-                            </div>
-                            <div class="form-group">
-                                <label>Nom</label>
-                                <input type="text" id="homepage-about-name" name="about_name" placeholder="Pricemou claude">
-                            </div>
-                            <div class="form-group">
-                                <label>Sous-titre</label>
-                                <input type="text" id="homepage-about-subtitle" name="about_subtitle">
-                            </div>
-                            <div class="form-group">
-                                <label>Description complète</label>
-                                <textarea id="homepage-about-description" name="about_description" rows="6"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                        </form>
+                        </header>
+
+                        <div class="homepage-editor-layout">
+                            <form id="homepage-form" class="admin-form homepage-editor-form">
+                                <section class="homepage-panel" aria-labelledby="homepage-hero-title">
+                                    <h3 class="homepage-panel-title" id="homepage-hero-title">Hero</h3>
+                                    <div class="form-group">
+                                        <label for="homepage-badge">Badge professionnel</label>
+                                        <input type="text" id="homepage-badge" name="badge" placeholder="Développeur Full-Stack &amp; Data Science">
+                                    </div>
+                                    <div class="homepage-field-grid">
+                                        <div class="form-group">
+                                            <label for="homepage-title1">Titre ligne 1</label>
+                                            <input type="text" id="homepage-title1" name="title_line1" placeholder="De l'idée à la donnée.">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="homepage-title2">Titre ligne 2</label>
+                                            <input type="text" id="homepage-title2" name="title_line2" placeholder="Du code à l'insight !">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="homepage-description">Description</label>
+                                        <textarea id="homepage-description" name="description" rows="3"></textarea>
+                                    </div>
+                                    <div class="homepage-field-grid">
+                                        <div class="form-group">
+                                            <label for="homepage-email">Email de contact</label>
+                                            <input type="email" id="homepage-email" name="email" placeholder="contact@example.com">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="homepage-cta">Texte du bouton CTA</label>
+                                            <input type="text" id="homepage-cta" name="cta_text" placeholder="Me contacter">
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="homepage-panel" aria-labelledby="homepage-about-panel-title">
+                                    <h3 class="homepage-panel-title" id="homepage-about-panel-title">À propos</h3>
+                                    <div class="homepage-field-grid">
+                                        <div class="form-group">
+                                            <label for="homepage-about-title">Titre de section</label>
+                                            <input type="text" id="homepage-about-title" name="about_title" placeholder="Présentation">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="homepage-about-name">Nom</label>
+                                            <input type="text" id="homepage-about-name" name="about_name" placeholder="Pricemou claude">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="homepage-about-subtitle">Sous-titre</label>
+                                        <input type="text" id="homepage-about-subtitle" name="about_subtitle">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="homepage-about-description">Description complète</label>
+                                        <textarea id="homepage-about-description" name="about_description" rows="6"></textarea>
+                                    </div>
+                                </section>
+
+                                <div class="homepage-editor-actions">
+                                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                </div>
+                            </form>
+
+                            <aside class="homepage-preview" aria-label="Aperçu du hero">
+                                <p class="homepage-preview-label">Aperçu</p>
+                                <div class="homepage-preview-card">
+                                    <span class="homepage-preview-badge" id="homepage-preview-badge">Badge</span>
+                                    <h3 class="homepage-preview-title">
+                                        <span id="homepage-preview-title1">Titre ligne 1</span>
+                                        <span id="homepage-preview-title2">Titre ligne 2</span>
+                                    </h3>
+                                    <p class="homepage-preview-desc" id="homepage-preview-description">La description du hero apparaîtra ici.</p>
+                                    <div class="homepage-preview-cta" id="homepage-preview-cta">Me contacter</div>
+                                </div>
+                            </aside>
+                        </div>
                     </div>
 
                     <!-- Section Skills -->
                     <div id="section-skills" class="content-section {% if active_section == 'skills' %}active-section{% endif %}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <h2>Compétences</h2>
-                            <button class="btn btn-primary" onclick="openSkillModal()">+ Ajouter une compétence</button>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Compétences</h2>
+                                <p class="admin-section-subtitle">Technologies et expertises affichées sur le portfolio.</p>
+                            </div>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openSkillModal()">+ Ajouter une compétence</button>
+                            </div>
+                        </header>
+                        <div class="admin-toolbar">
+                            <div id="skills-search-container"></div>
+                            <div id="skills-export-container"></div>
                         </div>
-                        <div id="skills-search-container"></div>
-                        <div id="skills-export-container"></div>
-                        <div id="skills-list" class="admin-list"></div>
-                        <div id="skills-pagination"></div>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="skills-count-label">0 compétence</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="skills-view-list" onclick="setAdminListView('skills', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="skills-view-grid" onclick="setAdminListView('skills', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
+                        </div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="skills-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="skills-pagination" class="admin-list-pagination"></div>
                     </div>
 
                     <!-- Section Partners -->
                     <div id="section-partners" class="content-section {% if active_section == 'partners' %}active-section{% endif %}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <h2>Partenaires</h2>
-                            <button class="btn btn-primary" onclick="openPartnerModal()">+ Ajouter un partenaire</button>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Partenaires</h2>
+                                <p class="admin-section-subtitle">Logos et liens des partenaires mis en avant sur l’accueil.</p>
+                            </div>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openPartnerModal()">+ Ajouter un partenaire</button>
+                            </div>
+                        </header>
+                        <div class="admin-toolbar">
+                            <div id="partners-search-container"></div>
+                            <div id="partners-export-container"></div>
                         </div>
-                        <div id="partners-search-container"></div>
-                        <div id="partners-export-container"></div>
-                        <div id="partners-list" class="admin-list"></div>
-                        <div id="partners-pagination"></div>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="partners-count-label">0 partenaire</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="partners-view-list" onclick="setAdminListView('partners', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="partners-view-grid" onclick="setAdminListView('partners', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
+                        </div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="partners-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="partners-pagination" class="admin-list-pagination"></div>
                     </div>
 
                     <!-- Section Projects -->
                     <div id="section-projects" class="content-section {% if active_section == 'projects' %}active-section{% endif %}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <h2>Projets</h2>
-                            <button class="btn btn-primary" onclick="openProjectModal()">+ Ajouter un projet</button>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Projets</h2>
+                                <p class="admin-section-subtitle">Réalisations du portfolio, mises en avant et détails.</p>
+                            </div>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openProjectModal()">+ Ajouter un projet</button>
+                            </div>
+                        </header>
+                        <div class="admin-toolbar">
+                            <div id="projects-search-container"></div>
+                            <div id="projects-export-container"></div>
                         </div>
-                        <div id="projects-search-container"></div>
-                        <div id="projects-export-container"></div>
-                        <div id="projects-list" class="admin-list"></div>
-                        <div id="projects-pagination"></div>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="projects-count-label">0 projet</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="projects-view-list" onclick="setAdminListView('projects', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="projects-view-grid" onclick="setAdminListView('projects', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
+                        </div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="projects-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="projects-pagination" class="admin-list-pagination"></div>
                     </div>
 
                     <!-- Section Services -->
                     <div id="section-services" class="content-section {% if active_section == 'services' %}active-section{% endif %}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <h2>Services</h2>
-                            <button class="btn btn-primary" onclick="openServiceModal()">+ Ajouter un service</button>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Services</h2>
+                                <p class="admin-section-subtitle">Offres et prestations présentées aux visiteurs.</p>
+                            </div>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openServiceModal()">+ Ajouter un service</button>
+                            </div>
+                        </header>
+                        <div class="admin-toolbar">
+                            <div id="services-search-container"></div>
+                            <div id="services-export-container"></div>
                         </div>
-                        <div id="services-search-container"></div>
-                        <div id="services-export-container"></div>
-                        <div id="services-list" class="admin-list"></div>
-                        <div id="services-pagination"></div>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="services-count-label">0 service</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="services-view-list" onclick="setAdminListView('services', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="services-view-grid" onclick="setAdminListView('services', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
+                        </div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="services-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="services-pagination" class="admin-list-pagination"></div>
                     </div>
 
                     <!-- Section Contacts -->
                     <div id="section-contacts" class="content-section {% if active_section == 'contacts' %}active-section{% endif %}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <div>
-                                <h2>Messages de contact</h2>
-                                <p id="contacts-count" style="color: var(--gray); font-size: 0.9rem; margin: 0.5rem 0 0 0;">
-                                    <span id="unread-count">0</span> non lus
-                                </p>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Messages de contact</h2>
+                                <p class="admin-section-subtitle" id="contacts-count"><span id="unread-count">0</span> non lus</p>
                             </div>
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div class="admin-section-actions">
                                 <select id="contacts-filter" onchange="filterContacts()" class="admin-select">
                                     <option value="all">Tous les messages</option>
                                     <option value="unread">Non lus uniquement</option>
                                     <option value="read">Lus uniquement</option>
                                 </select>
-                                <button class="btn btn-secondary" onclick="loadContacts()" title="Actualiser">
+                                <button type="button" class="btn btn-ghost" onclick="loadContacts()" title="Actualiser">
                                     <i class="fas fa-sync-alt"></i> Actualiser
                                 </button>
-                                <button id="notification-toggle" class="btn btn-sm" onclick="toggleNotifications()" title="Activer/Désactiver les notifications">
+                                <button type="button" id="notification-toggle" class="btn btn-ghost btn-icon" onclick="toggleNotifications()" title="Activer/Désactiver les notifications">
                                     <i class="fas fa-bell"></i>
                                 </button>
                             </div>
+                        </header>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="contacts-view-count">0 message</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="contacts-view-list" onclick="setAdminListView('contacts', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="contacts-view-grid" onclick="setAdminListView('contacts', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
                         </div>
-                        <div id="contacts-list" class="admin-list"></div>
+                        <div class="contacts-inbox">
+                            <div id="contacts-list" class="admin-list contacts-list" data-view="list"></div>
+                        </div>
+                        <div id="contacts-pagination" class="admin-list-pagination"></div>
                     </div>
 
                     <!-- Section Profil -->
                     <div id="section-profile" class="content-section {% if active_section == 'profile' %}active-section{% endif %}">
-                        <div style="margin-bottom: 2rem;">
-                            <h2>Mon Profil</h2>
-                            <p style="color: var(--gray); font-size: 0.9rem;">Gérez vos informations personnelles et votre mot de passe</p>
-                        </div>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Mon profil</h2>
+                                <p class="admin-section-subtitle">Informations personnelles, mot de passe et sécurité du compte.</p>
+                            </div>
+                        </header>
 
-                        <!-- Informations du compte -->
-                        <div class="admin-card" style="margin-bottom: 2rem;">
-                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Informations du compte</h3>
-                            <form id="profile-form" onsubmit="updateProfile(event)">
-                                <div style="display: grid; gap: 1rem;">
-                                    <div>
-                                        <label for="profile-username">Nom d'utilisateur</label>
-                                        <input type="text" id="profile-username" readonly>
-                                        <small>Le nom d'utilisateur ne peut pas être modifié</small>
-                                    </div>
-                                    <div>
+                        <div class="admin-panel">
+                            <h3 class="admin-panel-title">Informations du compte</h3>
+                            <form id="profile-form" class="admin-form" onsubmit="updateProfile(event)">
+                                <div class="form-group">
+                                    <label for="profile-username">Nom d'utilisateur</label>
+                                    <input type="text" id="profile-username" readonly>
+                                    <small>Le nom d'utilisateur ne peut pas être modifié</small>
+                                </div>
+                                <div class="admin-field-grid">
+                                    <div class="form-group">
                                         <label for="profile-email">Email</label>
                                         <input type="email" id="profile-email" placeholder="votre@email.com">
                                     </div>
-                                    <div>
+                                    <div class="form-group">
                                         <label for="profile-full-name">Nom complet</label>
                                         <input type="text" id="profile-full-name" placeholder="Votre nom complet">
                                     </div>
-                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-                                        <button type="button" class="btn btn-secondary" onclick="loadProfile()">Annuler</button>
-                                    </div>
+                                </div>
+                                <div class="admin-sticky-actions">
+                                    <button type="button" class="btn btn-secondary" onclick="loadProfile()">Annuler</button>
+                                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
                                 </div>
                             </form>
                         </div>
 
-                        <!-- Changer le mot de passe -->
-                        <div class="admin-card" style="margin-bottom: 2rem;">
-                            <h3 style="margin-top: 0; margin-bottom: 1rem;">Changer le mot de passe</h3>
-                            <form id="password-form" onsubmit="changePassword(event)">
-                                <div style="display: grid; gap: 1rem;">
-                                    <div>
-                                        <label for="current-password">Mot de passe actuel</label>
-                                        <input type="password" id="current-password" required>
-                                    </div>
-                                    <div>
+                        <div class="admin-panel">
+                            <h3 class="admin-panel-title">Changer le mot de passe</h3>
+                            <form id="password-form" class="admin-form" onsubmit="changePassword(event)">
+                                <div class="form-group">
+                                    <label for="current-password">Mot de passe actuel</label>
+                                    <input type="password" id="current-password" required>
+                                </div>
+                                <div class="admin-field-grid">
+                                    <div class="form-group">
                                         <label for="new-password">Nouveau mot de passe</label>
                                         <input type="password" id="new-password" required minlength="6">
                                         <small>Minimum 6 caractères</small>
                                     </div>
-                                    <div>
+                                    <div class="form-group">
                                         <label for="confirm-password">Confirmer le nouveau mot de passe</label>
                                         <input type="password" id="confirm-password" required minlength="6">
                                     </div>
-                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                                        <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
-                                        <button type="button" class="btn btn-secondary" onclick="resetPasswordForm()">Annuler</button>
-                                    </div>
+                                </div>
+                                <div class="admin-sticky-actions">
+                                    <button type="button" class="btn btn-secondary" onclick="resetPasswordForm()">Annuler</button>
+                                    <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
                                 </div>
                             </form>
                         </div>
 
-                        <!-- Historique des connexions -->
-                        <div class="admin-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h3 style="margin: 0;">Historique des connexions</h3>
-                                <button class="btn btn-secondary btn-sm" onclick="loadLoginHistory()" title="Actualiser">
+                        <div class="admin-panel">
+                            <h3 class="admin-panel-title">Authentification à deux facteurs (TOTP)</h3>
+                            <p id="2fa-status" class="admin-section-subtitle">Chargement…</p>
+                            <div id="2fa-setup-box" class="admin-2fa-box" style="display:none;">
+                                <p>Secret : <code id="2fa-secret"></code></p>
+                                <p class="admin-2fa-uri">URI : <code id="2fa-uri"></code></p>
+                                <div class="form-group">
+                                    <label for="2fa-enable-code">Code à 6 chiffres</label>
+                                    <input type="text" id="2fa-enable-code" placeholder="000000" maxlength="12">
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="enable2FA()">Confirmer l’activation</button>
+                            </div>
+                            <div id="2fa-backup-box" class="admin-2fa-box" style="display:none;">
+                                <p><strong>Codes de secours (à conserver) :</strong></p>
+                                <pre id="2fa-backup-codes" class="admin-2fa-codes"></pre>
+                            </div>
+                            <div class="admin-section-actions" style="margin-top:1rem;">
+                                <button type="button" class="btn btn-primary" onclick="setup2FA()">Configurer / régénérer</button>
+                                <button type="button" class="btn btn-secondary" onclick="disable2FA()">Désactiver</button>
+                            </div>
+                        </div>
+
+                        <div class="admin-panel">
+                            <div class="admin-panel-head">
+                                <h3 class="admin-panel-title">Historique des connexions</h3>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="loadLoginHistory()" title="Actualiser">
                                     <i class="fas fa-sync-alt"></i> Actualiser
                                 </button>
                             </div>
@@ -399,23 +726,34 @@
 
                     <!-- Section Administrateurs -->
                     <div id="section-admins" class="content-section {% if active_section == 'admins' %}active-section{% endif %}">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                            <div>
-                                <h2>Gestion des Administrateurs</h2>
-                                <p style="color: var(--gray); font-size: 0.9rem;">Créez et gérez les comptes administrateurs</p>
+                        <header class="admin-section-header">
+                            <div class="admin-section-header-text">
+                                <h2 class="admin-section-title">Administrateurs</h2>
+                                <p class="admin-section-subtitle">Créez et gérez les comptes administrateurs.</p>
                             </div>
-                            <button class="btn btn-primary" onclick="openCreateAdminModal()">
-                                <i class="fas fa-plus"></i> Nouvel administrateur
-                            </button>
+                            <div class="admin-section-actions">
+                                <button type="button" class="btn btn-primary" onclick="openCreateAdminModal()">
+                                    <i class="fas fa-plus"></i> Nouvel administrateur
+                                </button>
+                            </div>
+                        </header>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="admins-count-label">0 administrateur</p>
+                            <div class="admin-view-toggle" role="group" aria-label="Mode d’affichage">
+                                <button type="button" class="admin-view-btn is-active" id="admins-view-list" onclick="setAdminListView('admins', 'list')" aria-pressed="true"><i class="fas fa-list"></i> Liste</button>
+                                <button type="button" class="admin-view-btn" id="admins-view-grid" onclick="setAdminListView('admins', 'grid')" aria-pressed="false"><i class="fas fa-th-large"></i> Grille</button>
+                            </div>
                         </div>
-
-                        <div id="admins-list" class="admin-list"></div>
+                        <div class="admin-panel admin-list-shell">
+                            <div id="admins-list" class="admin-list" data-view="list"></div>
+                        </div>
+                        <div id="admins-pagination" class="admin-list-pagination"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Panel -->
-            <aside class="right-panel" id="right-panel">
+            <!-- Right Panel (fermé par défaut) -->
+            <aside class="right-panel hidden" id="right-panel" aria-hidden="true">
                 <button class="right-panel-close" onclick="toggleRightPanel()" aria-label="Fermer le panneau">
                     <i class="fas fa-times"></i>
                 </button>
@@ -492,8 +830,8 @@
                 </div>
             </aside>
 
-            <!-- Right Panel Toggle Button (visible when panel is hidden) -->
-            <button class="right-panel-toggle" id="right-panel-toggle" onclick="toggleRightPanel()" aria-label="Afficher le panneau">
+            <!-- Bouton pour rouvrir le panneau (visible par défaut) -->
+            <button class="right-panel-toggle show" id="right-panel-toggle" onclick="toggleRightPanel()" aria-label="Afficher le panneau" title="Vue d'ensemble">
                 <i class="fas fa-chevron-left"></i>
             </button>
         </main>
@@ -541,6 +879,99 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-primary" onclick="closeSupportModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Certifications -->
+    <div id="certModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="certModalTitle">Nouvelle certification</h3>
+                <button type="button" class="modal-close" onclick="closeCertModal()" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="cert-form" class="admin-form">
+                <input type="hidden" id="cert-id">
+                <div class="form-group">
+                    <label for="cert-title">Titre</label>
+                    <input type="text" id="cert-title" required maxlength="300">
+                </div>
+                <div class="admin-field-grid">
+                    <div class="form-group">
+                        <label for="cert-code">Code Coursera</label>
+                        <input type="text" id="cert-code" required maxlength="64" placeholder="9QSS4JFWLJPR">
+                    </div>
+                    <div class="form-group">
+                        <label for="cert-domain">Domaine</label>
+                        <select id="cert-domain" required>
+                            <option value="python">Python</option>
+                            <option value="data-ai">Data &amp; IA</option>
+                            <option value="big-data">Big Data</option>
+                            <option value="fullstack">Full Stack</option>
+                            <option value="uiux">UI/UX</option>
+                            <option value="security">Sécurité</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="admin-field-grid">
+                    <div class="form-group">
+                        <label for="cert-status">Statut</label>
+                        <select id="cert-status">
+                            <option value="published">Publié</option>
+                            <option value="draft">Brouillon</option>
+                            <option value="archived">Archivé</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cert-order">Ordre</label>
+                        <input type="number" id="cert-order" min="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="cert-url">URL du certificat</label>
+                    <input type="url" id="cert-url" maxlength="500" placeholder="https://www.coursera.org/...">
+                </div>
+                <div class="form-group">
+                    <label class="cert-featured-label">
+                        <input type="checkbox" id="cert-featured">
+                        Mettre en vedette
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCertModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="certViewModal" class="modal" style="display: none;">
+        <div class="modal-content cert-view-modal">
+            <div class="modal-header">
+                <h3 id="cert-view-title">Aperçu</h3>
+                <button type="button" class="modal-close" onclick="closeCertViewModal()" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body cert-view-body">
+                <div class="cert-view-media">
+                    <img id="cert-view-image" alt="" hidden>
+                    <div id="cert-view-fallback" class="cert-view-fallback" hidden>
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                </div>
+                <div class="cert-view-meta">
+                    <p><span>Domaine</span> <strong id="cert-view-domain">—</strong></p>
+                    <p><span>Code</span> <strong id="cert-view-code">—</strong></p>
+                    <p><span>Statut</span> <strong id="cert-view-status">—</strong></p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <a id="cert-view-link" class="btn btn-primary" href="#" target="_blank" rel="noopener">Voir le certificat</a>
+                <a id="cert-view-verify" class="btn btn-ghost" href="#" target="_blank" rel="noopener">Vérifier</a>
+                <button type="button" class="btn btn-secondary" onclick="closeCertViewModal()">Fermer</button>
             </div>
         </div>
     </div>
@@ -640,14 +1071,18 @@
                     <input type="url" id="project-github" placeholder="https://github.com/user/repo">
                 </div>
                 <div class="form-group">
-                    <label>Image principale (chemin ou URL)</label>
-                    <input type="text" id="project-image" placeholder="images/projects/project.png">
-                    <small style="color: var(--gray); font-size: 0.85rem;">Image principale du projet</small>
+                    <label>Image principale</label>
+                    <input type="file" id="project-image-file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif">
+                    <input type="hidden" id="project-image" value="">
+                    <div id="project-image-preview" class="project-upload-preview"></div>
+                    <small style="color: var(--gray); font-size: 0.85rem;">JPG, PNG, WebP ou GIF — max 2 Mo</small>
                 </div>
                 <div class="form-group">
-                    <label>Images supplémentaires (séparées par des virgules)</label>
-                    <textarea id="project-additional-images" rows="3" placeholder="images/projects/img1.png, images/projects/img2.png, images/projects/img3.png"></textarea>
-                    <small style="color: var(--gray); font-size: 0.85rem;">Ajoutez plusieurs images séparées par des virgules pour la galerie</small>
+                    <label>Images supplémentaires</label>
+                    <input type="file" id="project-additional-files" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple>
+                    <input type="hidden" id="project-additional-images" value="">
+                    <div id="project-additional-preview" class="project-upload-preview project-upload-preview--multi"></div>
+                    <small style="color: var(--gray); font-size: 0.85rem;">Sélectionnez une ou plusieurs images pour la galerie (max 2 Mo chacune)</small>
                 </div>
                 <div class="form-group">
                     <label>Statut</label>
@@ -761,37 +1196,6 @@
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin-data.js') }}"></script>
-    <script>
-        // S'assurer que les fonctions sont accessibles globalement
-        // Les exposer explicitement sur window si nécessaire
-        window.openServiceModal = window.openServiceModal || function() {
-            if (typeof openServiceModal === 'function') {
-                return openServiceModal.apply(this, arguments);
-            }
-            console.error('openServiceModal n\'est pas disponible');
-        };
-        
-        window.openProjectModal = window.openProjectModal || function() {
-            if (typeof openProjectModal === 'function') {
-                return openProjectModal.apply(this, arguments);
-            }
-            console.error('openProjectModal n\'est pas disponible');
-        };
-        
-        window.closeServiceModal = window.closeServiceModal || function() {
-            if (typeof closeServiceModal === 'function') {
-                return closeServiceModal.apply(this, arguments);
-            }
-            console.error('closeServiceModal n\'est pas disponible');
-        };
-        
-        window.closeProjectModal = window.closeProjectModal || function() {
-            if (typeof closeProjectModal === 'function') {
-                return closeProjectModal.apply(this, arguments);
-            }
-            console.error('closeProjectModal n\'est pas disponible');
-        };
-    </script>
 </body>
 </html>
 

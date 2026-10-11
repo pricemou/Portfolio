@@ -14,34 +14,49 @@
                 <button>{{ t('career_badge') }}</button>
                 <h1 class="white">{{ t('career_title') }}</h1>
                 <p class="gray">{{ t('career_intro') }}</p>
+            {% elif request.endpoint == 'certifications' %}
+                <button>{{ t('certs_badge') }}</button>
+                <h1 class="white">{{ t('certs_title') }}</h1>
+                <p class="gray">{{ t('certs_intro') }}</p>
             {% elif request.endpoint == 'contact' %}
                 <button>{{ t('contact_badge') }}</button>
                 <h1 class="white">{{ t('contact_title') }}</h1>
                 <p class="gray">{{ t('contact_intro') }}</p>
             {% else %}
+                <div class="hero-copy">
                 {% if homepage_data %}
-                    <button class="availability-badge">{{ homepage_data.badge }}</button>
-                    <h1 class="white">{{ homepage_data.title_line1 }}</h1>
-                    <h1 class="white">{{ homepage_data.title_line2 }}</h1>
-                    <p class="gray">{{ homepage_data.description }}</p>
+                    <p class="availability-badge">{{ homepage_data.badge }}</p>
+                    <p class="hero-brand">{{ homepage_data.about_name or 'Claude Pricemou' }}</p>
+                    <h1 class="hero-title">
+                        <span class="hero-title-line">{{ homepage_data.title_line1 }}</span>
+                        <span class="hero-title-line hero-title-accent">{{ homepage_data.title_line2 }}</span>
+                    </h1>
+                    <p class="hero-desc">{{ homepage_data.description }}</p>
                     <div class="hero-actions">
-                        <a class="green" href="{{ url_for('contact') }}">{{ homepage_data.cta_text }}</a>
-                        <a class="cv-btn" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
+                        <a class="hero-btn hero-btn--primary" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
+                        <a class="hero-btn hero-btn--outline" href="{{ url_for('works') }}">{{ t('see_all_projects') }}</a>
+                        <a class="hero-btn hero-btn--ghost" href="{{ url_for('contact') }}">{{ homepage_data.cta_text }} <span aria-hidden="true">→</span></a>
                     </div>
                 {% else %}
-                    <button class="availability-badge">{{ t('hero_badge') }}</button>
-                    <h1 class="white">{{ t('hero_line1') }}</h1>
-                    <h1 class="white">{{ t('hero_line2') }}</h1>
-                    <p class="gray">{{ t('hero_desc') }}</p>
+                    <p class="availability-badge">{{ t('hero_badge') }}</p>
+                    <p class="hero-brand">Claude Pricemou</p>
+                    <h1 class="hero-title">
+                        <span class="hero-title-line">{{ t('hero_line1') }}</span>
+                        <span class="hero-title-line hero-title-accent">{{ t('hero_line2') }}</span>
+                    </h1>
+                    <p class="hero-desc">{{ t('hero_desc') }}</p>
                     <div class="hero-actions">
-                        <a class="green" href="{{ url_for('contact') }}">{{ t('hero_cta') }}</a>
-                        <a class="cv-btn" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
+                        <a class="hero-btn hero-btn--primary" href="{{ url_for('download_cv') }}">{{ t('download_cv') }}</a>
+                        <a class="hero-btn hero-btn--ghost" href="{{ url_for('contact') }}">{{ t('hero_cta') }} <span aria-hidden="true">→</span></a>
                     </div>
                 {% endif %}
+                </div>
             {% endif %}
         </div>
         {% if request.endpoint == 'index' %}
-            <img src="{{ url_for('static', filename='images/claude-pricemou.svg') }}" width="463" height="513" alt="Portrait de Claude Pricemou, développeur full stack" class="header-image" onclick="openHeaderImageModal()" />
+            <figure class="hero-portrait">
+                <img src="{{ url_for('static', filename='images/claude-pricemou.png') }}" width="463" height="513" alt="Portrait de diplomation de Claude Pricemou, diplôme UQTR Informatique" class="header-image" onclick="openHeaderImageModal()" />
+            </figure>
         {% endif %}
     </div>
 </header>

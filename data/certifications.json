@@ -1,0 +1,525 @@
+{
+  "domains": {
+    "python": {
+      "fr": "Python et programmation scientifique",
+      "en": "Python and scientific programming"
+    },
+    "data-ai": {
+      "fr": "Data Science, IA et Deep Learning",
+      "en": "Data Science, AI and Deep Learning"
+    },
+    "big-data": {
+      "fr": "Big Data",
+      "en": "Big Data"
+    },
+    "fullstack": {
+      "fr": "Développement Full Stack et Web",
+      "en": "Full Stack and Web development"
+    },
+    "uiux": {
+      "fr": "UI/UX et Design",
+      "en": "UI/UX and Design"
+    },
+    "security": {
+      "fr": "Cybersécurité et scripting",
+      "en": "Cybersecurity and scripting"
+    }
+  },
+  "items": [
+    {
+      "domain": "python",
+      "title": "Programming for Everybody (Getting Started with Python)",
+      "code": "LS3N5522C8SA",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/LS3N5522C8SA",
+      "skill": {
+        "fr": "Je démarre un programme Python et j'utilise les bases du langage.",
+        "en": "I write basic Python programs and use core language features."
+      },
+      "featured": false
+    },
+    {
+      "domain": "python",
+      "title": "Python Data Structures",
+      "code": "9QSS4JFWLJPR",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/9QSS4JFWLJPR",
+      "skill": {
+        "fr": "Je manipule listes, dictionnaires et structures de données en Python.",
+        "en": "I work with lists, dictionaries and other Python data structures."
+      },
+      "featured": true
+    },
+    {
+      "domain": "python",
+      "title": "Python Programming: A Concise Introduction",
+      "code": "QHZBTEXHKPGG",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/QHZBTEXHKPGG",
+      "skill": {
+        "fr": "J'écris des scripts Python clairs pour des tâches courtes.",
+        "en": "I write clear Python scripts for short tasks."
+      },
+      "featured": false
+    },
+    {
+      "domain": "python",
+      "title": "Python Functions, Files, and Dictionaries",
+      "code": "QYBBALCBMN5A",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/QYBBALCBMN5A",
+      "skill": {
+        "fr": "J'organise mon code avec des fonctions et je lis des fichiers.",
+        "en": "I organize code with functions and read files."
+      },
+      "featured": false
+    },
+    {
+      "domain": "python",
+      "title": "Python Data Analysis",
+      "code": "CUPVATWCLRYM",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/CUPVATWCLRYM",
+      "skill": {
+        "fr": "J'analyse des tableaux de données avec les outils Python adaptés.",
+        "en": "I analyze tabular data with Python tooling."
+      },
+      "featured": true
+    },
+    {
+      "domain": "python",
+      "title": "Introduction to Data Science in Python",
+      "code": "NQSD2JWXFTYT",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/NQSD2JWXFTYT",
+      "skill": {
+        "fr": "Je mène une analyse de données de bout en bout en Python.",
+        "en": "I run an end-to-end data analysis workflow in Python."
+      },
+      "featured": true
+    },
+    {
+      "domain": "python",
+      "title": "Applied Plotting, Charting & Data Representation in Python",
+      "code": "MBRGMG4EKZKH",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/MBRGMG4EKZKH",
+      "skill": {
+        "fr": "Je crée des graphiques pour rendre des résultats lisibles.",
+        "en": "I create charts that make results easy to read."
+      },
+      "featured": true
+    },
+    {
+      "domain": "python",
+      "title": "Capstone: Retrieving, Processing, and Visualizing Data with Python",
+      "code": "3JJKZCKJUMB5",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/3JJKZCKJUMB5",
+      "skill": {
+        "fr": "Je récupère, traite et visualise des données dans un projet complet.",
+        "en": "I retrieve, process and visualize data in a complete project."
+      },
+      "featured": false
+    },
+    {
+      "domain": "python",
+      "title": "Game Theory with Python",
+      "code": "TK2D3FAASVZZ",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/TK2D3FAASVZZ",
+      "skill": {
+        "fr": "Je modélise des situations de choix stratégiques avec Python.",
+        "en": "I model strategic choice situations with Python."
+      },
+      "featured": false
+    },
+    {
+      "domain": "python",
+      "title": "COVID-19 : Les séries temporelles avec Python et Pandas",
+      "code": "RZPA3AY9AEEM",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/RZPA3AY9AEEM",
+      "skill": {
+        "fr": "J'analyse des séries temporelles avec Python et Pandas.",
+        "en": "I analyze time series with Python and Pandas."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "The Data Scientist's Toolbox",
+      "code": "4WV5HKB38SQB",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/4WV5HKB38SQB",
+      "skill": {
+        "fr": "Je connais les outils de base du travail en science des données.",
+        "en": "I know the basic tools used in data science work."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "Data Science Math Skills",
+      "code": "GD33WYGX5CUM",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/GD33WYGX5CUM",
+      "skill": {
+        "fr": "J'applique les bases mathématiques utiles à l'analyse de données.",
+        "en": "I apply the math foundations useful for data analysis."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "Neural Networks and Deep Learning",
+      "code": "WG37MGDQ74DS",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/WG37MGDQ74DS",
+      "skill": {
+        "fr": "Je comprends le fonctionnement d'un réseau de neurones et je sais l'entraîner.",
+        "en": "I understand how a neural network works and how to train one."
+      },
+      "featured": true
+    },
+    {
+      "domain": "data-ai",
+      "title": "Structuring Machine Learning Projects",
+      "code": "KKA925D6P5FP",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/KKA925D6P5FP",
+      "skill": {
+        "fr": "J'organise un projet d'apprentissage automatique de façon méthodique.",
+        "en": "I structure a machine learning project in a methodical way."
+      },
+      "featured": true
+    },
+    {
+      "domain": "data-ai",
+      "title": "Sequence Models",
+      "code": "TJX6U2HZFLWX",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/TJX6U2HZFLWX",
+      "skill": {
+        "fr": "Je travaille avec des modèles adaptés aux séquences, comme le texte ou le temps.",
+        "en": "I work with models suited to sequences such as text or time."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "Sequences, Time Series and Prediction",
+      "code": "YDA2LK572VNS",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/YDA2LK572VNS",
+      "skill": {
+        "fr": "Je prépare des prévisions à partir de données ordonnées dans le temps.",
+        "en": "I build forecasts from data ordered over time."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "Introduction to TensorFlow for AI, ML and Deep Learning",
+      "code": "U82RZCH6A963",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/U82RZCH6A963",
+      "skill": {
+        "fr": "Je construis des modèles d'apprentissage avec TensorFlow.",
+        "en": "I build learning models with TensorFlow."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "Natural Language Processing in TensorFlow",
+      "code": "L3D555Q9SPCU",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/L3D555Q9SPCU",
+      "skill": {
+        "fr": "Je traite du texte avec des outils d'apprentissage automatique.",
+        "en": "I process text with machine learning tools."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "AI for Medical Diagnosis",
+      "code": "CLPA6M5NRVKX",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/CLPA6M5NRVKX",
+      "skill": {
+        "fr": "Je comprends comment l'IA peut soutenir un diagnostic médical.",
+        "en": "I understand how AI can support medical diagnosis."
+      },
+      "featured": false
+    },
+    {
+      "domain": "data-ai",
+      "title": "AI For Everyone",
+      "code": "5JNUET8JMWCL",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/5JNUET8JMWCL",
+      "skill": {
+        "fr": "J'explique les notions d'IA à un public non technique.",
+        "en": "I explain AI concepts to a non-technical audience."
+      },
+      "featured": false
+    },
+    {
+      "domain": "big-data",
+      "title": "Introduction to Big Data",
+      "code": "CXBDLPNX7A9G",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/CXBDLPNX7A9G",
+      "skill": {
+        "fr": "Je situe les enjeux du traitement de grands volumes de données.",
+        "en": "I understand the challenges of working with large data volumes."
+      },
+      "featured": false
+    },
+    {
+      "domain": "big-data",
+      "title": "Big Data Modeling and Management Systems",
+      "code": "JPH9FEQRBE3R",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/JPH9FEQRBE3R",
+      "skill": {
+        "fr": "Je modélise et j'organise des données à grande échelle.",
+        "en": "I model and organize large-scale data."
+      },
+      "featured": false
+    },
+    {
+      "domain": "big-data",
+      "title": "Big Data Integration and Processing",
+      "code": "TSUSP6Q86FYC",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/TSUSP6Q86FYC",
+      "skill": {
+        "fr": "J'intègre et je traite des flux de données volumineux.",
+        "en": "I integrate and process large data flows."
+      },
+      "featured": false
+    },
+    {
+      "domain": "big-data",
+      "title": "Machine Learning With Big Data",
+      "code": "YPMJFMZNVPWT",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/YPMJFMZNVPWT",
+      "skill": {
+        "fr": "J'applique l'apprentissage automatique sur de grands jeux de données.",
+        "en": "I apply machine learning to large datasets."
+      },
+      "featured": true
+    },
+    {
+      "domain": "big-data",
+      "title": "Graph Analytics for Big Data",
+      "code": "4RHG7NKRV3DD",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/4RHG7NKRV3DD",
+      "skill": {
+        "fr": "J'analyse des relations entre entités sous forme de graphe.",
+        "en": "I analyze relationships between entities as graphs."
+      },
+      "featured": false
+    },
+    {
+      "domain": "big-data",
+      "title": "Managing Big Data in Clusters and Cloud Storage",
+      "code": "2VUR92CVBZFF",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/2VUR92CVBZFF",
+      "skill": {
+        "fr": "Je gère le stockage de données sur des clusters et dans le nuage.",
+        "en": "I manage data storage on clusters and in the cloud."
+      },
+      "featured": false
+    },
+    {
+      "domain": "big-data",
+      "title": "Foundations for Big Data Analysis with SQL",
+      "code": "JF3NJSYQAKNE",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/JF3NJSYQAKNE",
+      "skill": {
+        "fr": "J'interroge de grands volumes de données avec SQL.",
+        "en": "I query large data volumes with SQL."
+      },
+      "featured": true
+    },
+    {
+      "domain": "big-data",
+      "title": "Big Data - Capstone Project",
+      "code": "4YBGRDR5G2PZ",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/4YBGRDR5G2PZ",
+      "skill": {
+        "fr": "Je mène un projet Big Data de bout en bout.",
+        "en": "I deliver an end-to-end Big Data project."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Modern JavaScript: ES6 Basics",
+      "code": "AWS7J8RR2DE3",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/AWS7J8RR2DE3",
+      "skill": {
+        "fr": "J'utilise les bases modernes de JavaScript (ES6).",
+        "en": "I use modern JavaScript (ES6) basics."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Programming Foundations with JavaScript, HTML and CSS",
+      "code": "6EPTLM477C2J",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/6EPTLM477C2J",
+      "skill": {
+        "fr": "Je construis des pages web avec HTML, CSS et JavaScript.",
+        "en": "I build web pages with HTML, CSS and JavaScript."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Introduction to Front-end Development with ReactJS",
+      "code": "FQ3PXJFKXZUK",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/FQ3PXJFKXZUK",
+      "skill": {
+        "fr": "Je crée des interfaces avec React.",
+        "en": "I build user interfaces with React."
+      },
+      "featured": true
+    },
+    {
+      "domain": "fullstack",
+      "title": "Front-End Web Development with React",
+      "code": "E9ZUAKNYDJL2",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/E9ZUAKNYDJL2",
+      "skill": {
+        "fr": "Je développe des applications front-end structurées avec React.",
+        "en": "I develop structured front-end apps with React."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Front-End Web UI Frameworks and Tools: Bootstrap 4",
+      "code": "6SADKNQDQK9L",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/6SADKNQDQK9L",
+      "skill": {
+        "fr": "Je compose des interfaces responsives avec Bootstrap.",
+        "en": "I build responsive interfaces with Bootstrap."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Server-side Development with NodeJS, Express and MongoDB",
+      "code": "FJTK7BD4BNW3",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/FJTK7BD4BNW3",
+      "skill": {
+        "fr": "Je crée un serveur web avec Node.js, Express et MongoDB.",
+        "en": "I build a web server with Node.js, Express and MongoDB."
+      },
+      "featured": true
+    },
+    {
+      "domain": "fullstack",
+      "title": "Multiplatform Mobile App Development with React Native",
+      "code": "54BHPUNMM8G3",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/54BHPUNMM8G3",
+      "skill": {
+        "fr": "Je développe une application mobile multiplateforme avec React Native.",
+        "en": "I develop a cross-platform mobile app with React Native."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Build a Full Website using WordPress",
+      "code": "3XR6CPHWE9KY",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/3XR6CPHWE9KY",
+      "skill": {
+        "fr": "Je mets en place un site complet avec WordPress.",
+        "en": "I set up a full website with WordPress."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Use WordPress to Create a Blog for your Business",
+      "code": "6LXU6U2T6LSX",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/6LXU6U2T6LSX",
+      "skill": {
+        "fr": "Je crée un blog professionnel avec WordPress.",
+        "en": "I create a business blog with WordPress."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Deploy a WordPress Website in AWS EC2",
+      "code": "XKTFVLWJBXBN",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/XKTFVLWJBXBN",
+      "skill": {
+        "fr": "Je déploie un site WordPress sur un serveur AWS EC2.",
+        "en": "I deploy a WordPress site on an AWS EC2 server."
+      },
+      "featured": false
+    },
+    {
+      "domain": "fullstack",
+      "title": "Using Efficient Sorting Algorithms in Java to Arrange Tax Data",
+      "code": "4W4ALAKMWJ7H",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/4W4ALAKMWJ7H",
+      "skill": {
+        "fr": "J'applique des algorithmes de tri efficaces en Java.",
+        "en": "I apply efficient sorting algorithms in Java."
+      },
+      "featured": false
+    },
+    {
+      "domain": "uiux",
+      "title": "UX Design Fundamentals",
+      "code": "BFG58WMXM4AV",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/BFG58WMXM4AV",
+      "skill": {
+        "fr": "Je conçois une expérience utilisateur claire et utile.",
+        "en": "I design clear and useful user experiences."
+      },
+      "featured": false
+    },
+    {
+      "domain": "uiux",
+      "title": "Visual Elements of User Interface Design",
+      "code": "GL9KADZLYY4T",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/GL9KADZLYY4T",
+      "skill": {
+        "fr": "Je compose une interface avec une hiérarchie visuelle lisible.",
+        "en": "I compose interfaces with a clear visual hierarchy."
+      },
+      "featured": false
+    },
+    {
+      "domain": "uiux",
+      "title": "Graphic Design",
+      "code": "F4DKZ6NFFSH2",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/F4DKZ6NFFSH2",
+      "skill": {
+        "fr": "J'applique les bases du design graphique à des supports numériques.",
+        "en": "I apply graphic design basics to digital materials."
+      },
+      "featured": false
+    },
+    {
+      "domain": "uiux",
+      "title": "Brand New Brand",
+      "code": "9R5E3A42HAL9",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/9R5E3A42HAL9",
+      "skill": {
+        "fr": "Je construis une identité visuelle cohérente pour un projet.",
+        "en": "I build a coherent visual identity for a project."
+      },
+      "featured": false
+    },
+    {
+      "domain": "security",
+      "title": "Introduction to Cybersecurity Tools & Cyber Attacks",
+      "code": "G2LHF6D87WDW",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/G2LHF6D87WDW",
+      "skill": {
+        "fr": "Je reconnais les types d'attaques et les outils de cybersécurité de base.",
+        "en": "I recognize basic cyber attacks and security tools."
+      },
+      "featured": false
+    },
+    {
+      "domain": "security",
+      "title": "Scripting Bash : Découverte du Langage de Programmation",
+      "code": "S3HNQ9DQULFU",
+      "url": "https://www.coursera.org/account/accomplishments/certificate/S3HNQ9DQULFU",
+      "skill": {
+        "fr": "J'écris des scripts Bash pour automatiser des tâches.",
+        "en": "I write Bash scripts to automate tasks."
+      },
+      "featured": false
+    }
+  ]
+}

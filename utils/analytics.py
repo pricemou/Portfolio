@@ -4,6 +4,7 @@ Module de gestion des analytics et statistiques
 from datetime import datetime, timedelta
 import hashlib
 from database import get_db, row_to_dict, rows_to_list
+from utils.privacy import hash_ip
 
 def track_page_view(conn, page_path, ip_address, user_agent, referer=None):
     """
@@ -27,7 +28,7 @@ def track_page_view(conn, page_path, ip_address, user_agent, referer=None):
         ''', (
             'page_view',
             page_path,
-            ip_address,
+            hash_ip(ip_address),
             user_agent[:500] if user_agent else '',
             referer[:500] if referer else '',
             datetime.now(),
@@ -59,7 +60,7 @@ def track_project_view(conn, project_id, ip_address, user_agent):
         ''', (
             'project_view',
             int(project_id),
-            ip_address,
+            hash_ip(ip_address),
             user_agent[:500] if user_agent else '',
             datetime.now(),
             datetime.now().date()
@@ -87,8 +88,8 @@ def get_visitor_id(ip_address, user_agent):
     Returns:
         str: Hash unique du visiteur
     """
-    combined = f"{ip_address}_{user_agent}"
-    return hashlib.md5(combined.encode()).hexdigest()
+    combined = f"{hash_ip(ip_address)}_{user_agent or ''}"
+    return hashlib.sha256(combined.encode()).hexdigest()[:32]
 
 def track_visitor(conn, ip_address, user_agent, page_path):
     """
@@ -124,7 +125,7 @@ def track_visitor(conn, ip_address, user_agent, page_path):
             ''', (
                 'visitor',
                 visitor_id,
-                ip_address,
+                hash_ip(ip_address),
                 user_agent[:500] if user_agent else '',
                 datetime.now(),
                 today

@@ -1,58 +1,90 @@
-// Gestion du thème clair/sombre
-(function() {
+// Gestion du thème clair/sombre — transitions élégantes
+(function () {
     'use strict';
 
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-    const html = document.documentElement;
+    var html = document.documentElement;
+    var themeToggle = document.getElementById('theme-toggle');
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    var THEME_COLORS = { dark: '#2D2E32', light: '#c5ccd6' };
 
-    // Fonction pour obtenir le thème sauvegardé ou le thème système
     function getInitialTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            return savedTheme;
-        }
-        // Détecter la préférence système
+        try {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'light' || saved === 'dark') return saved;
+        } catch (e) {}
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
             return 'light';
         }
-        return 'dark'; // Par défaut, mode sombre
+        return 'dark';
     }
 
-    // Fonction pour appliquer le thème
-    function setTheme(theme) {
-        html.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        
-        // Mettre à jour l'icône
-        if (themeIcon) {
-            themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+    function updateChrome(theme) {
+        if (metaTheme) metaTheme.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.dark);
+        if (themeToggle) {
+            themeToggle.setAttribute('aria-pressed', theme === 'light' ? 'true' : 'false');
+            themeToggle.dataset.theme = theme;
         }
     }
 
-    // Initialiser le thème au chargement
-    const initialTheme = getInitialTheme();
-    setTheme(initialTheme);
-
-    // Écouter les changements de préférence système
-    if (window.matchMedia) {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
-        mediaQuery.addEventListener('change', (e) => {
-            // Seulement si l'utilisateur n'a pas défini de préférence manuelle
-            if (!localStorage.getItem('theme')) {
-                setTheme(e.matches ? 'light' : 'dark');
-            }
-        });
+    function applyTheme(theme) {
+        html.setAttribute('data-theme', theme);
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {}
+        updateChrome(theme);
     }
 
-    // Gérer le clic sur le bouton toggle
+    function setTheme(theme, withTransition) {
+        if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+        if (html.getAttribute('data-theme') === theme) {
+            updateChrome(theme);
+            return;
+        }
+
+        var run = function () {
+            applyTheme(theme);
+        };
+
+        if (withTransition && typeof document.startViewTransition === 'function') {
+            document.startViewTransition(run);
+            return;
+        }
+
+        if (withTransition) {
+            html.classList.add('theme-animating');
+            run();
+            window.setTimeout(function () {
+                html.classList.remove('theme-animating');
+            }, 480);
+            return;
+        }
+
+        run();
+    }
+
+    // Sync si le script inline a déjà posé data-theme
+    var initial = html.getAttribute('data-theme') || getInitialTheme();
+    applyTheme(initial);
+
+    if (window.matchMedia) {
+        var mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+        var onSystemChange = function (e) {
+            try {
+                if (localStorage.getItem('theme')) return;
+            } catch (err) {}
+            setTheme(e.matches ? 'light' : 'dark', true);
+        };
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', onSystemChange);
+        } else if (mediaQuery.addListener) {
+            mediaQuery.addListener(onSystemChange);
+        }
+    }
+
     if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            setTheme(newTheme);
+        themeToggle.addEventListener('click', function () {
+            var current = html.getAttribute('data-theme') || 'dark';
+            setTheme(current === 'light' ? 'dark' : 'light', true);
         });
     }
 })();
-
-

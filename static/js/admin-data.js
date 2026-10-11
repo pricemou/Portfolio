@@ -77,6 +77,9 @@ function showSection(sectionName) {
         if (typeof initProfileSection === 'function') {
             initProfileSection();
         }
+        if (typeof load2FAStatus === 'function') {
+            load2FAStatus();
+        }
     } else if (sectionName === 'skills') {
         if (typeof initSkillsSection === 'function') {
             initSkillsSection();
@@ -97,6 +100,35 @@ function showSection(sectionName) {
         if (typeof loadHomepageData === 'function') {
             loadHomepageData();
         }
+    } else if (sectionName === 'career') {
+        if (typeof loadCareerAdmin === 'function') {
+            loadCareerAdmin();
+        }
+    } else if (sectionName === 'certifications') {
+        if (typeof loadCertsAdmin === 'function') {
+            loadCertsAdmin();
+        }
+    } else if (sectionName === 'legal') {
+        if (typeof loadLegalPage === 'function') {
+            loadLegalPage();
+        }
+    } else if (sectionName === 'media') {
+        if (typeof loadMediaAdmin === 'function') {
+            loadMediaAdmin();
+        }
+    } else if (sectionName === 'trash') {
+        if (typeof loadTrashAdmin === 'function') {
+            loadTrashAdmin();
+        }
+    } else if (sectionName === 'audit') {
+        if (typeof loadAuditAdmin === 'function') {
+            loadAuditAdmin();
+        }
+    }
+
+    const searchInput = document.getElementById('admin-global-search');
+    if (searchInput && searchInput.value.trim() && typeof filterActiveAdminSection === 'function') {
+        setTimeout(() => filterActiveAdminSection(searchInput.value.trim().toLowerCase()), 120);
     }
 }
 
@@ -106,11 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const sectionFromRoute = (document.body.dataset.activeSection || 'dashboard').trim();
     const validSections = [
         'dashboard', 'homepage', 'skills', 'partners',
-        'projects', 'services', 'contacts', 'profile', 'admins'
+        'projects', 'services', 'career', 'certifications',
+        'contacts', 'media', 'trash', 'audit', 'legal',
+        'profile', 'admins'
     ];
     const currentSection = validSections.includes(sectionFromRoute) ? sectionFromRoute : 'dashboard';
-
-    console.log(`✅ Section active (route): ${currentSection}`);
 
     // Afficher uniquement la section de la route + charger ses données
     showSection(currentSection);
@@ -170,6 +202,7 @@ async function loadHomepageData() {
             if (aboutNameEl) aboutNameEl.value = data.about_name || '';
             if (aboutSubtitleEl) aboutSubtitleEl.value = data.about_subtitle || '';
             if (aboutDescEl) aboutDescEl.value = data.about_description || '';
+            updateHomepagePreview();
         }
     } catch (error) {
         console.error('Erreur lors du chargement des données homepage:', error);
@@ -177,10 +210,34 @@ async function loadHomepageData() {
     }
 }
 
+function updateHomepagePreview() {
+    const setText = (id, value, fallback) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const text = (value || '').trim();
+        el.textContent = text || fallback;
+    };
+
+    const badge = document.getElementById('homepage-badge');
+    const title1 = document.getElementById('homepage-title1');
+    const title2 = document.getElementById('homepage-title2');
+    const description = document.getElementById('homepage-description');
+    const cta = document.getElementById('homepage-cta');
+
+    setText('homepage-preview-badge', badge && badge.value, 'Badge');
+    setText('homepage-preview-title1', title1 && title1.value, 'Titre ligne 1');
+    setText('homepage-preview-title2', title2 && title2.value, 'Titre ligne 2');
+    setText('homepage-preview-description', description && description.value, 'La description du hero apparaîtra ici.');
+    setText('homepage-preview-cta', cta && cta.value, 'Me contacter');
+}
+
 // Attacher l'événement submit au formulaire homepage
 document.addEventListener('DOMContentLoaded', function() {
     const homepageForm = document.getElementById('homepage-form');
     if (homepageForm) {
+        homepageForm.addEventListener('input', updateHomepagePreview);
+        updateHomepagePreview();
+
         homepageForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -269,56 +326,175 @@ async function loadSkills() {
 }
 
 function displaySkills(skills) {
-    const skillsList = document.getElementById('skills-list');
-    if (!skillsList) return;
-    
-    if (skills.length === 0) {
-        skillsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucune compétence disponible.</p>';
-        return;
-    }
-    
-    skillsList.innerHTML = '';
-    skills.forEach(skill => {
-        const card = document.createElement('div');
-        card.className = 'admin-card';
-        card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div>
+    const renderList = (skill) => `
+        <div class="admin-card">
+            <div class="admin-card-row">
+                <div class="admin-card-main">
                     <h3>${skill.title || 'Sans titre'}</h3>
                     <p>${skill.description || ''}</p>
-                    <p style="color: var(--gray); font-size: 0.9rem;">
-                        <strong>Projets:</strong> ${skill.projects_count || 0} | 
-                        <strong>Ordre:</strong> ${skill.order || 0}
-                    </p>
+                    <div class="admin-card-meta">
+                        <span><strong>Projets:</strong> ${skill.projects_count || 0}</span>
+                        <span><strong>Ordre:</strong> ${skill.order || 0}</span>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-sm btn-primary" onclick="editSkill('${skill._id}')">Modifier</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteSkill('${skill._id}')">Supprimer</button>
+                <div class="admin-card-actions">
+                    <button class="btn btn-sm btn-ghost" onclick="editSkill('${skill._id}')"><i class="fas fa-edit"></i> Modifier</button>
+                    <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteSkill('${skill._id}')"><i class="fas fa-trash"></i> Supprimer</button>
                 </div>
             </div>
+        </div>
+    `;
+    const renderGrid = (skill) => {
+        const initial = (skill.title || 'C').trim().charAt(0).toUpperCase();
+        return `
+            <article class="admin-grid-card">
+                <div class="admin-grid-card-icon">${initial}</div>
+                <h3 class="admin-grid-card-title">${skill.title || 'Sans titre'}</h3>
+                <p class="admin-grid-card-text">${skill.description || ''}</p>
+                <div class="admin-card-meta">
+                    <span>${skill.projects_count || 0} projets</span>
+                    <span>Ordre ${skill.order || 0}</span>
+                </div>
+                <div class="admin-card-actions">
+                    <button class="btn btn-sm btn-ghost" onclick="editSkill('${skill._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteSkill('${skill._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </article>
         `;
-        skillsList.appendChild(card);
+    };
+    setAdminListItems('skills', skills, {
+        listId: 'skills-list',
+        paginationId: 'skills-pagination',
+        countId: 'skills-count-label',
+        listBtnId: 'skills-view-list',
+        gridBtnId: 'skills-view-grid',
+        emptyHtml: '<p class="admin-empty">Aucune compétence disponible.</p>',
+        countLabel: (n) => (n === 1 ? '1 compétence' : `${n} compétences`),
+        renderList,
+        renderGrid,
     });
 }
 
 function initSkillsSection() {
     loadSkills();
+    const skillForm = document.getElementById('skill-form');
+    if (skillForm && !skillForm.dataset.bound) {
+        skillForm.addEventListener('submit', handleSkillSubmit);
+        skillForm.dataset.bound = '1';
+    }
 }
 
-function editSkill(skillId) {
-    console.log('Modifier compétence:', skillId);
-    showToast('Fonctionnalité à implémenter', 'info');
+function openModalEl(modal) {
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.classList.add('open');
 }
 
-function deleteSkill(skillId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette compétence ?')) {
-        fetch(`${API_BASE}/skills/${skillId}`, {
-            method: 'DELETE',
-            headers: getHeaders()
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+function closeModalEl(modal) {
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.style.opacity = '0';
+    modal.classList.remove('open');
+}
+
+window.openSkillModal = function openSkillModal() {
+    const modal = document.getElementById('skillModal');
+    const modalTitle = document.getElementById('skillModalTitle');
+    const skillIdInput = document.getElementById('skill-id');
+    const form = document.getElementById('skill-form');
+    openModalEl(modal);
+    if (modalTitle) modalTitle.textContent = 'Nouvelle compétence';
+    if (skillIdInput) skillIdInput.value = '';
+    if (form) {
+        form.reset();
+        const orderInput = document.getElementById('skill-order');
+        const projectsInput = document.getElementById('skill-projects');
+        if (orderInput) orderInput.value = '1';
+        if (projectsInput) projectsInput.value = '0';
+    }
+    setTimeout(() => document.getElementById('skill-title')?.focus(), 100);
+};
+
+window.closeSkillModal = function closeSkillModal() {
+    const modal = document.getElementById('skillModal');
+    closeModalEl(modal);
+    const form = document.getElementById('skill-form');
+    if (form) form.reset();
+    const skillIdInput = document.getElementById('skill-id');
+    if (skillIdInput) skillIdInput.value = '';
+};
+
+window.editSkill = function editSkill(skillId) {
+    const skill = allSkillsData.find(s => String(s._id) === String(skillId));
+    if (!skill) {
+        showToast('Compétence non trouvée', 'error');
+        return;
+    }
+    const modal = document.getElementById('skillModal');
+    openModalEl(modal);
+    const modalTitle = document.getElementById('skillModalTitle');
+    if (modalTitle) modalTitle.textContent = 'Modifier la compétence';
+    const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    };
+    setVal('skill-id', skillId);
+    setVal('skill-title', skill.title || '');
+    setVal('skill-icon', skill.icon || '');
+    setVal('skill-description', skill.description || '');
+    setVal('skill-projects', skill.projects_count ?? 0);
+    setVal('skill-order', skill.order ?? 0);
+    setTimeout(() => document.getElementById('skill-title')?.focus(), 100);
+};
+
+async function handleSkillSubmit(event) {
+    event.preventDefault();
+    const skillId = document.getElementById('skill-id')?.value?.trim();
+    const payload = {
+        title: document.getElementById('skill-title')?.value?.trim() || '',
+        icon: document.getElementById('skill-icon')?.value?.trim() || '',
+        description: document.getElementById('skill-description')?.value?.trim() || '',
+        projects_count: parseInt(document.getElementById('skill-projects')?.value || '0', 10) || 0,
+        order: parseInt(document.getElementById('skill-order')?.value || '0', 10) || 0,
+    };
+    if (!payload.title || !payload.description) {
+        showToast('Titre et description requis', 'error');
+        return;
+    }
+    try {
+        const url = skillId ? `${API_BASE}/skills/${skillId}` : `${API_BASE}/skills`;
+        const method = skillId ? 'PUT' : 'POST';
+        const response = await fetch(url, {
+            method,
+            headers: getHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success !== false) {
+            showToast(skillId ? 'Compétence mise à jour' : 'Compétence créée', 'success');
+            closeSkillModal();
+            loadSkills();
+        } else {
+            showToast(data.error || 'Erreur lors de l’enregistrement', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur skill submit:', error);
+        showToast('Erreur lors de l’enregistrement', 'error');
+    }
+}
+
+window.deleteSkill = function deleteSkill(skillId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette compétence ?')) return;
+    fetch(`${API_BASE}/skills/${skillId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+        credentials: 'same-origin',
+    })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (ok && data.success) {
                 showToast('Compétence supprimée', 'success');
                 loadSkills();
             } else {
@@ -329,8 +505,7 @@ function deleteSkill(skillId) {
             console.error('Erreur:', error);
             showToast('Erreur lors de la suppression', 'error');
         });
-    }
-}
+};
 
 // ========== Partners Management ==========
 let allPartnersData = [];
@@ -370,47 +545,162 @@ async function loadPartners() {
     }
 }
 
+function partnerImageSrc(partner) {
+    const img = partner.image || partner.logo || '';
+    if (!img) return '';
+    if (/^https?:\/\//i.test(img) || img.startsWith('/')) return img;
+    return `/static/${img.replace(/^\//, '')}`;
+}
+
 function displayPartners(partners) {
-    const partnersList = document.getElementById('partners-list');
-    if (!partnersList) return;
-    
-    if (partners.length === 0) {
-        partnersList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun partenaire disponible.</p>';
-        return;
-    }
-    
-    partnersList.innerHTML = '';
-    partners.forEach(partner => {
-        const card = document.createElement('div');
-        card.className = 'admin-card';
-        card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div>
-                        <h3>${partner.name || 'Sans nom'}</h3>
-                        <p style="color: var(--gray); font-size: 0.9rem;">${partner.period || ''} · ordre ${partner.order || 0}</p>
+    const renderList = (partner) => {
+        const src = partnerImageSrc(partner);
+        return `
+            <div class="admin-card">
+                <div class="admin-card-row">
+                    <div class="admin-card-main admin-card-main--media">
+                        ${src ? `<img class="admin-list-thumb" src="${src}" alt="" loading="lazy">` : '<div class="admin-list-thumb admin-list-thumb--empty"><i class="fas fa-handshake"></i></div>'}
+                        <div>
+                            <h3>${partner.name || 'Sans nom'}</h3>
+                            <div class="admin-card-meta">
+                                <span>${partner.period || '—'}</span>
+                                <span><strong>Ordre:</strong> ${partner.order || 0}</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-sm btn-primary" onclick="editPartner('${partner._id}')">Modifier</button>
-                    <button class="btn btn-sm btn-danger" onclick="deletePartner('${partner._id}')">Supprimer</button>
+                    <div class="admin-card-actions">
+                        <button class="btn btn-sm btn-ghost" onclick="editPartner('${partner._id}')"><i class="fas fa-edit"></i> Modifier</button>
+                        <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deletePartner('${partner._id}')"><i class="fas fa-trash"></i> Supprimer</button>
+                    </div>
                 </div>
             </div>
         `;
-        partnersList.appendChild(card);
+    };
+    const renderGrid = (partner) => {
+        const src = partnerImageSrc(partner);
+        return `
+            <article class="admin-grid-card">
+                <div class="admin-grid-card-media">
+                    ${src ? `<img src="${src}" alt="" loading="lazy">` : '<div class="admin-grid-fallback"><i class="fas fa-handshake"></i></div>'}
+                </div>
+                <h3 class="admin-grid-card-title">${partner.name || 'Sans nom'}</h3>
+                <div class="admin-card-meta">
+                    <span>${partner.period || '—'}</span>
+                    <span>Ordre ${partner.order || 0}</span>
+                </div>
+                <div class="admin-card-actions">
+                    <button class="btn btn-sm btn-ghost" onclick="editPartner('${partner._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deletePartner('${partner._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </article>
+        `;
+    };
+    setAdminListItems('partners', partners, {
+        listId: 'partners-list',
+        paginationId: 'partners-pagination',
+        countId: 'partners-count-label',
+        listBtnId: 'partners-view-list',
+        gridBtnId: 'partners-view-grid',
+        emptyHtml: '<p class="admin-empty">Aucun partenaire disponible.</p>',
+        countLabel: (n) => (n === 1 ? '1 partenaire' : `${n} partenaires`),
+        renderList,
+        renderGrid,
     });
 }
 
 function initPartnersSection() {
     loadPartners();
+    const partnerForm = document.getElementById('partner-form');
+    if (partnerForm && !partnerForm.dataset.bound) {
+        partnerForm.addEventListener('submit', handlePartnerSubmit);
+        partnerForm.dataset.bound = '1';
+    }
 }
 
-function editPartner(partnerId) {
-    console.log('Modifier partenaire:', partnerId);
-    showToast('Fonctionnalité à implémenter', 'info');
+window.openPartnerModal = function openPartnerModal() {
+    const modal = document.getElementById('partnerModal');
+    const modalTitle = document.getElementById('partnerModalTitle');
+    const partnerIdInput = document.getElementById('partner-id');
+    const form = document.getElementById('partner-form');
+    openModalEl(modal);
+    if (modalTitle) modalTitle.textContent = 'Nouveau partenaire';
+    if (partnerIdInput) partnerIdInput.value = '';
+    if (form) {
+        form.reset();
+        const orderInput = document.getElementById('partner-order');
+        if (orderInput) orderInput.value = '1';
+    }
+    setTimeout(() => document.getElementById('partner-name')?.focus(), 100);
+};
+
+window.closePartnerModal = function closePartnerModal() {
+    const modal = document.getElementById('partnerModal');
+    closeModalEl(modal);
+    const form = document.getElementById('partner-form');
+    if (form) form.reset();
+    const partnerIdInput = document.getElementById('partner-id');
+    if (partnerIdInput) partnerIdInput.value = '';
+};
+
+window.editPartner = function editPartner(partnerId) {
+    const partner = allPartnersData.find(p => String(p._id) === String(partnerId));
+    if (!partner) {
+        showToast('Partenaire non trouvé', 'error');
+        return;
+    }
+    const modal = document.getElementById('partnerModal');
+    openModalEl(modal);
+    const modalTitle = document.getElementById('partnerModalTitle');
+    if (modalTitle) modalTitle.textContent = 'Modifier le partenaire';
+    const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    };
+    setVal('partner-id', partnerId);
+    setVal('partner-name', partner.name || '');
+    setVal('partner-image', partner.image || partner.logo || '');
+    setVal('partner-order', partner.order ?? 0);
+    setTimeout(() => document.getElementById('partner-name')?.focus(), 100);
+};
+
+async function handlePartnerSubmit(event) {
+    event.preventDefault();
+    const partnerId = document.getElementById('partner-id')?.value?.trim();
+    const image = document.getElementById('partner-image')?.value?.trim() || '';
+    const payload = {
+        name: document.getElementById('partner-name')?.value?.trim() || '',
+        image,
+        logo: image,
+        order: parseInt(document.getElementById('partner-order')?.value || '0', 10) || 0,
+    };
+    if (!payload.name) {
+        showToast('Nom requis', 'error');
+        return;
+    }
+    try {
+        const url = partnerId ? `${API_BASE}/partners/${partnerId}` : `${API_BASE}/partners`;
+        const method = partnerId ? 'PUT' : 'POST';
+        const response = await fetch(url, {
+            method,
+            headers: getHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success !== false) {
+            showToast(partnerId ? 'Partenaire mis à jour' : 'Partenaire créé', 'success');
+            closePartnerModal();
+            loadPartners();
+        } else {
+            showToast(data.error || 'Erreur lors de l’enregistrement', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur partner submit:', error);
+        showToast('Erreur lors de l’enregistrement', 'error');
+    }
 }
 
-async function deletePartner(partnerId) {
+window.deletePartner = async function deletePartner(partnerId) {
     if (!partnerId) {
         showToast('ID partenaire invalide', 'error');
         return;
@@ -449,7 +739,7 @@ async function deletePartner(partnerId) {
         console.error('Erreur:', error);
         showToast('Erreur lors de la suppression', 'error');
     }
-}
+};
 
 // ========== Projects Management ==========
 let allProjectsData = [];
@@ -489,77 +779,225 @@ async function loadProjects() {
     }
 }
 
+function projectCoverSrc(project) {
+    const img = project.image || project.cover || project.thumbnail || '';
+    if (!img) return '';
+    if (/^https?:\/\//i.test(img) || img.startsWith('/')) return img;
+    return `/static/${img.replace(/^\//, '')}`;
+}
+
 function displayProjects(projects) {
-    const projectsList = document.getElementById('projects-list');
-    if (!projectsList) return;
-    
-    if (projects.length === 0) {
-        projectsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun projet disponible.</p>';
-        return;
-    }
-    
-    projectsList.innerHTML = '';
-    projects.forEach(project => {
-        const card = document.createElement('div');
-        card.className = 'admin-card';
-        
-        const statusBadge = project.status === 'published' 
-            ? '<span style="background: var(--green); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">● Publié</span>' 
-            : project.status === 'draft' 
-            ? '<span style="background: orange; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">● Brouillon</span>' 
-            : '<span style="background: gray; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">● Archivé</span>';
-        
-        const featuredBadge = project.featured 
-            ? '<span style="background: var(--primary); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;"><i class="fas fa-star"></i> Vedette</span>' 
-            : '';
-        
+    const statusBadge = (project) => (
+        project.status === 'published'
+            ? '<span class="admin-badge">Publié</span>'
+            : project.status === 'draft'
+            ? '<span class="admin-badge admin-badge--draft">Brouillon</span>'
+            : '<span class="admin-badge admin-badge--archived">Archivé</span>'
+    );
+    const renderList = (project) => {
         const description = project.description || '';
         const truncatedDesc = description.length > 100 ? description.substring(0, 100) + '...' : description;
-        
         const links = [];
-        if (project.link) links.push(`<a href="${escapeHtml(project.link)}" target="_blank" style="color: var(--green); margin-right: 0.5rem;"><i class="fas fa-external-link-alt"></i> Site</a>`);
-        if (project.github_link) links.push(`<a href="${escapeHtml(project.github_link)}" target="_blank" style="color: var(--green);"><i class="fab fa-github"></i> GitHub</a>`);
-        
-        card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                        <h3 style="margin: 0;">${escapeHtml(project.title || 'Sans titre')}</h3>
-                        ${statusBadge}
-                        ${featuredBadge}
+        if (project.link) links.push(`<a href="${escapeHtml(project.link)}" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Site</a>`);
+        if (project.github_link) links.push(`<a href="${escapeHtml(project.github_link)}" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>`);
+        const cover = projectCoverSrc(project);
+        return `
+            <div class="admin-card">
+                <div class="admin-card-row">
+                    <div class="admin-card-main admin-card-main--media">
+                        ${cover ? `<img class="admin-list-thumb" src="${cover}" alt="" loading="lazy">` : '<div class="admin-list-thumb admin-list-thumb--empty"><i class="fas fa-folder"></i></div>'}
+                        <div>
+                            <div class="admin-card-title-row">
+                                <h3>${escapeHtml(project.title || 'Sans titre')}</h3>
+                                ${statusBadge(project)}
+                                ${project.featured ? '<span class="admin-badge admin-badge--featured"><i class="fas fa-star"></i> Vedette</span>' : ''}
+                            </div>
+                            <p><strong>Technologies:</strong> ${escapeHtml(project.technologies || 'N/A')}</p>
+                            <p>${escapeHtml(truncatedDesc)}</p>
+                            ${links.length ? `<div class="admin-card-links">${links.join('')}</div>` : ''}
+                            <div class="admin-card-meta">
+                                <span><strong>Ordre:</strong> ${project.order || 0}</span>
+                                ${project.views !== undefined ? `<span><strong>Vues:</strong> ${project.views || 0}</span>` : ''}
+                            </div>
+                        </div>
                     </div>
-                    <p style="color: var(--gray); margin: 0.5rem 0;"><strong>Technologies:</strong> ${escapeHtml(project.technologies || 'N/A')}</p>
-                    <p style="color: var(--gray); margin: 0.5rem 0; line-height: 1.5;">${escapeHtml(truncatedDesc)}</p>
-                    ${links.length > 0 ? `<div style="margin-top: 0.5rem;">${links.join('')}</div>` : ''}
-                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.85rem; color: var(--gray);">
-                        <span><strong>Ordre:</strong> ${project.order || 0}</span>
-                        ${project.views !== undefined ? `<span><strong>Vues:</strong> ${project.views || 0}</span>` : ''}
+                    <div class="admin-card-actions">
+                        <button class="btn btn-sm btn-ghost" onclick="viewProjectDetail('${project._id}')"><i class="fas fa-eye"></i> Détail</button>
+                        <button class="btn btn-sm btn-ghost" onclick="editProject('${project._id}')"><i class="fas fa-edit"></i> Modifier</button>
+                        <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteProject('${project._id}', '${escapeHtml(project.title)}')"><i class="fas fa-trash"></i> Supprimer</button>
                     </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                    <button class="btn btn-sm btn-info" onclick="viewProjectDetail('${project._id}')" title="Voir détail">
-                        <i class="fas fa-eye"></i> Détail
-                    </button>
-                    <button class="btn btn-sm btn-primary" onclick="editProject('${project._id}')" title="Modifier">
-                        <i class="fas fa-edit"></i> Modifier
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteProject('${project._id}', '${escapeHtml(project.title)}')" title="Supprimer">
-                        <i class="fas fa-trash"></i> Supprimer
-                    </button>
                 </div>
             </div>
         `;
-        projectsList.appendChild(card);
+    };
+    const renderGrid = (project) => {
+        const cover = projectCoverSrc(project);
+        const description = project.description || '';
+        const truncatedDesc = description.length > 90 ? description.substring(0, 90) + '...' : description;
+        return `
+            <article class="admin-grid-card">
+                <div class="admin-grid-card-media">
+                    ${cover ? `<img src="${cover}" alt="" loading="lazy">` : '<div class="admin-grid-fallback"><i class="fas fa-folder"></i></div>'}
+                    ${project.featured ? '<span class="admin-badge admin-badge--featured admin-grid-badge"><i class="fas fa-star"></i></span>' : ''}
+                </div>
+                <div class="admin-card-title-row">
+                    <h3 class="admin-grid-card-title">${escapeHtml(project.title || 'Sans titre')}</h3>
+                    ${statusBadge(project)}
+                </div>
+                <p class="admin-grid-card-text">${escapeHtml(truncatedDesc)}</p>
+                <div class="admin-card-actions">
+                    <button class="btn btn-sm btn-ghost" onclick="viewProjectDetail('${project._id}')"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-ghost" onclick="editProject('${project._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteProject('${project._id}', '${escapeHtml(project.title)}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </article>
+        `;
+    };
+    setAdminListItems('projects', projects, {
+        listId: 'projects-list',
+        paginationId: 'projects-pagination',
+        countId: 'projects-count-label',
+        listBtnId: 'projects-view-list',
+        gridBtnId: 'projects-view-grid',
+        emptyHtml: '<p class="admin-empty">Aucun projet disponible.</p>',
+        countLabel: (n) => (n === 1 ? '1 projet' : `${n} projets`),
+        renderList,
+        renderGrid,
     });
 }
 
 function initProjectsSection() {
     loadProjects();
-    // Initialiser le formulaire de projet
     const projectForm = document.getElementById('project-form');
-    if (projectForm) {
+    if (projectForm && !projectForm.dataset.bound) {
         projectForm.addEventListener('submit', handleProjectSubmit);
+        projectForm.dataset.bound = '1';
     }
+    const mainFile = document.getElementById('project-image-file');
+    const extraFiles = document.getElementById('project-additional-files');
+    if (mainFile && !mainFile.dataset.bound) {
+        mainFile.addEventListener('change', () => renderProjectMainPreview());
+        mainFile.dataset.bound = '1';
+    }
+    if (extraFiles && !extraFiles.dataset.bound) {
+        extraFiles.addEventListener('change', () => renderProjectAdditionalPreview());
+        extraFiles.dataset.bound = '1';
+    }
+}
+
+function projectMediaSrc(path) {
+    if (!path) return '';
+    const p = String(path).trim();
+    if (!p) return '';
+    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('/')) return p;
+    return `/static/${p}`;
+}
+
+function parseAdditionalImages(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+    return String(value).split(',').map(v => v.trim()).filter(Boolean);
+}
+
+function resetProjectImageFields() {
+    const mainHidden = document.getElementById('project-image');
+    const extraHidden = document.getElementById('project-additional-images');
+    const mainFile = document.getElementById('project-image-file');
+    const extraFiles = document.getElementById('project-additional-files');
+    if (mainHidden) mainHidden.value = '';
+    if (extraHidden) extraHidden.value = '';
+    if (mainFile) mainFile.value = '';
+    if (extraFiles) extraFiles.value = '';
+    renderProjectMainPreview();
+    renderProjectAdditionalPreview();
+}
+
+function renderProjectMainPreview() {
+    const box = document.getElementById('project-image-preview');
+    const hidden = document.getElementById('project-image');
+    const fileInput = document.getElementById('project-image-file');
+    if (!box) return;
+    box.innerHTML = '';
+    const file = fileInput?.files?.[0];
+    if (file) {
+        const url = URL.createObjectURL(file);
+        box.innerHTML = `
+            <div class="project-upload-thumb">
+                <img src="${url}" alt="Aperçu image principale">
+                <button type="button" title="Retirer" aria-label="Retirer" onclick="clearProjectMainImage()">&times;</button>
+            </div>`;
+        return;
+    }
+    const path = hidden?.value?.trim();
+    if (path) {
+        box.innerHTML = `
+            <div class="project-upload-thumb">
+                <img src="${escapeHtml(projectMediaSrc(path))}" alt="Image principale">
+                <button type="button" title="Retirer" aria-label="Retirer" onclick="clearProjectMainImage()">&times;</button>
+            </div>`;
+    }
+}
+
+window.clearProjectMainImage = function clearProjectMainImage() {
+    const hidden = document.getElementById('project-image');
+    const fileInput = document.getElementById('project-image-file');
+    if (hidden) hidden.value = '';
+    if (fileInput) fileInput.value = '';
+    renderProjectMainPreview();
+};
+
+function renderProjectAdditionalPreview() {
+    const box = document.getElementById('project-additional-preview');
+    const hidden = document.getElementById('project-additional-images');
+    const fileInput = document.getElementById('project-additional-files');
+    if (!box) return;
+    const existing = parseAdditionalImages(hidden?.value);
+    const pending = Array.from(fileInput?.files || []);
+    box.innerHTML = '';
+
+    existing.forEach((path, index) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'project-upload-thumb';
+        thumb.innerHTML = `
+            <img src="${escapeHtml(projectMediaSrc(path))}" alt="Image ${index + 1}">
+            <button type="button" title="Retirer" aria-label="Retirer">&times;</button>`;
+        thumb.querySelector('button').addEventListener('click', () => {
+            existing.splice(index, 1);
+            if (hidden) hidden.value = existing.join(', ');
+            renderProjectAdditionalPreview();
+        });
+        box.appendChild(thumb);
+    });
+
+    pending.forEach((file, index) => {
+        const url = URL.createObjectURL(file);
+        const thumb = document.createElement('div');
+        thumb.className = 'project-upload-thumb';
+        thumb.innerHTML = `
+            <img src="${url}" alt="${escapeHtml(file.name)}">
+            <button type="button" title="Retirer" aria-label="Retirer">&times;</button>`;
+        thumb.querySelector('button').addEventListener('click', () => {
+            const dt = new DataTransfer();
+            pending.forEach((f, i) => {
+                if (i !== index) dt.items.add(f);
+            });
+            if (fileInput) fileInput.files = dt.files;
+            renderProjectAdditionalPreview();
+        });
+        box.appendChild(thumb);
+    });
+}
+
+async function uploadProjectMediaFile(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('alt_text', file.name || 'project');
+    const res = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(data.error || `Échec upload (${file.name})`);
+    }
+    return data.asset?.path || '';
 }
 
 // Exposer la fonction globalement
@@ -569,7 +1007,6 @@ window.openProjectModal = function openProjectModal() {
     const projectIdInput = document.getElementById('project-id');
     
     if (modal) {
-        // Afficher la modale avec les styles nécessaires
         modal.style.display = 'flex';
         modal.style.opacity = '1';
         modal.classList.add('open');
@@ -577,7 +1014,6 @@ window.openProjectModal = function openProjectModal() {
         if (modalTitle) modalTitle.textContent = 'Nouveau projet';
         if (projectIdInput) projectIdInput.value = '';
         
-        // Réinitialiser le formulaire
         const form = document.getElementById('project-form');
         if (form) {
             form.reset();
@@ -588,8 +1024,8 @@ window.openProjectModal = function openProjectModal() {
             if (orderInput) orderInput.value = '0';
             if (featuredInput) featuredInput.checked = false;
         }
+        resetProjectImageFields();
         
-        // Focus sur le premier champ après un court délai pour l'animation
         setTimeout(() => {
             const titleInput = document.getElementById('project-title');
             if (titleInput) titleInput.focus();
@@ -612,6 +1048,7 @@ window.closeProjectModal = function closeProjectModal() {
             const projectIdInput = document.getElementById('project-id');
             if (projectIdInput) projectIdInput.value = '';
         }
+        resetProjectImageFields();
     }
 };
 
@@ -633,12 +1070,13 @@ async function editProject(projectId) {
     const githubInput = document.getElementById('project-github');
     const imageInput = document.getElementById('project-image');
     const additionalImagesInput = document.getElementById('project-additional-images');
+    const mainFileInput = document.getElementById('project-image-file');
+    const extraFilesInput = document.getElementById('project-additional-files');
     const statusInput = document.getElementById('project-status');
     const orderInput = document.getElementById('project-order');
     const featuredInput = document.getElementById('project-featured');
     
     if (modal) {
-        // Afficher la modale avec les styles nécessaires
         modal.style.display = 'flex';
         modal.style.opacity = '1';
         modal.classList.add('open');
@@ -650,18 +1088,19 @@ async function editProject(projectId) {
         if (descriptionInput) descriptionInput.value = project.description || '';
         if (linkInput) linkInput.value = project.link || '';
         if (githubInput) githubInput.value = project.github_link || '';
+        if (mainFileInput) mainFileInput.value = '';
+        if (extraFilesInput) extraFilesInput.value = '';
         if (imageInput) imageInput.value = project.image || '';
         if (additionalImagesInput) {
-            const additionalImages = project.additional_images || '';
-            additionalImagesInput.value = Array.isArray(additionalImages) 
-                ? additionalImages.join(', ') 
-                : additionalImages;
+            const additionalImages = parseAdditionalImages(project.additional_images || '');
+            additionalImagesInput.value = additionalImages.join(', ');
         }
+        renderProjectMainPreview();
+        renderProjectAdditionalPreview();
         if (statusInput) statusInput.value = project.status || 'published';
         if (orderInput) orderInput.value = project.order || 0;
         if (featuredInput) featuredInput.checked = project.featured || false;
         
-        // Focus sur le titre après un court délai
         setTimeout(() => {
             if (titleInput) titleInput.focus();
         }, 100);
@@ -679,6 +1118,8 @@ async function handleProjectSubmit(event) {
     const githubInput = document.getElementById('project-github');
     const imageInput = document.getElementById('project-image');
     const additionalImagesInput = document.getElementById('project-additional-images');
+    const mainFileInput = document.getElementById('project-image-file');
+    const extraFilesInput = document.getElementById('project-additional-files');
     const statusInput = document.getElementById('project-status');
     const orderInput = document.getElementById('project-order');
     const featuredInput = document.getElementById('project-featured');
@@ -690,13 +1131,12 @@ async function handleProjectSubmit(event) {
     const description = descriptionInput ? descriptionInput.value.trim() : '';
     const link = linkInput ? linkInput.value.trim() : '';
     const github = githubInput ? githubInput.value.trim() : '';
-    const image = imageInput ? imageInput.value.trim() : '';
-    const additionalImages = additionalImagesInput ? additionalImagesInput.value.trim() : '';
+    let image = imageInput ? imageInput.value.trim() : '';
+    let additionalImages = additionalImagesInput ? additionalImagesInput.value.trim() : '';
     const status = statusInput ? statusInput.value : 'published';
     const order = orderInput ? parseInt(orderInput.value) || 0 : 0;
     const featured = featuredInput ? featuredInput.checked : false;
     
-    // Validation
     if (!title) {
         showToast('Le titre est requis', 'error');
         if (titleInput) titleInput.focus();
@@ -715,7 +1155,6 @@ async function handleProjectSubmit(event) {
         return;
     }
     
-    // Validation des URLs
     if (link && !link.match(/^https?:\/\/.+/)) {
         showToast('Format d\'URL de lien invalide', 'error');
         if (linkInput) linkInput.focus();
@@ -728,14 +1167,33 @@ async function handleProjectSubmit(event) {
         return;
     }
     
-    // Désactiver le bouton pendant la requête
     const originalBtnText = submitBtn ? submitBtn.textContent : '';
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = projectId ? 'Mise à jour...' : 'Création...';
+        submitBtn.textContent = 'Téléversement...';
     }
     
     try {
+        const mainFile = mainFileInput?.files?.[0];
+        if (mainFile) {
+            image = await uploadProjectMediaFile(mainFile);
+            if (imageInput) imageInput.value = image;
+        }
+
+        const extraFiles = Array.from(extraFilesInput?.files || []);
+        if (extraFiles.length) {
+            const uploaded = [];
+            for (const file of extraFiles) {
+                uploaded.push(await uploadProjectMediaFile(file));
+            }
+            const merged = [...parseAdditionalImages(additionalImages), ...uploaded.filter(Boolean)];
+            additionalImages = merged.join(', ');
+            if (additionalImagesInput) additionalImagesInput.value = additionalImages;
+            if (extraFilesInput) extraFilesInput.value = '';
+        }
+
+        if (submitBtn) submitBtn.textContent = projectId ? 'Mise à jour...' : 'Création...';
+
         const url = projectId ? `${API_BASE}/projects/${projectId}` : `${API_BASE}/projects`;
         const method = projectId ? 'PUT' : 'POST';
         
@@ -745,13 +1203,13 @@ async function handleProjectSubmit(event) {
             description: description,
             status: status,
             order: order,
-            featured: featured
+            featured: featured,
+            image: image || '',
+            additional_images: additionalImages || '',
         };
         
         if (link) requestData.link = link;
         if (github) requestData.github_link = github;
-        if (image) requestData.image = image;
-        if (additionalImages) requestData.additional_images = additionalImages;
         
         const response = await fetch(url, {
             method: method,
@@ -773,9 +1231,7 @@ async function handleProjectSubmit(event) {
         showToast(projectId ? 'Projet mis à jour avec succès' : 'Projet créé avec succès', 'success');
         closeProjectModal();
         
-        // Mettre à jour la liste localement
         if (projectId) {
-            // Mise à jour
             const projectIndex = allProjectsData.findIndex(p => p._id === projectId);
             if (projectIndex !== -1) {
             allProjectsData[projectIndex] = {
@@ -793,7 +1249,6 @@ async function handleProjectSubmit(event) {
             };
             }
         } else {
-            // Création
             const newProject = {
                 _id: data.id,
                 title: title,
@@ -811,7 +1266,6 @@ async function handleProjectSubmit(event) {
                 updated_at: new Date().toISOString()
             };
             allProjectsData.push(newProject);
-            // Trier par ordre
             allProjectsData.sort((a, b) => (a.order || 0) - (b.order || 0));
         }
         
@@ -865,22 +1319,14 @@ window.viewProjectDetail = async function viewProjectDetail(projectId) {
     let imagesHtml = '';
     const allImages = [];
     
-    // Ajouter l'image principale
     if (project.image) {
-        allImages.push({ url: project.image, isMain: true });
+        allImages.push({ url: projectMediaSrc(project.image), isMain: true });
     }
     
-    // Ajouter les images supplémentaires
     if (project.additional_images) {
-        const additionalImages = typeof project.additional_images === 'string' 
-            ? project.additional_images.split(',').map(img => img.trim()).filter(img => img)
-            : Array.isArray(project.additional_images) 
-            ? project.additional_images 
-            : [];
-        
-        additionalImages.forEach(img => {
+        parseAdditionalImages(project.additional_images).forEach(img => {
             if (img && img !== project.image) {
-                allImages.push({ url: img, isMain: false });
+                allImages.push({ url: projectMediaSrc(img), isMain: false });
             }
         });
     }
@@ -900,7 +1346,7 @@ window.viewProjectDetail = async function viewProjectDetail(projectId) {
                                  onclick="window.open('${escapeHtml(img.url)}', '_blank')"
                                  onmouseover="this.style.transform='scale(1.05)'"
                                  onmouseout="this.style.transform='scale(1)'"
-                                 onerror="this.src='https://via.placeholder.com/400x200?text=Image+non+disponible'">
+                                 onerror="this.style.opacity='0.3'">
                             ${img.isMain ? `
                                 <div style="position: absolute; top: 0.5rem; right: 0.5rem; background: var(--green); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
                                     <i class="fas fa-star"></i> Principale
@@ -1072,44 +1518,53 @@ async function loadServices() {
 }
 
 function displayServices(services) {
-    const servicesList = document.getElementById('services-list');
-    if (!servicesList) return;
-    
-    if (services.length === 0) {
-        servicesList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun service disponible.</p>';
-        return;
-    }
-    
-    servicesList.innerHTML = '';
-    services.forEach(service => {
-        const card = document.createElement('div');
-        card.className = 'admin-card';
-        
+    const renderList = (service) => {
         const description = service.description || '';
         const truncatedDesc = description.length > 150 ? description.substring(0, 150) + '...' : description;
-        const iconDisplay = service.icon ? `<div style="margin-bottom: 0.5rem;"><i class="fas fa-image" style="color: var(--green);"></i> <span style="font-size: 0.85rem; color: var(--gray);">${escapeHtml(service.icon)}</span></div>` : '';
-        
-        card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
-                <div style="flex: 1;">
-                    <h3 style="margin: 0 0 0.5rem 0;">${escapeHtml(service.title || 'Sans titre')}</h3>
-                    ${iconDisplay}
-                    <p style="color: var(--gray); margin: 0.5rem 0; line-height: 1.5;">${escapeHtml(truncatedDesc)}</p>
-                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.85rem; color: var(--gray);">
-                        <span><strong>Ordre:</strong> ${service.order || 0}</span>
+        return `
+            <div class="admin-card">
+                <div class="admin-card-row">
+                    <div class="admin-card-main">
+                        <h3>${escapeHtml(service.title || 'Sans titre')}</h3>
+                        ${service.icon ? `<div class="admin-card-meta"><span><i class="fas fa-image" style="color:var(--green)"></i> ${escapeHtml(service.icon)}</span></div>` : ''}
+                        <p>${escapeHtml(truncatedDesc)}</p>
+                        <div class="admin-card-meta"><span><strong>Ordre:</strong> ${service.order || 0}</span></div>
                     </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                    <button class="btn btn-sm btn-primary" onclick="editService('${service._id}')" title="Modifier">
-                        <i class="fas fa-edit"></i> Modifier
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteService('${service._id}', '${escapeHtml(service.title)}')" title="Supprimer">
-                        <i class="fas fa-trash"></i> Supprimer
-                    </button>
+                    <div class="admin-card-actions">
+                        <button class="btn btn-sm btn-ghost" onclick="editService('${service._id}')"><i class="fas fa-edit"></i> Modifier</button>
+                        <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteService('${service._id}', '${escapeHtml(service.title)}')"><i class="fas fa-trash"></i> Supprimer</button>
+                    </div>
                 </div>
             </div>
         `;
-        servicesList.appendChild(card);
+    };
+    const renderGrid = (service) => {
+        const description = service.description || '';
+        const truncatedDesc = description.length > 100 ? description.substring(0, 100) + '...' : description;
+        const initial = (service.title || 'S').trim().charAt(0).toUpperCase();
+        return `
+            <article class="admin-grid-card">
+                <div class="admin-grid-card-icon">${initial}</div>
+                <h3 class="admin-grid-card-title">${escapeHtml(service.title || 'Sans titre')}</h3>
+                <p class="admin-grid-card-text">${escapeHtml(truncatedDesc)}</p>
+                <div class="admin-card-meta"><span>Ordre ${service.order || 0}</span></div>
+                <div class="admin-card-actions">
+                    <button class="btn btn-sm btn-ghost" onclick="editService('${service._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteService('${service._id}', '${escapeHtml(service.title)}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </article>
+        `;
+    };
+    setAdminListItems('services', services, {
+        listId: 'services-list',
+        paginationId: 'services-pagination',
+        countId: 'services-count-label',
+        listBtnId: 'services-view-list',
+        gridBtnId: 'services-view-grid',
+        emptyHtml: '<p class="admin-empty">Aucun service disponible.</p>',
+        countLabel: (n) => (n === 1 ? '1 service' : `${n} services`),
+        renderList,
+        renderGrid,
     });
 }
 
@@ -1393,86 +1848,82 @@ async function loadContacts() {
         showToast('Erreur lors du chargement des contacts', 'error');
         const contactsList = document.getElementById('contacts-list');
         if (contactsList) {
-            contactsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun message disponible.</p>';
+            contactsList.innerHTML = '<p class="admin-empty">Aucun message disponible.</p>';
         }
         updateContactsCount([]);
     }
 }
 
 function displayContacts(contacts) {
-    const contactsList = document.getElementById('contacts-list');
-    if (!contactsList) return;
-    
-    if (contacts.length === 0) {
-        contactsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun message disponible.</p>';
-        updateContactsCount(); // Utiliser allContacts pour le compteur
-        return;
-    }
-    
-    // Mettre à jour le compteur avec tous les contacts
     updateContactsCount();
-    
-    contactsList.innerHTML = '';
-    contacts.forEach(contact => {
-        const card = document.createElement('div');
-        card.className = 'admin-card';
-        
-        // Style pour les messages non lus
-        const isUnread = !contact.read;
-        if (isUnread) {
-            card.style.borderLeft = '4px solid var(--green)';
-            card.style.backgroundColor = 'var(--dark-bg)';
-        }
-        
-        const date = new Date(contact.created_at);
-        const formattedDate = date.toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+    const formatDate = (value) => {
+        const date = new Date(value);
+        return date.toLocaleDateString('fr-FR', {
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
-        
-        const readBadge = isUnread 
-            ? '<span style="background: var(--green); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">NON LU</span>'
-            : '<span style="background: var(--gray); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">LU</span>';
-        
-        card.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <h3 style="margin: 0; ${isUnread ? 'font-weight: bold;' : ''}">${escapeHtml(contact.subject || 'Sans sujet')}</h3>
-                            ${readBadge}
+    };
+    const actions = (contact, isUnread) => `
+        ${isUnread
+            ? `<button type="button" class="btn btn-ghost btn-sm" onclick="markContactRead('${contact._id}', true)"><i class="fas fa-check"></i> Marquer lu</button>`
+            : `<button type="button" class="btn btn-ghost btn-sm" onclick="markContactRead('${contact._id}', false)"><i class="fas fa-envelope"></i> Non lu</button>`}
+        <a href="mailto:${contact.email}?subject=Re: ${encodeURIComponent(contact.subject || '')}" class="btn btn-ghost btn-sm" target="_blank" rel="noopener"><i class="fas fa-reply"></i> Répondre</a>
+        <button type="button" class="btn btn-ghost btn-sm btn-danger-ghost" onclick="deleteContact('${contact._id}')"><i class="fas fa-trash"></i> Supprimer</button>
+    `;
+    const renderList = (contact) => {
+        const isUnread = !contact.read;
+        const initial = (contact.name || contact.email || '?').trim().charAt(0).toUpperCase();
+        return `
+            <article class="contact-item${isUnread ? ' is-unread' : ''}">
+                <div class="contact-item-avatar" aria-hidden="true">${escapeHtml(initial)}</div>
+                <div class="contact-item-body">
+                    <div class="contact-item-top">
+                        <div class="contact-item-heading">
+                            <h3 class="contact-item-subject">${escapeHtml(contact.subject || 'Sans sujet')}</h3>
+                            ${isUnread ? '<span class="contact-dot" title="Non lu"></span>' : ''}
                         </div>
-                        <div style="color: var(--gray); font-size: 0.9rem; margin-top: 0.5rem;">
-                            <p><strong>De:</strong> ${escapeHtml(contact.name)} (<a href="mailto:${contact.email}" style="color: var(--green);">${escapeHtml(contact.email)}</a>)</p>
-                            <p><strong>Date:</strong> ${formattedDate}</p>
-                        </div>
-                        <div style="background: var(--dark-bg); padding: 1rem; border-radius: 8px; margin-top: 0.5rem; max-height: 200px; overflow-y: auto;">
-                            <p style="color: var(--white); white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(contact.message || '')}</p>
-                        </div>
+                        <time class="contact-item-date">${formatDate(contact.created_at)}</time>
                     </div>
+                    <p class="contact-item-from">
+                        <span>${escapeHtml(contact.name || 'Anonyme')}</span>
+                        <a href="mailto:${escapeHtml(contact.email)}">${escapeHtml(contact.email || '')}</a>
+                    </p>
+                    <p class="contact-item-preview">${escapeHtml((contact.message || '').trim()) || '—'}</p>
+                    <div class="contact-item-actions">${actions(contact, isUnread)}</div>
                 </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    ${isUnread 
-                        ? `<button class="btn btn-sm btn-success" onclick="markContactRead('${contact._id}', true)" title="Marquer comme lu">
-                            <i class="fas fa-check"></i> Marquer comme lu
-                        </button>`
-                        : `<button class="btn btn-sm btn-secondary" onclick="markContactRead('${contact._id}', false)" title="Marquer comme non lu">
-                            <i class="fas fa-envelope"></i> Marquer comme non lu
-                        </button>`
-                    }
-                    <a href="mailto:${contact.email}?subject=Re: ${encodeURIComponent(contact.subject || '')}" class="btn btn-sm btn-primary" target="_blank">
-                        <i class="fas fa-reply"></i> Répondre
-                    </a>
-                    <button class="btn btn-sm btn-danger" onclick="deleteContact('${contact._id}')" title="Supprimer">
-                        <i class="fas fa-trash"></i> Supprimer
-                    </button>
-                </div>
-            </div>
+            </article>
         `;
-        contactsList.appendChild(card);
+    };
+    const renderGrid = (contact) => {
+        const isUnread = !contact.read;
+        const initial = (contact.name || contact.email || '?').trim().charAt(0).toUpperCase();
+        const preview = ((contact.message || '').trim()).slice(0, 120);
+        return `
+            <article class="admin-grid-card contact-grid-card${isUnread ? ' is-unread' : ''}">
+                <div class="admin-grid-card-icon">${escapeHtml(initial)}</div>
+                <div class="admin-card-title-row">
+                    <h3 class="admin-grid-card-title">${escapeHtml(contact.subject || 'Sans sujet')}</h3>
+                    ${isUnread ? '<span class="contact-dot" title="Non lu"></span>' : ''}
+                </div>
+                <p class="admin-grid-card-text">${escapeHtml(contact.name || 'Anonyme')}</p>
+                <p class="admin-grid-card-text">${escapeHtml(preview) || '—'}</p>
+                <div class="admin-card-meta"><span>${formatDate(contact.created_at)}</span></div>
+                <div class="admin-card-actions">${actions(contact, isUnread)}</div>
+            </article>
+        `;
+    };
+    setAdminListItems('contacts', contacts, {
+        listId: 'contacts-list',
+        paginationId: 'contacts-pagination',
+        countId: 'contacts-view-count',
+        listBtnId: 'contacts-view-list',
+        gridBtnId: 'contacts-view-grid',
+        listClass: 'admin-list contacts-list',
+        gridClass: 'contacts-list admin-items-grid',
+        emptyHtml: '<p class="admin-empty">Aucun message disponible.</p>',
+        countLabel: (n) => (n === 1 ? '1 message' : `${n} messages`),
+        perPage: 8,
+        renderList,
+        renderGrid,
     });
 }
 
@@ -1482,8 +1933,7 @@ function updateContactsCount(contacts) {
     const unreadCountEl = document.getElementById('unread-count');
     if (unreadCountEl) {
         unreadCountEl.textContent = unreadCount;
-        unreadCountEl.style.color = unreadCount > 0 ? 'var(--green)' : 'var(--gray)';
-        unreadCountEl.style.fontWeight = unreadCount > 0 ? 'bold' : 'normal';
+        unreadCountEl.classList.toggle('has-unread', unreadCount > 0);
     }
 }
 
@@ -1948,72 +2398,67 @@ async function loadAdminUsers() {
 }
 
 function displayAdminUsers(admins) {
-    const adminsList = document.getElementById('admins-list');
-    if (!adminsList) return;
-    
-    // Utiliser la variable globale currentAdminId
-    
-    if (admins.length === 0) {
-        adminsList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun administrateur disponible.</p>';
-        return;
-    }
-    
-    adminsList.innerHTML = '';
-    admins.forEach(admin => {
-        const card = document.createElement('div');
-        card.className = 'admin-card';
-        
-        const date = new Date(admin.created_at);
-        const formattedDate = date.toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        
-        const lastLogin = admin.last_login 
-            ? new Date(admin.last_login).toLocaleDateString('fr-FR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
-            : 'Jamais';
-        
-        // Utiliser currentAdminId ou currentProfileData._id pour identifier l'utilisateur actuel
-        const adminIdToCompare = currentAdminId || (currentProfileData && (currentProfileData._id || currentProfileData.id));
+    const adminIdToCompare = currentAdminId || (currentProfileData && (currentProfileData._id || currentProfileData.id));
+    const fmt = (value, withTime = false) => {
+        if (!value) return 'Jamais';
+        return new Date(value).toLocaleDateString('fr-FR', withTime
+            ? { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+            : { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+    const actions = (admin, isCurrentUser) => (
+        !isCurrentUser
+            ? `<button class="btn btn-sm btn-ghost" onclick="editAdmin('${admin._id}')"><i class="fas fa-edit"></i> Modifier</button>
+               <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteAdmin('${admin._id}', '${escapeHtml(admin.username)}')"><i class="fas fa-trash"></i> Supprimer</button>`
+            : '<span class="admin-card-meta">Utilisez la section Profil pour vos infos</span>'
+    );
+    const renderList = (admin) => {
         const isCurrentUser = admin._id === adminIdToCompare;
-        
-        card.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <h3 style="margin: 0;">${escapeHtml(admin.username || 'Sans nom')}</h3>
-                            ${isCurrentUser ? '<span style="background: var(--green); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">VOUS</span>' : ''}
+        return `
+            <div class="admin-card">
+                <div class="admin-card-row">
+                    <div class="admin-card-main">
+                        <div class="admin-card-title-row">
+                            <h3>${escapeHtml(admin.username || 'Sans nom')}</h3>
+                            ${isCurrentUser ? '<span class="admin-badge">Vous</span>' : ''}
                         </div>
-                        <div style="color: var(--gray); font-size: 0.9rem;">
-                            ${admin.full_name ? `<p><strong>Nom complet:</strong> ${escapeHtml(admin.full_name)}</p>` : ''}
-                            ${admin.email ? `<p><strong>Email:</strong> <a href="mailto:${admin.email}" style="color: var(--green);">${escapeHtml(admin.email)}</a></p>` : ''}
-                            <p><strong>Créé le:</strong> ${formattedDate}</p>
-                            <p><strong>Dernière connexion:</strong> ${lastLogin}</p>
+                        <div class="admin-card-meta">
+                            ${admin.full_name ? `<span>${escapeHtml(admin.full_name)}</span>` : ''}
+                            ${admin.email ? `<span><a href="mailto:${admin.email}" style="color:var(--green)">${escapeHtml(admin.email)}</a></span>` : ''}
+                            <span>Créé le ${fmt(admin.created_at)}</span>
+                            <span>Dernière connexion : ${fmt(admin.last_login, true)}</span>
                         </div>
                     </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    ${!isCurrentUser 
-                        ? `<button class="btn btn-sm btn-primary" onclick="editAdmin('${admin._id}')" title="Modifier">
-                            <i class="fas fa-edit"></i> Modifier
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${admin._id}', '${escapeHtml(admin.username)}')" title="Supprimer">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </button>`
-                        : '<span style="color: var(--gray); font-size: 0.85rem;">Utilisez la section Profil pour modifier vos informations</span>'
-                    }
+                    <div class="admin-card-actions">${actions(admin, isCurrentUser)}</div>
                 </div>
             </div>
         `;
-        adminsList.appendChild(card);
+    };
+    const renderGrid = (admin) => {
+        const isCurrentUser = admin._id === adminIdToCompare;
+        const initial = (admin.username || 'A').trim().charAt(0).toUpperCase();
+        return `
+            <article class="admin-grid-card">
+                <div class="admin-grid-card-icon">${escapeHtml(initial)}</div>
+                <div class="admin-card-title-row">
+                    <h3 class="admin-grid-card-title">${escapeHtml(admin.username || 'Sans nom')}</h3>
+                    ${isCurrentUser ? '<span class="admin-badge">Vous</span>' : ''}
+                </div>
+                <p class="admin-grid-card-text">${escapeHtml(admin.full_name || admin.email || '—')}</p>
+                <div class="admin-card-meta"><span>${fmt(admin.last_login, true)}</span></div>
+                <div class="admin-card-actions">${actions(admin, isCurrentUser)}</div>
+            </article>
+        `;
+    };
+    setAdminListItems('admins', admins, {
+        listId: 'admins-list',
+        paginationId: 'admins-pagination',
+        countId: 'admins-count-label',
+        listBtnId: 'admins-view-list',
+        gridBtnId: 'admins-view-grid',
+        emptyHtml: '<p class="admin-empty">Aucun administrateur disponible.</p>',
+        countLabel: (n) => (n === 1 ? '1 administrateur' : `${n} administrateurs`),
+        renderList,
+        renderGrid,
     });
 }
 
@@ -2215,4 +2660,44 @@ function deleteAdmin(adminId, username) {
         showToast('Erreur lors de la suppression', 'error');
     });
 }
+
+// Exposer toutes les fonctions utilisées par les onclick inline de l'admin
+Object.assign(window, {
+    showSection,
+    loadHomepageData,
+    loadSkills,
+    loadPartners,
+    loadProjects,
+    loadServices,
+    loadContacts,
+    toggleNotifications,
+    loadProfile,
+    resetPasswordForm,
+    loadLoginHistory,
+    loadAdminUsers,
+    editProject,
+    deleteProject,
+    editService,
+    deleteService,
+    markContactRead,
+    deleteContact,
+    updateProfile,
+    changePassword,
+    createAdmin,
+    openCreateAdminModal,
+    closeCreateAdminModal,
+    editAdmin,
+    deleteAdmin,
+});
+// Déjà assignés via window.xxx = function ... — garantir la présence
+[
+    'openSkillModal', 'closeSkillModal', 'editSkill', 'deleteSkill',
+    'openPartnerModal', 'closePartnerModal', 'editPartner', 'deletePartner',
+    'openProjectModal', 'closeProjectModal', 'viewProjectDetail', 'closeProjectDetailModal',
+    'openServiceModal', 'closeServiceModal',
+].forEach((name) => {
+    if (typeof window[name] !== 'function') {
+        console.error(`Handler admin manquant: ${name}`);
+    }
+});
 
