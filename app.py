@@ -228,7 +228,8 @@ def set_language(lang):
     return resp
 
 def get_key_stats():
-    years = max(1, datetime.now().year - 2019)
+    # Affiché comme « 3+ » années d'expérience sur la page À propos
+    years = 3
     stats = {'projects': 0, 'years': years, 'certs': 0}
     try:
         with get_db() as conn:
