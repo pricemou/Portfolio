@@ -995,6 +995,9 @@ async function uploadProjectMediaFile(file) {
     const res = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+        if (res.status === 413) {
+            throw new Error(`Fichier trop volumineux (max 8 Mo) : ${file.name}`);
+        }
         throw new Error(data.error || `Échec upload (${file.name})`);
     }
     return data.asset?.path || '';

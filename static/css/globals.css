@@ -1252,7 +1252,7 @@ nav ul li {
     var(--bg-light);
   border: 1px solid var(--card-border);
   border-radius: 0.85rem;
-  max-width: 720px;
+  max-width: 840px;
   width: 100%;
   max-height: 88vh;
   overflow-y: auto;
@@ -1344,8 +1344,11 @@ nav ul li {
   border-radius: 0.3rem;
   padding: 0.24rem 0.5rem;
 }
-.project-detail-hero {
+.project-gallery {
   margin: 0 0 1.35rem;
+}
+.project-detail-hero {
+  margin: 0;
   border-radius: 0.5rem;
   overflow: hidden;
   border: 1px solid var(--media-border);
@@ -1357,6 +1360,62 @@ nav ul li {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: opacity 0.18s ease;
+}
+.project-detail-hero.is-swapping img {
+  opacity: 0.35;
+}
+.project-gallery-strip {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.project-gallery-strip::-webkit-scrollbar {
+  height: 4px;
+}
+.project-gallery-strip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.project-gallery-thumb {
+  flex: 0 0 auto;
+  width: 5.75rem;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border: 1px solid var(--media-border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  background: var(--media-surface);
+  cursor: pointer;
+  opacity: 0.55;
+  scroll-snap-align: start;
+  transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.project-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.project-gallery-thumb:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.project-gallery-thumb.is-active {
+  opacity: 1;
+  border-color: var(--text-green);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-green) 45%, transparent);
+}
+.project-gallery-thumb:focus-visible {
+  outline: 2px solid var(--text-green);
+  outline-offset: 2px;
+  opacity: 1;
 }
 .project-detail-section {
   margin: 0 0 1.15rem;
@@ -1421,25 +1480,24 @@ nav ul li {
   padding-top: 1.15rem;
   border-top: 1px solid var(--divider);
 }
+/* Legacy aliases — galerie remplacée par .project-gallery / .project-gallery-strip */
 .project-images-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
+  display: flex;
+  gap: 0.55rem;
+  margin-bottom: 1.35rem;
+  overflow-x: auto;
 }
 .project-image-item {
-  position: relative;
-  border-radius: 0.5rem;
+  flex: 0 0 auto;
+  width: 5.75rem;
+  aspect-ratio: 16 / 10;
+  border-radius: 0.4rem;
   overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-.project-image-item:hover {
-  transform: scale(1.05);
+  border: 1px solid var(--media-border);
 }
 .project-image-item img {
   width: 100%;
-  height: 200px;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
@@ -2032,25 +2090,15 @@ footer,
     font-size: 0.7rem !important;
     padding: 0.25rem 0.5rem !important;
   }
-  /* Grille d'images en 1 colonne */
-  .project-images-gallery {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-    margin-bottom: 1.5rem !important;
+  .project-gallery {
+    margin-bottom: 1.15rem;
   }
-  .project-image-item {
-    width: 100% !important;
-    margin: 0 !important;
+  .project-gallery-strip {
+    gap: 0.45rem;
+    margin-top: 0.65rem;
   }
-  .project-image-item img {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 250px !important;
-    object-fit: cover !important;
-  }
-  .image-badge {
-    font-size: 0.7rem !important;
-    padding: 0.25rem 0.5rem !important;
+  .project-gallery-thumb {
+    width: 4.75rem;
   }
   .project-detail-section {
     margin-bottom: 1.5rem !important;

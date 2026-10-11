@@ -1520,7 +1520,13 @@ def get_projects_api():
                 }), 503
             
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM projects ORDER BY created_at DESC')
+            cursor.execute(
+                '''
+                SELECT * FROM projects
+                WHERE deleted_at IS NULL OR deleted_at = ''
+                ORDER BY created_at DESC
+                '''
+            )
             rows = cursor.fetchall()
             projects = rows_to_list(rows)
             # Convertir id en _id pour compatibilité

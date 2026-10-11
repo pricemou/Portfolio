@@ -205,7 +205,7 @@ def init_database():
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_contacts_created ON contacts(created_at)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics(type)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_analytics_date ON analytics(date)')
-
+            
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS career (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -459,7 +459,7 @@ def init_site_pages_data(conn):
 
 
 HOMEPAGE_SEED = {
-    "type": "header",
+                "type": "header",
     "badge": "Ouvert aux opportunités · Trois-Rivières (Québec)",
     "title_line1": "Développeur Full Stack",
     "title_line2": "& science des données.",
@@ -470,7 +470,7 @@ HOMEPAGE_SEED = {
     ),
     "email": "pricemoufromon97@gmail.com",
     "cta_text": "Me contacter",
-    "about_title": "Présentation",
+                "about_title": "Présentation",
     "about_name": "Claude Pricemou",
     "about_subtitle": "Développeur Full Stack & Science des données, basé à Trois-Rivières.",
     "about_description": (
@@ -537,18 +537,18 @@ def init_skills_data(conn):
         cursor.execute('SELECT COUNT(*) FROM skills')
         if cursor.fetchone()[0] > 0:
             return
-        default_skills = [
+            default_skills = [
             ("Langages", "icons/code.svg", "Python, JavaScript / TypeScript, SQL.", None, "Cœur du métier", 1),
             ("Frontend", "icons/design.svg", "React, Angular, HTML/CSS accessibles.", None, "Interfaces", 2),
             ("Backend", "icons/code.svg", "Flask, Node.js, NestJS, API REST.", None, "Serveur", 3),
             ("Data", "icons/design.svg", "Power BI, machine learning, données ouvertes canadiennes.", None, "Analyse", 4),
             ("Cloud", "icons/phone.svg", "AWS Cloud Practitioner, Azure AI-900.", None, "Infra", 5),
         ]
-        cursor.executemany('''
+            cursor.executemany('''
             INSERT INTO skills (title, icon, description, projects_count, label, order_index)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', default_skills)
-        conn.commit()
+            ''', default_skills)
+            conn.commit()
     except Exception as e:
         print(f"⚠️  Erreur compétences: {e}")
 
@@ -690,7 +690,7 @@ TEMPLATE_PROJECT_TITLES = (
 )
 
 # Couvertures Unsplash (licence Unsplash — https://unsplash.com/license)
-COVER_TRANSPORT = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=80"
+COVER_TRANSPORT = "images/projects/marc-transport.jpg"
 COVER_INTERVENTIONS = "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=1400&q=80"
 COVER_RECYCLAGE = "https://images.unsplash.com/photo-1642631171488-23d631eba638?auto=format&fit=crop&w=1400&q=80"
 COVER_MEDECINE = "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1400&q=80"
@@ -1383,7 +1383,10 @@ def init_projects_data(conn):
     try:
         cursor = conn.cursor()
         for title in TEMPLATE_PROJECT_TITLES:
-            cursor.execute("UPDATE projects SET status='archived' WHERE title = ?", (title,))
+            cursor.execute(
+                "UPDATE projects SET status='archived', deleted_at=COALESCE(deleted_at, CURRENT_TIMESTAMP) WHERE title = ?",
+                (title,),
+            )
 
         # Rafraîchir les projets enrichis s'ils existent déjà
         marc_ok = _upsert_marc_transport_project(cursor)

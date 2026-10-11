@@ -14,7 +14,7 @@ def configure_session_security(app):
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
         hours=int(os.getenv("SESSION_HOURS", "8"))
     )
-    app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 Mo
+    app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 Mo (captures d’écran)
 
 
 def register_security_headers(app):
@@ -30,7 +30,7 @@ def register_security_headers(app):
         # CSP pragmatique (fonts Google + miniatures Coursera / Unsplash)
         csp = (
             "default-src 'self'; "
-            "img-src 'self' data: https://s3.amazonaws.com https://*.coursera.org "
+            "img-src 'self' data: blob: https://s3.amazonaws.com https://*.coursera.org "
             "https://images.unsplash.com https://*.unsplash.com; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; "

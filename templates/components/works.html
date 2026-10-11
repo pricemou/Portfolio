@@ -14,14 +14,14 @@
             <article class="work-card" data-project-id="{{ project._id }}" data-category="{{ project.category }}">
                 {% if project.image %}
                 <div class="work-card-image">
-                    <img src="{{ url_for('static', filename=project.image) if not project.image.startswith('http') else project.image }}"
+                    <img src="{{ url_for('static', filename=project.image) if not project.image.startswith('http') else project.image }}" 
                          alt="Capture du projet {{ project.title }}"
                          class="work-image"
                          loading="lazy">
                 </div>
                 {% endif %}
                 <div class="work-card-body">
-                    <div class="work-card-header">
+                <div class="work-card-header">
                         <h3>{{ project.title }}</h3>
                         <span class="cat-badge">{{ project.category }}</span>
                     </div>
@@ -76,7 +76,7 @@
 <script>
 if (!window.worksScriptLoaded) {
     window.worksScriptLoaded = true;
-
+    
     (function () {
         var currentPage = 1;
         var perPage = 9; // 3 colonnes × 3 lignes
@@ -229,11 +229,40 @@ if (!window.worksScriptLoaded) {
                 }
                 html += '</header>';
 
-                if (project.image) {
-                    var imgSrc = String(project.image).indexOf('http') === 0
-                        ? project.image
-                        : '/static/' + project.image.replace(/^\/?static\//, '');
-                    html += '<div class="project-detail-hero"><img src="' + escapeHtml(imgSrc) + '" alt="" loading="lazy"></div>';
+                var gallery = [];
+                function pushGallerySrc(raw) {
+                    if (!raw) return;
+                    var src = String(raw).trim();
+                    if (!src) return;
+                    src = src.indexOf('http') === 0
+                        ? src
+                        : '/static/' + src.replace(/^\/?static\//, '');
+                    if (gallery.indexOf(src) === -1) gallery.push(src);
+                }
+                pushGallerySrc(project.image);
+                if (project.additional_images) {
+                    String(project.additional_images).split(',').forEach(function (part) {
+                        pushGallerySrc(part);
+                    });
+                }
+                if (gallery.length) {
+                    html += '<div class="project-gallery">';
+                    html += '<div class="project-detail-hero" id="project-gallery-hero">';
+                    html += '<img id="project-gallery-active" src="' + escapeHtml(gallery[0]) + '" alt="' + escapeHtml(project.title || '') + '" loading="lazy">';
+                    html += '</div>';
+                    if (gallery.length > 1) {
+                        html += '<div class="project-gallery-strip" role="listbox" aria-label="Images du projet">';
+                        gallery.forEach(function (src, index) {
+                            html += '<button type="button" class="project-gallery-thumb' + (index === 0 ? ' is-active' : '') + '"';
+                            html += ' role="option" aria-selected="' + (index === 0 ? 'true' : 'false') + '"';
+                            html += ' data-src="' + escapeHtml(src) + '"';
+                            html += ' aria-label="Image ' + (index + 1) + '">';
+                            html += '<img src="' + escapeHtml(src) + '" alt="" loading="lazy">';
+                            html += '</button>';
+                        });
+                        html += '</div>';
+                    }
+                    html += '</div>';
                 }
 
                 if (project.role) {
@@ -266,13 +295,41 @@ if (!window.worksScriptLoaded) {
                 html += '</div>';
 
                 content.innerHTML = html;
+                bindProjectGallery(content);
                 document.getElementById('projectDetailModal').style.display = 'flex';
                 document.body.style.overflow = 'hidden';
                 if (typeof trackProjectView === 'function') trackProjectView(projectId);
             });
     }
 
-    function closeProjectDetail() {
+    function bindProjectGallery(root) {
+        if (!root) return;
+        var active = root.querySelector('#project-gallery-active');
+        var hero = root.querySelector('#project-gallery-hero');
+        var thumbs = root.querySelectorAll('.project-gallery-thumb');
+        if (!active || !thumbs.length) return;
+
+        thumbs.forEach(function (thumb) {
+            thumb.addEventListener('click', function () {
+                var src = thumb.getAttribute('data-src');
+                if (!src || active.getAttribute('src') === src) return;
+
+                if (hero) hero.classList.add('is-swapping');
+                window.setTimeout(function () {
+                    active.setAttribute('src', src);
+                    if (hero) hero.classList.remove('is-swapping');
+                }, 140);
+
+                thumbs.forEach(function (el) {
+                    var on = el === thumb;
+                    el.classList.toggle('is-active', on);
+                    el.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+            });
+        });
+    }
+
+function closeProjectDetail() {
         var modal = document.getElementById('projectDetailModal');
         if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
     }
