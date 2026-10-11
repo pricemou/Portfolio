@@ -713,6 +713,7 @@ MARC_TRANSPORT_TITLE = "Système de gestion de transport"
 MARC_TRANSPORT_PROJECT = {
     "title": MARC_TRANSPORT_TITLE,
     "image": COVER_TRANSPORT,
+    "additional_images": "images/projects/marc-transport-gallery-1.jpg, images/projects/marc-transport-gallery-2.jpg, images/projects/marc-transport-gallery-3.jpg",
     "technologies": "Flask, React, MySQL",
     # Carte : aperçu court uniquement
     "description": (
@@ -880,7 +881,7 @@ def _upsert_featured_project(cursor, project):
         '''
         UPDATE projects
         SET technologies=?, description=?, long_description=?, category=?, role=?, context=?, results=?,
-            measurement=?, period=?, link=?, image=?, featured=?, order_index=?,
+            measurement=?, period=?, link=?, image=?, additional_images=?, featured=?, order_index=?,
             status='published', updated_at=CURRENT_TIMESTAMP
         WHERE title=?
         ''',
@@ -896,6 +897,7 @@ def _upsert_featured_project(cursor, project):
             project["period"],
             project.get("link") or None,
             project.get("image") or None,
+            project.get("additional_images") or "",
             project["featured"],
             project["order_index"],
             project["title"],
@@ -1279,9 +1281,9 @@ def _ensure_featured_project(cursor, project):
         '''
         INSERT INTO projects (
             title, technologies, description, long_description, category, role, context,
-            results, measurement, period, link, image, order_index, featured, status
+            results, measurement, period, link, image, additional_images, order_index, featured, status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published')
         ''',
         (
             project["title"],
@@ -1296,6 +1298,7 @@ def _ensure_featured_project(cursor, project):
             project["period"],
             project.get("link") or None,
             project.get("image") or None,
+            project.get("additional_images") or "",
             project["order_index"],
             project["featured"],
         ),
