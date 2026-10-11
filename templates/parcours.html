@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{{ t('career_title') }} — Claude Pricemou{% endblock %}
-{% block meta_description %}Parcours de Claude Pricemou : développement full stack, science des données, stages et encadrement d'équipe.{% endblock %}
+{% block meta_description %}Parcours de Claude Pricemou : emplois, stages, diplômes et formation en informatique et science des données.{% endblock %}
 {% block og_title %}Parcours — Claude Pricemou{% endblock %}
 {% block canonical %}https://claude225.pythonanywhere.com/parcours{% endblock %}
 {% block og_url %}https://claude225.pythonanywhere.com/parcours{% endblock %}
@@ -12,11 +12,11 @@
         <section class="dark-bg career-section">
             <ol class="timeline">
                 {% for item in career %}
-                <li class="timeline-item">
+                <li class="timeline-item" data-kind="{{ item.kind or 'emploi' }}">
                     <div class="timeline-marker" aria-hidden="true"></div>
                     <div class="timeline-card">
                         <div class="timeline-card-top">
-                            <span class="timeline-kind">{{ t('kind_' + (item.kind or 'emploi')) }}</span>
+                            <span class="timeline-kind timeline-kind--{{ item.kind or 'emploi' }}">{{ t('kind_' + (item.kind or 'emploi')) }}</span>
                             <time class="timeline-dates">
                                 {{ item.start or '' }}
                                 {% if item.end %} — {{ item.end }}{% elif item.start %} — {{ t('present') }}{% endif %}

@@ -385,6 +385,19 @@ async function loadMonitoringLists() {
 
 let careerCache = {};
 
+const CAREER_KIND_LABELS = {
+    emploi: 'Emploi',
+    stage: 'Stage',
+    formation: 'Formation',
+    benevolat: 'Bénévolat',
+    autre: 'Autre',
+};
+
+function careerKindLabel(kind) {
+    const key = (kind || 'emploi').toString();
+    return CAREER_KIND_LABELS[key] || key;
+}
+
 function escapeCareerHtml(text) {
     if (text == null) return '';
     return String(text)
@@ -464,7 +477,7 @@ async function loadCareerAdmin() {
                     <h3>${heading || 'Sans titre'}</h3>
                     <div class="admin-card-meta">
                         <span>${period}</span>
-                        <span>${escapeCareerHtml(item.kind || '')}</span>
+                        <span>${escapeCareerHtml(careerKindLabel(item.kind))}</span>
                         <span>${escapeCareerHtml(item.location || '')}</span>
                     </div>
                     <p>${escapeCareerHtml(item.bullets || '')}</p>
@@ -486,7 +499,7 @@ async function loadCareerAdmin() {
                 <p class="admin-grid-card-text">${escapeCareerHtml(item.org || '')}</p>
                 <div class="admin-card-meta">
                     <span>${period}</span>
-                    <span>${escapeCareerHtml(item.kind || '')}</span>
+                    <span>${escapeCareerHtml(careerKindLabel(item.kind))}</span>
                 </div>
                 <div class="admin-card-actions">
                     <button type="button" class="btn btn-sm btn-ghost" onclick="editCareer(${item.id})" title="Modifier"><i class="fas fa-edit"></i></button>

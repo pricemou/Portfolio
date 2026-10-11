@@ -2692,6 +2692,14 @@ footer,
   border-radius: 999px;
   padding: 0.28rem 0.65rem;
 }
+.timeline-kind--formation {
+  color: #7eb8ff;
+  background: rgba(126, 184, 255, 0.12);
+  border-color: rgba(126, 184, 255, 0.35);
+}
+.timeline-item[data-kind="formation"] .timeline-org {
+  color: #7eb8ff;
+}
 .timeline-dates {
   font-size: 0.82rem;
   color: var(--text-gray);

@@ -228,6 +228,7 @@ def init_database():
             init_skills_data(conn)
             init_partners_data(conn)
             init_career_data(conn)
+            ensure_education_career(conn)
             init_services_data(conn)
             init_projects_data(conn)
             init_certifications_data(conn)
@@ -608,6 +609,8 @@ def init_career_data(conn):
         if cursor.fetchone()[0] > 0:
             return
         items = [
+            ("Baccalauréat en informatique — science des données", "UQTR", "Trois-Rivières", "2024", "", "formation",
+             "Parcours académique en cours (apprentissage) : science des données, programmation et projets appliqués.", 0),
             ("Développeur Full Stack freelance", "Marc Worldwide Transport", "Québec", "2026-05", "", "emploi",
              "Conception et évolution d'un système de gestion de transport (Flask + React).", 1),
             ("Stagiaire développeur", "Network Pro Service", "Québec", "2026-01", "2026-04", "stage",
@@ -620,6 +623,10 @@ def init_career_data(conn):
              "Coordination d'équipe et livraison des livrables techniques.", 5),
             ("Bénévole", "Association des étudiants en informatique de l'UQTR", "Trois-Rivières", "2024", "", "benevolat",
              "Soutien aux activités étudiantes et partage de pratiques.", 6),
+            ("Baccalauréat en informatique", "HEC", "", "", "", "formation",
+             "Formation universitaire en informatique.", 7),
+            ("BTS en informatique", "HEC", "", "", "", "formation",
+             "Diplôme de technicien supérieur en informatique.", 8),
         ]
         cursor.executemany('''
             INSERT INTO career (title, org, location, start, end, kind, bullets, order_index)
@@ -628,6 +635,42 @@ def init_career_data(conn):
         conn.commit()
     except Exception as e:
         print(f"⚠️  Erreur parcours: {e}")
+
+
+def ensure_education_career(conn):
+    """Ajoute les diplômes / formations s'ils manquent sur une base déjà peuplée."""
+    try:
+        cursor = conn.cursor()
+        education = [
+            ("Baccalauréat en informatique — science des données", "UQTR", "Trois-Rivières", "2024", "", "formation",
+             "Parcours académique en cours (apprentissage) : science des données, programmation et projets appliqués.", 0),
+            ("Baccalauréat en informatique", "HEC", "", "", "", "formation",
+             "Formation universitaire en informatique.", 7),
+            ("BTS en informatique", "HEC", "", "", "", "formation",
+             "Diplôme de technicien supérieur en informatique.", 8),
+        ]
+        for title, org, location, start, end, kind, bullets, order_index in education:
+            cursor.execute(
+                '''
+                SELECT id FROM career
+                WHERE title = ? AND org = ?
+                  AND (deleted_at IS NULL OR deleted_at = '')
+                LIMIT 1
+                ''',
+                (title, org),
+            )
+            if cursor.fetchone():
+                continue
+            cursor.execute(
+                '''
+                INSERT INTO career (title, org, location, start, end, kind, bullets, order_index, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published')
+                ''',
+                (title, org, location, start, end, kind, bullets, order_index),
+            )
+        conn.commit()
+    except Exception as e:
+        print(f"⚠️  Erreur formations parcours: {e}")
 
 
 def init_services_data(conn):

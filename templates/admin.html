@@ -235,7 +235,7 @@
                         <header class="admin-section-header">
                             <div class="admin-section-header-text">
                                 <h2 class="admin-section-title">Parcours</h2>
-                                <p class="admin-section-subtitle">Expériences et étapes de carrière affichées sur le site.</p>
+                                <p class="admin-section-subtitle">Emplois, stages, formations et diplômes affichés sur /parcours.</p>
                             </div>
                             <div class="admin-section-actions">
                                 <button type="button" class="btn btn-primary" onclick="openCareerModal()">+ Ajouter</button>
@@ -258,7 +258,7 @@
                         <header class="admin-section-header">
                             <div class="admin-section-header-text">
                                 <h2 class="admin-section-title">Certifications</h2>
-                                <p class="admin-section-subtitle">Diplômes et certifications mis en avant sur le portfolio.</p>
+                                <p class="admin-section-subtitle">Certificats en ligne (Coursera, cloud…). Les diplômes scolaires se gèrent dans Parcours.</p>
                             </div>
                             <div class="admin-section-actions">
                                 <button type="button" class="btn btn-primary" onclick="openCertModal()">+ Ajouter</button>
@@ -931,13 +931,13 @@
             <form id="career-form" class="admin-form">
                 <input type="hidden" id="career-id">
                 <div class="form-group">
-                    <label for="career-title">Titre du poste *</label>
-                    <input type="text" id="career-title" required maxlength="200" placeholder="Développeur Full Stack">
+                    <label for="career-title">Titre *</label>
+                    <input type="text" id="career-title" required maxlength="200" placeholder="Poste, diplôme ou formation">
                 </div>
                 <div class="admin-field-grid">
                     <div class="form-group">
-                        <label for="career-org">Organisation</label>
-                        <input type="text" id="career-org" maxlength="200" placeholder="Entreprise ou organisme">
+                        <label for="career-org">Organisation / établissement</label>
+                        <input type="text" id="career-org" maxlength="200" placeholder="Entreprise, université, collège…">
                     </div>
                     <div class="form-group">
                         <label for="career-location">Lieu</label>
@@ -960,6 +960,7 @@
                         <select id="career-kind">
                             <option value="emploi">Emploi</option>
                             <option value="stage">Stage</option>
+                            <option value="formation">Formation / diplôme</option>
                             <option value="benevolat">Bénévolat</option>
                             <option value="autre">Autre</option>
                         </select>
