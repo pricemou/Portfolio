@@ -651,8 +651,9 @@
                                 </div>
                                 <div class="admin-field-grid">
                                     <div class="form-group">
-                                        <label for="profile-email">Email</label>
-                                        <input type="email" id="profile-email" placeholder="votre@email.com">
+                                        <label for="profile-email">Email *</label>
+                                        <input type="email" id="profile-email" required placeholder="votre@email.com">
+                                        <small class="form-hint">Utilisé pour se connecter à l'administration</small>
                                     </div>
                                     <div class="form-group">
                                         <label for="profile-full-name">Nom complet</label>
@@ -859,6 +860,26 @@
                     <button type="button" class="btn btn-secondary" id="admin-confirm-cancel">Annuler</button>
                     <button type="button" class="btn btn-primary admin-confirm-ok" id="admin-confirm-ok">Confirmer</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Prompt admin (remplace window.prompt) -->
+        <div id="adminPromptModal" class="modal admin-confirm-modal admin-prompt-modal" style="display: none;" aria-hidden="true">
+            <div class="modal-content admin-confirm-dialog admin-prompt-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-prompt-title" aria-describedby="admin-prompt-message">
+                <div class="admin-confirm-icon" id="admin-prompt-icon" aria-hidden="true">
+                    <i class="fas fa-keyboard"></i>
+                </div>
+                <h3 id="admin-prompt-title">Saisie</h3>
+                <p id="admin-prompt-message"></p>
+                <form id="admin-prompt-form" class="admin-prompt-form" autocomplete="off">
+                    <label class="admin-prompt-label" id="admin-prompt-label" for="admin-prompt-input">Valeur</label>
+                    <input type="text" id="admin-prompt-input" class="admin-prompt-input" />
+                    <p class="admin-prompt-hint" id="admin-prompt-hint" hidden></p>
+                    <div class="admin-confirm-actions">
+                        <button type="button" class="btn btn-secondary" id="admin-prompt-cancel">Annuler</button>
+                        <button type="submit" class="btn btn-primary" id="admin-prompt-ok">Valider</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1111,8 +1132,12 @@
                     <input type="text" id="partner-name" required>
                 </div>
                 <div class="form-group">
-                    <label>Image (chemin)</label>
-                    <input type="text" id="partner-image" placeholder="images/partners/logo.png" required>
+                    <label>Image</label>
+                    <input type="file" id="partner-image-file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif">
+                    <input type="hidden" id="partner-image" value="">
+                    <div id="partner-image-preview" class="project-upload-preview"></div>
+                    <small style="color: var(--gray); font-size: 0.85rem;">JPG, PNG, WebP ou GIF — max 8 Mo. Vous pouvez aussi coller une URL ou un chemin ci-dessous.</small>
+                    <input type="text" id="partner-image-url" placeholder="https://… ou images/partners/logo.png" style="margin-top: 0.5rem;">
                 </div>
                 <div class="form-group">
                     <label>Ordre d'affichage</label>
@@ -1263,8 +1288,9 @@
                     <input type="password" id="new-admin-password" required minlength="6" placeholder="min. 6 caractères">
                 </div>
                 <div class="form-group">
-                    <label for="new-admin-email">Email</label>
-                    <input type="email" id="new-admin-email" placeholder="admin@example.com">
+                    <label for="new-admin-email">Email *</label>
+                    <input type="email" id="new-admin-email" required placeholder="admin@example.com">
+                    <small class="form-hint">Utilisé pour se connecter à l'administration</small>
                 </div>
                 <div class="form-group">
                     <label for="new-admin-full-name">Nom complet</label>
@@ -1273,6 +1299,53 @@
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-primary">Créer</button>
                     <button type="button" class="btn btn-secondary" onclick="closeCreateAdminModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Édition Administrateur -->
+    <div id="edit-admin-modal" class="modal admin-edit-modal" style="display: none;" aria-hidden="true">
+        <div class="modal-content admin-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-admin-title">
+            <div class="modal-header">
+                <div class="admin-edit-header">
+                    <div class="admin-edit-avatar" aria-hidden="true">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h3 id="edit-admin-title">Modifier l'administrateur</h3>
+                        <p class="admin-edit-subtitle" id="edit-admin-username">—</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" onclick="closeEditAdminModal()" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="edit-admin-form" class="admin-form" onsubmit="saveEditAdmin(event)">
+                <input type="hidden" id="edit-admin-id" value="">
+                <div class="form-group">
+                    <label for="edit-admin-email">Email</label>
+                    <input type="email" id="edit-admin-email" placeholder="admin@example.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="edit-admin-full-name">Nom complet</label>
+                    <input type="text" id="edit-admin-full-name" placeholder="Nom complet" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label for="edit-admin-current-password">Ancien mot de passe</label>
+                    <input type="password" id="edit-admin-current-password" placeholder="Requis pour changer le mot de passe" autocomplete="current-password">
+                    <small class="form-hint">Obligatoire uniquement si vous changez le mot de passe</small>
+                </div>
+                <div class="form-group">
+                    <label for="edit-admin-password">Nouveau mot de passe</label>
+                    <input type="password" id="edit-admin-password" minlength="6" placeholder="Laisser vide pour conserver l'actuel" autocomplete="new-password">
+                    <small class="form-hint">Optionnel · minimum 6 caractères</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditAdminModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
                 </div>
             </form>
         </div>

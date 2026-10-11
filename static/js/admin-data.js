@@ -629,8 +629,79 @@ function displayPartners(partners) {
     });
 }
 
+function bindPartnerImageUpload() {
+    const fileInput = document.getElementById('partner-image-file');
+    const urlInput = document.getElementById('partner-image-url');
+    if (fileInput && !fileInput.dataset.bound) {
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files?.[0];
+            if (file) {
+                const hidden = document.getElementById('partner-image');
+                if (hidden) hidden.value = '';
+                if (urlInput) urlInput.value = '';
+            }
+            renderPartnerImagePreview();
+        });
+        fileInput.dataset.bound = '1';
+    }
+    if (urlInput && !urlInput.dataset.bound) {
+        urlInput.addEventListener('input', () => {
+            const hidden = document.getElementById('partner-image');
+            const fileInputEl = document.getElementById('partner-image-file');
+            if (fileInputEl) fileInputEl.value = '';
+            if (hidden) hidden.value = urlInput.value.trim();
+            renderPartnerImagePreview();
+        });
+        urlInput.dataset.bound = '1';
+    }
+}
+
+function resetPartnerImageFields() {
+    const hidden = document.getElementById('partner-image');
+    const fileInput = document.getElementById('partner-image-file');
+    const urlInput = document.getElementById('partner-image-url');
+    if (hidden) hidden.value = '';
+    if (fileInput) fileInput.value = '';
+    if (urlInput) urlInput.value = '';
+    renderPartnerImagePreview();
+}
+
+function renderPartnerImagePreview() {
+    const box = document.getElementById('partner-image-preview');
+    const hidden = document.getElementById('partner-image');
+    const fileInput = document.getElementById('partner-image-file');
+    if (!box) return;
+    box.innerHTML = '';
+    const file = fileInput?.files?.[0];
+    if (file) {
+        const url = URL.createObjectURL(file);
+        box.innerHTML = `
+            <div class="project-upload-thumb">
+                <img src="${url}" alt="Aperçu partenaire">
+                <button type="button" title="Retirer" aria-label="Retirer" onclick="clearPartnerImage()">&times;</button>
+            </div>`;
+        return;
+    }
+    const path = hidden?.value?.trim();
+    if (path) {
+        const src = /^https?:\/\//i.test(path) || path.startsWith('/')
+            ? path
+            : `/static/${path.replace(/^\//, '')}`;
+        box.innerHTML = `
+            <div class="project-upload-thumb">
+                <img src="${escapeHtml(src)}" alt="Image partenaire">
+                <button type="button" title="Retirer" aria-label="Retirer" onclick="clearPartnerImage()">&times;</button>
+            </div>`;
+    }
+}
+
+window.clearPartnerImage = function clearPartnerImage() {
+    resetPartnerImageFields();
+};
+
 function initPartnersSection() {
     loadPartners();
+    bindPartnerImageUpload();
     const partnerForm = document.getElementById('partner-form');
     if (partnerForm && !partnerForm.dataset.bound) {
         partnerForm.addEventListener('submit', handlePartnerSubmit);
@@ -651,6 +722,8 @@ window.openPartnerModal = function openPartnerModal() {
         const orderInput = document.getElementById('partner-order');
         if (orderInput) orderInput.value = '1';
     }
+    resetPartnerImageFields();
+    bindPartnerImageUpload();
     setTimeout(() => document.getElementById('partner-name')?.focus(), 100);
 };
 
@@ -661,6 +734,7 @@ window.closePartnerModal = function closePartnerModal() {
     if (form) form.reset();
     const partnerIdInput = document.getElementById('partner-id');
     if (partnerIdInput) partnerIdInput.value = '';
+    resetPartnerImageFields();
 };
 
 window.editPartner = function editPartner(partnerId) {
@@ -677,28 +751,54 @@ window.editPartner = function editPartner(partnerId) {
         const el = document.getElementById(id);
         if (el) el.value = value ?? '';
     };
+    const image = partner.image || partner.logo || '';
     setVal('partner-id', partnerId);
     setVal('partner-name', partner.name || '');
-    setVal('partner-image', partner.image || partner.logo || '');
+    setVal('partner-image', image);
+    setVal('partner-image-url', image);
     setVal('partner-order', partner.order ?? 0);
+    const fileInput = document.getElementById('partner-image-file');
+    if (fileInput) fileInput.value = '';
+    bindPartnerImageUpload();
+    renderPartnerImagePreview();
     setTimeout(() => document.getElementById('partner-name')?.focus(), 100);
 };
 
 async function handlePartnerSubmit(event) {
     event.preventDefault();
     const partnerId = document.getElementById('partner-id')?.value?.trim();
-    const image = document.getElementById('partner-image')?.value?.trim() || '';
-    const payload = {
-        name: document.getElementById('partner-name')?.value?.trim() || '',
-        image,
-        logo: image,
-        order: parseInt(document.getElementById('partner-order')?.value || '0', 10) || 0,
-    };
-    if (!payload.name) {
+    const name = document.getElementById('partner-name')?.value?.trim() || '';
+    const hidden = document.getElementById('partner-image');
+    const urlInput = document.getElementById('partner-image-url');
+    const fileInput = document.getElementById('partner-image-file');
+    let image = (hidden?.value || urlInput?.value || '').trim();
+
+    if (!name) {
         showToast('Nom requis', 'error');
         return;
     }
+
     try {
+        const file = fileInput?.files?.[0];
+        if (file) {
+            image = await uploadProjectMediaFile(file);
+            if (hidden) hidden.value = image;
+            if (urlInput) urlInput.value = image;
+            if (fileInput) fileInput.value = '';
+            renderPartnerImagePreview();
+        }
+
+        if (!image) {
+            showToast('Image requise (fichier ou URL)', 'error');
+            return;
+        }
+
+        const payload = {
+            name,
+            image,
+            logo: image,
+            order: parseInt(document.getElementById('partner-order')?.value || '0', 10) || 0,
+        };
         const url = partnerId ? `${API_BASE}/partners/${partnerId}` : `${API_BASE}/partners`;
         const method = partnerId ? 'PUT' : 'POST';
         const response = await fetch(url, {
@@ -717,7 +817,7 @@ async function handlePartnerSubmit(event) {
         }
     } catch (error) {
         console.error('Erreur partner submit:', error);
-        showToast('Erreur lors de l’enregistrement', 'error');
+        showToast(error.message || 'Erreur lors de l’enregistrement', 'error');
     }
 }
 
@@ -2271,6 +2371,7 @@ async function changePassword(event) {
         const response = await fetch(`${API_BASE}/admin/profile/password`, {
             method: 'PUT',
             headers: getHeaders(),
+            credentials: 'include',
             body: JSON.stringify({
                 current_password: currentPassword,
                 new_password: newPassword,
@@ -2446,10 +2547,10 @@ function displayAdminUsers(admins) {
             : { year: 'numeric', month: 'long', day: 'numeric' });
     };
     const actions = (admin, isCurrentUser) => (
-        !isCurrentUser
-            ? `<button class="btn btn-sm btn-ghost" onclick="editAdmin('${admin._id}')"><i class="fas fa-edit"></i> Modifier</button>
-               <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteAdmin('${admin._id}', '${escapeHtml(admin.username)}')"><i class="fas fa-trash"></i> Supprimer</button>`
-            : '<span class="admin-card-meta">Utilisez la section Profil pour vos infos</span>'
+        `<button class="btn btn-sm btn-ghost" onclick="editAdmin('${admin._id}')"><i class="fas fa-edit"></i> Modifier</button>`
+        + (!isCurrentUser
+            ? ` <button class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteAdmin('${admin._id}', '${escapeHtml(admin.username)}')"><i class="fas fa-trash"></i> Supprimer</button>`
+            : '')
     );
     const renderList = (admin) => {
         const isCurrentUser = admin._id === adminIdToCompare;
@@ -2529,8 +2630,8 @@ async function createAdmin(event) {
         return;
     }
     
-    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-        showToast('Format d\'email invalide', 'error');
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        showToast('Un email valide est requis pour la connexion', 'error');
         emailInput.focus();
         return;
     }
@@ -2608,36 +2709,99 @@ function editAdmin(adminId) {
         showToast('Administrateur non trouvé', 'error');
         return;
     }
-    
-    // Pour l'instant, on utilise une modale simple avec prompt
-    // Vous pouvez créer une modale dédiée plus tard
-    const newEmail = prompt('Nouvel email (laissez vide pour ne pas modifier):', admin.email || '');
-    const newFullName = prompt('Nouveau nom complet (laissez vide pour ne pas modifier):', admin.full_name || '');
-    const newPassword = prompt('Nouveau mot de passe (laissez vide pour ne pas modifier, min. 6 caractères):', '');
-    
-    if (newEmail === null && newFullName === null && newPassword === null) {
-        return; // Annulé
-    }
-    
-    const updateData = {};
-    if (newEmail !== null && newEmail !== admin.email) {
-        updateData.email = newEmail;
-    }
-    if (newFullName !== null && newFullName !== admin.full_name) {
-        updateData.full_name = newFullName;
-    }
-    if (newPassword && newPassword.length >= 6) {
-        updateData.password = newPassword;
-    } else if (newPassword && newPassword.length > 0) {
-        showToast('Le mot de passe doit contenir au moins 6 caractères', 'error');
+
+    const modal = document.getElementById('edit-admin-modal');
+    const idInput = document.getElementById('edit-admin-id');
+    const emailInput = document.getElementById('edit-admin-email');
+    const nameInput = document.getElementById('edit-admin-full-name');
+    const passwordInput = document.getElementById('edit-admin-password');
+    const currentPasswordInput = document.getElementById('edit-admin-current-password');
+    const usernameEl = document.getElementById('edit-admin-username');
+
+    if (!modal || !idInput || !emailInput || !nameInput || !passwordInput) {
+        showToast('Modale d’édition indisponible', 'error');
         return;
     }
-    
+
+    idInput.value = adminId;
+    emailInput.value = admin.email || '';
+    nameInput.value = admin.full_name || '';
+    passwordInput.value = '';
+    if (currentPasswordInput) currentPasswordInput.value = '';
+    if (usernameEl) {
+        usernameEl.textContent = `@${admin.username || 'admin'}`;
+    }
+
+    if (typeof openModalEl === 'function') {
+        openModalEl(modal);
+    } else {
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => modal.classList.add('open'));
+    }
+    window.setTimeout(() => emailInput.focus(), 60);
+}
+
+function closeEditAdminModal() {
+    const modal = document.getElementById('edit-admin-modal');
+    if (!modal) return;
+    if (typeof closeModalEl === 'function') {
+        closeModalEl(modal);
+    } else {
+        modal.classList.remove('open');
+        modal.style.display = 'none';
+    }
+    const form = document.getElementById('edit-admin-form');
+    if (form) form.reset();
+    const idInput = document.getElementById('edit-admin-id');
+    if (idInput) idInput.value = '';
+}
+
+function saveEditAdmin(event) {
+    event.preventDefault();
+
+    const adminId = document.getElementById('edit-admin-id')?.value;
+    const admin = allAdminsData.find(a => a._id === adminId);
+    if (!adminId || !admin) {
+        showToast('Administrateur non trouvé', 'error');
+        return;
+    }
+
+    const newEmail = (document.getElementById('edit-admin-email')?.value || '').trim();
+    const newFullName = (document.getElementById('edit-admin-full-name')?.value || '').trim();
+    const currentPassword = document.getElementById('edit-admin-current-password')?.value || '';
+    const newPassword = document.getElementById('edit-admin-password')?.value || '';
+
+    const updateData = {};
+    if (newEmail !== (admin.email || '')) {
+        updateData.email = newEmail;
+    }
+    if (newFullName !== (admin.full_name || '')) {
+        updateData.full_name = newFullName;
+    }
+    if (newPassword) {
+        if (!currentPassword) {
+            showToast('Saisissez l’ancien mot de passe pour en définir un nouveau', 'error');
+            document.getElementById('edit-admin-current-password')?.focus();
+            return;
+        }
+        if (newPassword.length < 6) {
+            showToast('Le mot de passe doit contenir au moins 6 caractères', 'error');
+            document.getElementById('edit-admin-password')?.focus();
+            return;
+        }
+        updateData.current_password = currentPassword;
+        updateData.password = newPassword;
+    } else if (currentPassword) {
+        showToast('Indiquez aussi le nouveau mot de passe', 'error');
+        document.getElementById('edit-admin-password')?.focus();
+        return;
+    }
+
     if (Object.keys(updateData).length === 0) {
         showToast('Aucune modification', 'info');
         return;
     }
-    
+
     updateAdmin(adminId, updateData);
 }
 
@@ -2646,17 +2810,25 @@ async function updateAdmin(adminId, updateData) {
         const response = await fetch(`${API_BASE}/admin/users/${adminId}`, {
             method: 'PUT',
             headers: getHeaders(),
+            credentials: 'include',
             body: JSON.stringify(updateData)
         });
         
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         
         if (!response.ok) {
             showToast(data.error || 'Erreur lors de la mise à jour', 'error');
+            if (data.error && String(data.error).toLowerCase().includes('ancien')) {
+                document.getElementById('edit-admin-current-password')?.focus();
+            }
             return;
         }
         
-        showToast('Administrateur mis à jour avec succès', 'success');
+        closeEditAdminModal();
+        showToast(
+            data.message || (updateData.password ? 'Mot de passe mis à jour avec succès' : 'Administrateur mis à jour avec succès'),
+            'success'
+        );
         
         // Mettre à jour l'état local immédiatement
         const adminIndex = allAdminsData.findIndex(a => a._id === adminId);
@@ -2729,6 +2901,8 @@ Object.assign(window, {
     openCreateAdminModal,
     closeCreateAdminModal,
     editAdmin,
+    closeEditAdminModal,
+    saveEditAdmin,
     deleteAdmin,
 });
 // Déjà assignés via window.xxx = function ... — garantir la présence

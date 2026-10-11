@@ -88,6 +88,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    const editAdminModal = document.getElementById('edit-admin-modal');
+    if (editAdminModal) {
+        editAdminModal.addEventListener('click', function(e) {
+            if (e.target === editAdminModal && typeof closeEditAdminModal === 'function') {
+                closeEditAdminModal();
+            }
+        });
+    }
 });
 
 // ============================================
@@ -1353,12 +1362,23 @@ async function enable2FA() {
 }
 
 async function disable2FA() {
-    const code = prompt('Code TOTP pour désactiver la 2FA');
-    if (!code) return;
+    const code = await adminPrompt({
+        title: 'Désactiver la 2FA',
+        message: 'Entrez le code TOTP actuel pour confirmer la désactivation.',
+        label: 'Code TOTP',
+        placeholder: '000000',
+        confirmLabel: 'Désactiver',
+        inputType: 'text',
+        icon: 'fa-shield-alt',
+        danger: true,
+        required: true,
+        hint: 'Le code à 6 chiffres de votre application d’authentification.',
+    });
+    if (code === null || !String(code).trim()) return;
     const res = await fetch('/api/admin/2fa/disable', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code: String(code).trim() }),
     });
     const data = await res.json();
     showToast(res.ok ? '2FA désactivée' : (data.error || 'Erreur'), res.ok ? 'success' : 'error');
@@ -1575,6 +1595,138 @@ function adminConfirm(options) {
 window.adminConfirm = adminConfirm;
 
 // ============================================
+// Prompt dialog (remplace window.prompt)
+// ============================================
+let adminPromptResolver = null;
+
+function closeAdminPrompt(result) {
+    const modal = document.getElementById('adminPromptModal');
+    if (modal) {
+        if (typeof closeModalEl === 'function') {
+            closeModalEl(modal);
+        } else {
+            modal.classList.remove('open');
+            modal.style.display = 'none';
+        }
+    }
+    if (adminPromptResolver) {
+        adminPromptResolver(result);
+        adminPromptResolver = null;
+    }
+}
+
+function initAdminPromptModal() {
+    const modal = document.getElementById('adminPromptModal');
+    if (!modal || modal.dataset.bound) return;
+    modal.dataset.bound = '1';
+    const form = document.getElementById('admin-prompt-form');
+    const cancelBtn = document.getElementById('admin-prompt-cancel');
+    const input = document.getElementById('admin-prompt-input');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => closeAdminPrompt(null));
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const value = input ? input.value : '';
+            if (form.dataset.required === '1' && !String(value).trim()) {
+                if (input) {
+                    input.focus();
+                    input.classList.add('is-invalid');
+                }
+                return;
+            }
+            closeAdminPrompt(value);
+        });
+    }
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeAdminPrompt(null);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+            closeAdminPrompt(null);
+        }
+    });
+    if (input) {
+        input.addEventListener('input', () => input.classList.remove('is-invalid'));
+    }
+}
+
+/**
+ * @param {string|{title?:string,message?:string,label?:string,placeholder?:string,defaultValue?:string,confirmLabel?:string,cancelLabel?:string,inputType?:string,hint?:string,icon?:string,danger?:boolean,required?:boolean}} options
+ * @returns {Promise<string|null>}
+ */
+function adminPrompt(options) {
+    initAdminPromptModal();
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const title = opts.title || 'Saisie';
+    const message = opts.message || '';
+    const label = opts.label || 'Valeur';
+    const placeholder = opts.placeholder || '';
+    const defaultValue = opts.defaultValue != null ? String(opts.defaultValue) : '';
+    const confirmLabel = opts.confirmLabel || 'Valider';
+    const cancelLabel = opts.cancelLabel || 'Annuler';
+    const inputType = opts.inputType || 'text';
+    const hint = opts.hint || '';
+    const danger = Boolean(opts.danger);
+    const required = Boolean(opts.required);
+    const icon = opts.icon || (danger ? 'fa-exclamation-triangle' : 'fa-pen');
+
+    const modal = document.getElementById('adminPromptModal');
+    const titleEl = document.getElementById('admin-prompt-title');
+    const messageEl = document.getElementById('admin-prompt-message');
+    const labelEl = document.getElementById('admin-prompt-label');
+    const input = document.getElementById('admin-prompt-input');
+    const hintEl = document.getElementById('admin-prompt-hint');
+    const okBtn = document.getElementById('admin-prompt-ok');
+    const cancelBtn = document.getElementById('admin-prompt-cancel');
+    const iconWrap = document.getElementById('admin-prompt-icon');
+    const form = document.getElementById('admin-prompt-form');
+
+    if (!modal || !input) {
+        return Promise.resolve(window.prompt([title, message].filter(Boolean).join('\n\n'), defaultValue));
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) {
+        messageEl.textContent = message;
+        messageEl.hidden = !message;
+    }
+    if (labelEl) labelEl.textContent = label;
+    if (hintEl) {
+        hintEl.textContent = hint;
+        hintEl.hidden = !hint;
+    }
+    if (okBtn) {
+        okBtn.textContent = confirmLabel;
+        okBtn.classList.toggle('btn-danger', danger);
+    }
+    if (cancelBtn) cancelBtn.textContent = cancelLabel;
+    if (iconWrap) iconWrap.innerHTML = `<i class="fas ${icon}"></i>`;
+    if (form) form.dataset.required = required ? '1' : '0';
+    modal.classList.toggle('is-danger', danger);
+
+    input.type = inputType;
+    input.placeholder = placeholder;
+    input.value = defaultValue;
+    input.classList.remove('is-invalid');
+    input.autocomplete = inputType === 'password' ? 'new-password' : 'off';
+
+    return new Promise((resolve) => {
+        adminPromptResolver = resolve;
+        if (typeof openModalEl === 'function') {
+            openModalEl(modal);
+        } else {
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => modal.classList.add('open'));
+        }
+        window.setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 60);
+    });
+}
+window.adminPrompt = adminPrompt;
+
+// ============================================
 // Loading Overlay
 // ============================================
 function showLoading() {
@@ -1599,6 +1751,7 @@ Object.assign(window, {
     loadPanelStats,
     loadDashboardStats,
     adminConfirm,
+    adminPrompt,
     loadCareerAdmin,
     openCareerModal,
     editCareer,

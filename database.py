@@ -348,6 +348,16 @@ def migrate_schema(cursor):
     ):
         _add_column(cursor, 'admin_users', col, definition)
 
+    # Index unique sur l'email (connexion admin) — ignore les NULL
+    try:
+        cursor.execute('''
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_users_email_unique
+            ON admin_users (LOWER(TRIM(email)))
+            WHERE email IS NOT NULL AND TRIM(email) != ''
+        ''')
+    except Exception:
+        pass
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

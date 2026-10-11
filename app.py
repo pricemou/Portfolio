@@ -156,6 +156,15 @@ except ImportError:
         except Exception:
             return False
 
+def _default_admin_email():
+    """Email admin par défaut : variable d'env valide ou fallback local."""
+    for key in ('ADMIN_EMAIL', 'NOTIFICATION_EMAIL', 'MAIL_USERNAME'):
+        candidate = (os.getenv(key) or '').strip().lower()
+        if candidate and validate_email(candidate):
+            return candidate
+    return 'admin@example.com'
+
+
 def init_admin_user():
     """Initialise l'utilisateur admin par défaut si nécessaire"""
     try:
@@ -166,6 +175,7 @@ def init_admin_user():
             cursor = conn.cursor()
             default_username = os.getenv('ADMIN_USERNAME', 'admin')
             default_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+            default_email = _default_admin_email()
             
             # Vérifier si un admin existe déjà
             cursor.execute('SELECT * FROM admin_users WHERE username = ?', (default_username,))
@@ -173,12 +183,23 @@ def init_admin_user():
             
             if not existing_admin:
                 cursor.execute('''
-                    INSERT INTO admin_users (username, password, created_at)
-                    VALUES (?, ?, ?)
-                ''', (default_username, hash_password(default_password), datetime.now()))
+                    INSERT INTO admin_users (username, password, email, created_at)
+                    VALUES (?, ?, ?, ?)
+                ''', (default_username, hash_password(default_password), default_email, datetime.now()))
                 conn.commit()
-                print(f"✅ Utilisateur admin créé - Username: {default_username}, Password: {default_password}")
+                print(f"✅ Utilisateur admin créé - Email: {default_email}, Password: {default_password}")
                 print("⚠️  Changez le mot de passe par défaut en production !")
+            else:
+                # Migration soft: email manquant ou rejeté par validate_email (ex. admin@localhost)
+                existing = row_to_dict(existing_admin)
+                existing_email = (existing.get('email') or '').strip().lower()
+                if not existing_email or not validate_email(existing_email):
+                    cursor.execute(
+                        'UPDATE admin_users SET email = ? WHERE id = ?',
+                        (default_email, existing['id']),
+                    )
+                    conn.commit()
+                    print(f"✅ Email admin corrigé: {default_email}")
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation de l'utilisateur admin: {e}")
 
@@ -750,37 +771,42 @@ def json_serial(obj):
 @app.route('/admin/login', methods=['GET', 'POST'])
 @_limit_login
 def admin_login():
-    """Page de connexion administrateur"""
+    """Page de connexion administrateur (email + mot de passe)"""
     if request.method == 'POST':
-        username = request.form.get('username')
+        # Compatibilité: accepter encore "username" si un vieux client poste ce champ
+        email = (request.form.get('email') or request.form.get('username') or '').strip()
         password = request.form.get('password')
         ip_addr = client_ip_from_request(request)
         ua = request.headers.get('User-Agent', '')[:500]
         
-        if not username or not password:
+        if not email or not password:
             flash('Veuillez remplir tous les champs', 'error')
-            return render_template('admin_login.html')
+            return render_template('admin_login.html', email_value=email)
         
-        username = sanitize_input(username, max_length=50)
+        email = sanitize_input(email, max_length=100).lower()
         password = password.strip() if password else ''
         
-        if len(username) < 3 or len(password) < 6:
+        if not validate_email(email) or len(password) < 6:
             flash('Identifiants invalides', 'error')
-            return render_template('admin_login.html')
+            return render_template('admin_login.html', email_value=email)
         
         try:
             with get_db() as conn:
                 if conn is None:
                     flash('Erreur de connexion à la base de données', 'error')
-                    return render_template('admin_login.html')
+                    return render_template('admin_login.html', email_value=email)
                 
                 cursor = conn.cursor()
-                cursor.execute('SELECT * FROM admin_users WHERE username = ?', (username,))
+                cursor.execute(
+                    'SELECT * FROM admin_users WHERE LOWER(TRIM(email)) = ?',
+                    (email,),
+                )
                 admin_user = cursor.fetchone()
                 
                 if admin_user:
                     admin_user_dict = row_to_dict(admin_user)
                     stored_password = admin_user_dict['password']
+                    username = admin_user_dict.get('username') or email
                     
                     if check_password(password, stored_password):
                         if len(stored_password) == 64 and re.match(r'^[a-f0-9]{64}$', stored_password):
@@ -797,8 +823,8 @@ def admin_login():
                         cursor.execute('''
                             UPDATE admin_users
                             SET last_login = ?
-                            WHERE username = ?
-                        ''', (datetime.now(), username))
+                            WHERE id = ?
+                        ''', (datetime.now(), admin_user_dict['id']))
                         cursor.execute('''
                             INSERT INTO login_history (username, success, ip_address, user_agent)
                             VALUES (?, ?, ?, ?)
@@ -806,7 +832,7 @@ def admin_login():
                         log_security_event(
                             conn, 'login_success', severity='info',
                             path='/admin/login', ip_address=ip_addr,
-                            details={'username': username[:50]},
+                            details={'email': email[:80], 'username': username[:50]},
                         )
                         conn.commit()
                         session.clear()
@@ -820,11 +846,11 @@ def admin_login():
                     cursor.execute('''
                         INSERT INTO login_history (username, success, ip_address, user_agent)
                         VALUES (?, ?, ?, ?)
-                    ''', (username[:50], 0, hash_ip(ip_addr), ua))
+                    ''', (email[:50], 0, hash_ip(ip_addr), ua))
                     log_security_event(
                         conn, 'login_failed', severity='warning',
                         path='/admin/login', ip_address=ip_addr,
-                        details={'username': username[:50]},
+                        details={'email': email[:80]},
                     )
                     cursor.execute(
                         """
@@ -848,11 +874,11 @@ def admin_login():
                     pass
                 
                 flash('Identifiants invalides', 'error')
-                return render_template('admin_login.html')
+                return render_template('admin_login.html', email_value=email)
         except Exception as e:
             app.logger.error(f"Erreur lors de la connexion: {e}")
             flash('Erreur lors de la connexion. Veuillez réessayer.', 'error')
-            return render_template('admin_login.html')
+            return render_template('admin_login.html', email_value=email)
     
     if 'admin_logged_in' in session and session.get('admin_logged_in'):
         return redirect(url_for('admin_section', section='dashboard'))
@@ -2102,13 +2128,20 @@ def update_admin_profile():
             updates = []
             values = []
             
-            # Valider et mettre à jour l'email si fourni
+            # Valider et mettre à jour l'email si fourni (requis pour la connexion)
             if 'email' in data:
-                email = sanitize_input(data['email'], max_length=100)
-                if email and not validate_email(email):
-                    return jsonify({'error': 'Format d\'email invalide'}), 400
+                email_raw = (data.get('email') or '').strip()
+                email = sanitize_input(email_raw, max_length=100).lower() if email_raw else ''
+                if not email or not validate_email(email):
+                    return jsonify({'error': 'Un email valide est requis pour la connexion'}), 400
+                cursor.execute(
+                    'SELECT id FROM admin_users WHERE LOWER(TRIM(email)) = ? AND id != ?',
+                    (email, int(admin_id)),
+                )
+                if cursor.fetchone():
+                    return jsonify({'error': 'Cet email est déjà utilisé'}), 400
                 updates.append('email = ?')
-                values.append(email if email else None)
+                values.append(email)
             
             # Mettre à jour le nom complet si fourni
             if 'full_name' in data:
@@ -2285,7 +2318,8 @@ def create_admin_user():
         # Validation des champs requis
         username = sanitize_input(data.get('username', ''), max_length=50)
         password = data.get('password', '').strip()
-        email = sanitize_input(data.get('email', ''), max_length=100) if data.get('email') else None
+        email_raw = (data.get('email') or '').strip()
+        email = sanitize_input(email_raw, max_length=100).lower() if email_raw else ''
         full_name = sanitize_input(data.get('full_name', ''), max_length=100) if data.get('full_name') else None
         
         # Validation
@@ -2295,8 +2329,8 @@ def create_admin_user():
         if not password or len(password) < 6:
             return jsonify({'error': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
         
-        if email and not validate_email(email):
-            return jsonify({'error': 'Format d\'email invalide'}), 400
+        if not email or not validate_email(email):
+            return jsonify({'error': 'Un email valide est requis pour la connexion'}), 400
         
         with get_db() as conn:
             if conn is None:
@@ -2308,6 +2342,13 @@ def create_admin_user():
             cursor.execute('SELECT id FROM admin_users WHERE username = ?', (username,))
             if cursor.fetchone():
                 return jsonify({'error': 'Ce nom d\'utilisateur existe déjà'}), 400
+
+            cursor.execute(
+                'SELECT id FROM admin_users WHERE LOWER(TRIM(email)) = ?',
+                (email,),
+            )
+            if cursor.fetchone():
+                return jsonify({'error': 'Cet email est déjà utilisé'}), 400
             
             # Hasher le mot de passe
             password_hash = hash_password(password)
@@ -2341,10 +2382,6 @@ def update_admin_user(admin_id):
         if not current_admin_id:
             return jsonify({'error': 'Non authentifié'}), 401
         
-        # Empêcher un admin de se modifier lui-même via cette route (utiliser /api/admin/profile)
-        if str(current_admin_id) == str(admin_id):
-            return jsonify({'error': 'Utilisez la section Profil pour modifier vos propres informations'}), 400
-        
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Données JSON manquantes'}), 400
@@ -2356,18 +2393,28 @@ def update_admin_user(admin_id):
             cursor = conn.cursor()
             
             # Vérifier que l'admin existe
-            cursor.execute('SELECT id FROM admin_users WHERE id = ?', (int(admin_id),))
-            if not cursor.fetchone():
+            cursor.execute('SELECT id, password FROM admin_users WHERE id = ?', (int(admin_id),))
+            target_row = cursor.fetchone()
+            if not target_row:
                 return jsonify({'error': 'Administrateur non trouvé'}), 404
+            stored_password = target_row[1]
             
             updates = []
             values = []
+            password_updated = False
             
             # Mettre à jour l'email si fourni
             if 'email' in data:
-                email = sanitize_input(data['email'], max_length=100) if data['email'] else None
-                if email and not validate_email(email):
-                    return jsonify({'error': 'Format d\'email invalide'}), 400
+                email_raw = (data.get('email') or '').strip()
+                email = sanitize_input(email_raw, max_length=100).lower() if email_raw else ''
+                if not email or not validate_email(email):
+                    return jsonify({'error': 'Un email valide est requis pour la connexion'}), 400
+                cursor.execute(
+                    'SELECT id FROM admin_users WHERE LOWER(TRIM(email)) = ? AND id != ?',
+                    (email, int(admin_id)),
+                )
+                if cursor.fetchone():
+                    return jsonify({'error': 'Cet email est déjà utilisé'}), 400
                 updates.append('email = ?')
                 values.append(email)
             
@@ -2377,14 +2424,22 @@ def update_admin_user(admin_id):
                 updates.append('full_name = ?')
                 values.append(full_name)
             
-            # Mettre à jour le mot de passe si fourni
+            # Remplacer le hash en base si nouveau mot de passe + ancien correct
             if 'password' in data and data['password']:
                 password = data['password'].strip()
+                current_password = (data.get('current_password') or '').strip()
+                if not current_password:
+                    return jsonify({'error': 'L\'ancien mot de passe est requis pour le modifier'}), 400
                 if len(password) < 6:
                     return jsonify({'error': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
+                if current_password == password:
+                    return jsonify({'error': 'Le nouveau mot de passe doit être différent de l\'ancien'}), 400
+                if not check_password(current_password, stored_password):
+                    return jsonify({'error': 'Ancien mot de passe incorrect'}), 400
                 password_hash = hash_password(password)
                 updates.append('password = ?')
                 values.append(password_hash)
+                password_updated = True
             
             if not updates:
                 return jsonify({'error': 'Aucune donnée à mettre à jour'}), 400
@@ -2397,9 +2452,14 @@ def update_admin_user(admin_id):
             ''', values)
             conn.commit()
             
-            if cursor.rowcount > 0:
-                app.logger.info(f"Administrateur mis à jour (ID: {admin_id})")
-                return jsonify({'success': True, 'message': 'Administrateur mis à jour avec succès'}), 200
+            if cursor.rowcount > 0 or password_updated:
+                msg = (
+                    'Mot de passe mis à jour avec succès'
+                    if password_updated and len(updates) == 1
+                    else 'Administrateur mis à jour avec succès'
+                )
+                app.logger.info(f"Administrateur mis à jour (ID: {admin_id}, password={password_updated})")
+                return jsonify({'success': True, 'message': msg, 'password_updated': password_updated}), 200
             return jsonify({'error': 'Aucune modification effectuée'}), 400
             
     except Exception as e:

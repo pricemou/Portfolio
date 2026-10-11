@@ -1942,6 +1942,124 @@ body {
     100% { transform: scale(1); opacity: 1; }
 }
 
+/* Prompt dialog (remplace window.prompt) */
+.admin-prompt-dialog {
+    text-align: left;
+}
+
+.admin-prompt-dialog .admin-confirm-icon {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.admin-prompt-dialog h3,
+.admin-prompt-dialog > p {
+    text-align: center;
+}
+
+.admin-prompt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.15rem;
+}
+
+.admin-prompt-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--admin-muted);
+}
+
+.admin-prompt-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--admin-border);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--white);
+    font: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-prompt-input:focus {
+    border-color: rgba(77, 186, 135, 0.55);
+    box-shadow: 0 0 0 3px rgba(77, 186, 135, 0.16);
+    background: rgba(0, 0, 0, 0.32);
+}
+
+.admin-prompt-input.is-invalid {
+    border-color: rgba(220, 53, 69, 0.65);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.18);
+}
+
+.admin-prompt-hint {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+    color: var(--admin-muted);
+    line-height: 1.4;
+}
+
+.admin-prompt-form .admin-confirm-actions {
+    margin-top: 0.55rem;
+}
+
+/* Édition administrateur */
+.admin-edit-dialog {
+    max-width: 460px;
+    width: min(94vw, 460px);
+}
+
+.admin-edit-header {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+}
+
+.admin-edit-avatar {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: var(--green);
+    background: var(--admin-soft-green);
+    border: 1px solid rgba(77, 186, 135, 0.28);
+    font-size: 1.05rem;
+}
+
+.admin-edit-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.admin-edit-subtitle {
+    margin: 0.15rem 0 0;
+    font-size: 0.82rem;
+    color: var(--admin-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-edit-dialog .form-hint {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--admin-muted);
+}
+
+.admin-edit-dialog .modal-actions {
+    margin-top: 0.35rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .modal,
     .modal-content,
