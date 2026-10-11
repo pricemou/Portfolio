@@ -107,7 +107,17 @@ def register_extra_routes(app, admin_required, sanitize_input):
         try:
             with get_db() as conn:
                 cursor = conn.cursor()
-                cursor.execute(f"UPDATE career SET {', '.join(fields)} WHERE id = ?", values)
+                cursor.execute(
+                    f'''
+                    UPDATE career SET {', '.join(fields)}
+                    WHERE id = ? AND (deleted_at IS NULL OR deleted_at = '')
+                    ''',
+                    values,
+                )
+                if cursor.rowcount < 1:
+                    return jsonify({'error': 'Entrée introuvable'}), 404
+                from utils.audit import log_audit
+                log_audit(conn, session.get('admin_id'), 'update', 'career', item_id, data)
                 conn.commit()
                 return jsonify({'success': True})
         except Exception as e:
@@ -126,6 +136,8 @@ def register_extra_routes(app, admin_required, sanitize_input):
                     ''',
                     (item_id,),
                 )
+                if cursor.rowcount < 1:
+                    return jsonify({'error': 'Entrée introuvable'}), 404
                 from utils.audit import log_audit
                 log_audit(conn, session.get('admin_id'), 'soft_delete', 'career', item_id)
                 conn.commit()

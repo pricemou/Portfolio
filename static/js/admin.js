@@ -374,42 +374,114 @@ async function loadMonitoringLists() {
     }
 }
 
+let careerCache = {};
+
+function escapeCareerHtml(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function openCareerModalEl(modal) {
+    if (!modal) return;
+    if (typeof openModalEl === 'function') {
+        openModalEl(modal);
+        return;
+    }
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+}
+
+function closeCareerModalEl(modal) {
+    if (!modal) return;
+    if (typeof closeModalEl === 'function') {
+        closeModalEl(modal);
+        return;
+    }
+    modal.style.display = 'none';
+    modal.classList.remove('open');
+}
+
+function fillCareerForm(item) {
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    };
+    set('career-id', item?.id || '');
+    set('career-title', item?.title || '');
+    set('career-org', item?.org || '');
+    set('career-location', item?.location || '');
+    set('career-start', item?.start || '');
+    set('career-end', item?.end || '');
+    set('career-kind', item?.kind || 'emploi');
+    set('career-status', item?.status || 'published');
+    set('career-order', item?.order_index ?? 0);
+    set('career-bullets', item?.bullets || '');
+}
+
+function initCareerForm() {
+    const form = document.getElementById('career-form');
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = '1';
+    form.addEventListener('submit', handleCareerSubmit);
+}
+
 async function loadCareerAdmin() {
     const list = document.getElementById('career-list');
     if (!list) return;
+    initCareerForm();
     const res = await fetch('/api/career', { credentials: 'include' });
-    if (!res.ok) return;
+    if (!res.ok) {
+        showToast('Impossible de charger le parcours', 'error');
+        return;
+    }
     const items = await res.json();
-    const renderList = (item) => `
+    careerCache = {};
+    (items || []).forEach((item) => {
+        if (item && item.id != null) careerCache[item.id] = item;
+    });
+
+    const renderList = (item) => {
+        const period = `${escapeCareerHtml(item.start || '')} → ${escapeCareerHtml(item.end || 'aujourd’hui')}`;
+        const heading = [item.title, item.org].filter(Boolean).map(escapeCareerHtml).join(' — ');
+        return `
         <div class="admin-card">
             <div class="admin-card-row">
                 <div class="admin-card-main">
-                    <h3>${item.title || ''} — ${item.org || ''}</h3>
+                    <h3>${heading || 'Sans titre'}</h3>
                     <div class="admin-card-meta">
-                        <span>${item.start || ''} → ${item.end || 'aujourd’hui'}</span>
-                        <span>${item.kind || ''}</span>
+                        <span>${period}</span>
+                        <span>${escapeCareerHtml(item.kind || '')}</span>
+                        <span>${escapeCareerHtml(item.location || '')}</span>
                     </div>
-                    <p>${item.bullets || ''}</p>
+                    <p>${escapeCareerHtml(item.bullets || '')}</p>
                 </div>
                 <div class="admin-card-actions">
+                    <button type="button" class="btn btn-sm btn-ghost" onclick="editCareer(${item.id})"><i class="fas fa-edit"></i> Modifier</button>
                     <button type="button" class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteCareer(${item.id})"><i class="fas fa-trash"></i> Supprimer</button>
                 </div>
             </div>
-        </div>
-    `;
+        </div>`;
+    };
     const renderGrid = (item) => {
         const initial = (item.title || 'P').trim().charAt(0).toUpperCase();
+        const period = `${escapeCareerHtml(item.start || '')} → ${escapeCareerHtml(item.end || 'aujourd’hui')}`;
         return `
             <article class="admin-grid-card">
-                <div class="admin-grid-card-icon">${initial}</div>
-                <h3 class="admin-grid-card-title">${item.title || 'Sans titre'}</h3>
-                <p class="admin-grid-card-text">${item.org || ''}</p>
+                <div class="admin-grid-card-icon">${escapeCareerHtml(initial)}</div>
+                <h3 class="admin-grid-card-title">${escapeCareerHtml(item.title || 'Sans titre')}</h3>
+                <p class="admin-grid-card-text">${escapeCareerHtml(item.org || '')}</p>
                 <div class="admin-card-meta">
-                    <span>${item.start || ''} → ${item.end || 'aujourd’hui'}</span>
-                    <span>${item.kind || ''}</span>
+                    <span>${period}</span>
+                    <span>${escapeCareerHtml(item.kind || '')}</span>
                 </div>
                 <div class="admin-card-actions">
-                    <button type="button" class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteCareer(${item.id})"><i class="fas fa-trash"></i></button>
+                    <button type="button" class="btn btn-sm btn-ghost" onclick="editCareer(${item.id})" title="Modifier"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-sm btn-ghost btn-danger-ghost" onclick="deleteCareer(${item.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
                 </div>
             </article>
         `;
@@ -427,27 +499,86 @@ async function loadCareerAdmin() {
     });
 }
 
-async function openCareerModal() {
-    const title = prompt('Titre du poste');
-    if (!title) return;
-    const org = prompt('Organisation') || '';
-    const bullets = prompt('Description courte') || '';
-    const res = await fetch('/api/career', {
-        method: 'POST',
+function openCareerModal() {
+    initCareerForm();
+    const modal = document.getElementById('careerModal');
+    const titleEl = document.getElementById('careerModalTitle');
+    if (titleEl) titleEl.textContent = 'Nouvelle entrée';
+    fillCareerForm(null);
+    openCareerModalEl(modal);
+}
+
+function editCareer(id) {
+    initCareerForm();
+    const item = careerCache[id];
+    if (!item) {
+        showToast('Entrée introuvable', 'error');
+        return;
+    }
+    const modal = document.getElementById('careerModal');
+    const titleEl = document.getElementById('careerModalTitle');
+    if (titleEl) titleEl.textContent = 'Modifier l’entrée';
+    fillCareerForm(item);
+    openCareerModalEl(modal);
+}
+
+function closeCareerModal() {
+    closeCareerModalEl(document.getElementById('careerModal'));
+}
+
+async function handleCareerSubmit(event) {
+    event.preventDefault();
+    const id = (document.getElementById('career-id')?.value || '').trim();
+    const title = (document.getElementById('career-title')?.value || '').trim();
+    if (!title) {
+        showToast('Le titre est requis', 'error');
+        return;
+    }
+    const payload = {
+        title,
+        org: (document.getElementById('career-org')?.value || '').trim(),
+        location: (document.getElementById('career-location')?.value || '').trim(),
+        start: (document.getElementById('career-start')?.value || '').trim(),
+        end: (document.getElementById('career-end')?.value || '').trim(),
+        kind: document.getElementById('career-kind')?.value || 'emploi',
+        status: document.getElementById('career-status')?.value || 'published',
+        order_index: parseInt(document.getElementById('career-order')?.value, 10) || 0,
+        bullets: (document.getElementById('career-bullets')?.value || '').trim(),
+    };
+    const url = id ? `/api/career/${id}` : '/api/career';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+        method,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, org, bullets, kind: 'emploi', status: 'published', order_index: 0 }),
+        body: JSON.stringify(payload),
     });
-    if (res.ok) {
-        showToast('Parcours ajouté', 'success');
-        loadCareerAdmin();
-    } else showToast('Erreur ajout parcours', 'error');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        showToast(data.error || 'Erreur enregistrement parcours', 'error');
+        return;
+    }
+    showToast(id ? 'Parcours mis à jour' : 'Parcours ajouté', 'success');
+    closeCareerModal();
+    loadCareerAdmin();
 }
 
 async function deleteCareer(id) {
-    if (!confirm('Supprimer cette entrée ?')) return;
+    const ok = await adminConfirm({
+        title: 'Supprimer cette entrée ?',
+        message: 'Elle sera retirée du parcours public et placée en corbeille.',
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/career/${id}`, { method: 'DELETE', credentials: 'include' });
-    if (res.ok) loadCareerAdmin();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        showToast(data.error || 'Erreur lors de la suppression', 'error');
+        return;
+    }
+    showToast('Entrée supprimée', 'success');
+    loadCareerAdmin();
 }
 
 let certsCache = {};
@@ -806,7 +937,13 @@ async function handleCertSubmit(event) {
 }
 
 async function deleteCert(id) {
-    if (!confirm('Mettre cette certification à la corbeille ?')) return;
+    const ok = await adminConfirm({
+        title: 'Supprimer cette certification ?',
+        message: 'Elle sera déplacée dans la corbeille et retirée du site public.',
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/certifications/${id}`, { method: 'DELETE', credentials: 'include' });
     if (res.ok) {
         showToast('Certification supprimée', 'success');
@@ -1069,7 +1206,13 @@ async function uploadMedia(event) {
 }
 
 async function deleteMedia(id) {
-    if (!confirm('Mettre ce fichier à la corbeille ?')) return;
+    const ok = await adminConfirm({
+        title: 'Supprimer ce fichier ?',
+        message: 'Le fichier sera placé dans la corbeille.',
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/media/${id}`, { method: 'DELETE', credentials: 'include' });
     if (res.ok) loadMediaAdmin();
 }
@@ -1130,13 +1273,25 @@ async function restoreTrash(entity, id) {
 }
 
 async function purgeTrash(entity, id) {
-    if (!confirm('Suppression définitive ?')) return;
+    const ok = await adminConfirm({
+        title: 'Suppression définitive ?',
+        message: 'Cette action est irréversible. L’élément sera effacé définitivement.',
+        confirmLabel: 'Purger',
+        danger: true,
+        icon: 'fa-skull-crossbones',
+    });
+    if (!ok) return;
     const res = await fetch('/api/trash/purge', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entity, id }),
     });
-    if (res.ok) loadTrashAdmin();
+    if (res.ok) {
+        showToast('Élément purgé', 'success');
+        loadTrashAdmin();
+    } else {
+        showToast('Erreur lors de la purge', 'error');
+    }
 }
 
 async function loadAuditAdmin() {
@@ -1326,6 +1481,100 @@ function showToast(message, type = 'info') {
 window.showToast = showToast;
 
 // ============================================
+// Confirmation dialog (remplace window.confirm)
+// ============================================
+let adminConfirmResolver = null;
+
+function closeAdminConfirm(result) {
+    const modal = document.getElementById('adminConfirmModal');
+    if (!modal) {
+        if (adminConfirmResolver) {
+            adminConfirmResolver(Boolean(result));
+            adminConfirmResolver = null;
+        }
+        return;
+    }
+    if (typeof closeModalEl === 'function') {
+        closeModalEl(modal);
+    } else {
+        modal.classList.remove('open');
+        modal.style.display = 'none';
+    }
+    if (adminConfirmResolver) {
+        adminConfirmResolver(Boolean(result));
+        adminConfirmResolver = null;
+    }
+}
+
+function initAdminConfirmModal() {
+    const modal = document.getElementById('adminConfirmModal');
+    if (!modal || modal.dataset.bound) return;
+    modal.dataset.bound = '1';
+    const cancelBtn = document.getElementById('admin-confirm-cancel');
+    const okBtn = document.getElementById('admin-confirm-ok');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => closeAdminConfirm(false));
+    if (okBtn) okBtn.addEventListener('click', () => closeAdminConfirm(true));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeAdminConfirm(false);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('open')) {
+            closeAdminConfirm(false);
+        }
+    });
+}
+
+/**
+ * @param {string|{title?:string,message?:string,confirmLabel?:string,cancelLabel?:string,danger?:boolean,icon?:string}} options
+ * @returns {Promise<boolean>}
+ */
+function adminConfirm(options) {
+    initAdminConfirmModal();
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const title = opts.title || 'Confirmer';
+    const message = opts.message || 'Voulez-vous continuer ?';
+    const confirmLabel = opts.confirmLabel || 'Confirmer';
+    const cancelLabel = opts.cancelLabel || 'Annuler';
+    const danger = opts.danger !== false;
+    const icon = opts.icon || (danger ? 'fa-exclamation-triangle' : 'fa-question-circle');
+
+    const modal = document.getElementById('adminConfirmModal');
+    const titleEl = document.getElementById('admin-confirm-title');
+    const messageEl = document.getElementById('admin-confirm-message');
+    const okBtn = document.getElementById('admin-confirm-ok');
+    const cancelBtn = document.getElementById('admin-confirm-cancel');
+    const iconWrap = document.getElementById('admin-confirm-icon');
+
+    if (!modal) {
+        return Promise.resolve(window.confirm([title, message].filter(Boolean).join('\n\n')));
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+    if (okBtn) {
+        okBtn.textContent = confirmLabel;
+        okBtn.classList.toggle('btn-danger', danger);
+    }
+    if (cancelBtn) cancelBtn.textContent = cancelLabel;
+    if (iconWrap) {
+        iconWrap.innerHTML = `<i class="fas ${icon}"></i>`;
+    }
+    modal.classList.toggle('is-danger', danger);
+
+    return new Promise((resolve) => {
+        adminConfirmResolver = resolve;
+        if (typeof openModalEl === 'function') {
+            openModalEl(modal);
+        } else {
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => modal.classList.add('open'));
+        }
+        window.setTimeout(() => okBtn && okBtn.focus(), 60);
+    });
+}
+window.adminConfirm = adminConfirm;
+
+// ============================================
 // Loading Overlay
 // ============================================
 function showLoading() {
@@ -1349,8 +1598,11 @@ Object.assign(window, {
     toggleRightPanel,
     loadPanelStats,
     loadDashboardStats,
+    adminConfirm,
     loadCareerAdmin,
     openCareerModal,
+    editCareer,
+    closeCareerModal,
     deleteCareer,
     loadCertsAdmin,
     openCertModal,

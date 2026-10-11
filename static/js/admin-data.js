@@ -386,17 +386,33 @@ function initSkillsSection() {
 
 function openModalEl(modal) {
     if (!modal) return;
+    modal.classList.remove('is-closing');
     modal.style.display = 'flex';
-    modal.style.opacity = '1';
-    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    // Force reflow so enter transition plays
+    void modal.offsetWidth;
+    requestAnimationFrame(() => {
+        modal.classList.add('open');
+        modal.style.opacity = '1';
+    });
 }
 
 function closeModalEl(modal) {
     if (!modal) return;
-    modal.style.display = 'none';
-    modal.style.opacity = '0';
     modal.classList.remove('open');
+    modal.classList.add('is-closing');
+    modal.style.opacity = '0';
+    modal.setAttribute('aria-hidden', 'true');
+    window.setTimeout(() => {
+        if (!modal.classList.contains('open')) {
+            modal.style.display = 'none';
+            modal.classList.remove('is-closing');
+        }
+    }, 240);
 }
+
+window.openModalEl = openModalEl;
+window.closeModalEl = closeModalEl;
 
 window.openSkillModal = function openSkillModal() {
     const modal = document.getElementById('skillModal');
@@ -485,26 +501,31 @@ async function handleSkillSubmit(event) {
     }
 }
 
-window.deleteSkill = function deleteSkill(skillId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette compétence ?')) return;
-    fetch(`${API_BASE}/skills/${skillId}`, {
-        method: 'DELETE',
-        headers: getHeaders(),
-        credentials: 'same-origin',
-    })
-        .then(response => response.json().then(data => ({ ok: response.ok, data })))
-        .then(({ ok, data }) => {
-            if (ok && data.success) {
-                showToast('Compétence supprimée', 'success');
-                loadSkills();
-            } else {
-                showToast(data.error || 'Erreur lors de la suppression', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            showToast('Erreur lors de la suppression', 'error');
+window.deleteSkill = async function deleteSkill(skillId) {
+    const ok = await adminConfirm({
+        title: 'Supprimer cette compétence ?',
+        message: 'Elle disparaîtra de la page d’accueil et des sections associées.',
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!ok) return;
+    try {
+        const response = await fetch(`${API_BASE}/skills/${skillId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+            credentials: 'same-origin',
         });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
+            showToast('Compétence supprimée', 'success');
+            loadSkills();
+        } else {
+            showToast(data.error || 'Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la suppression', 'error');
+    }
 };
 
 // ========== Partners Management ==========
@@ -705,9 +726,13 @@ window.deletePartner = async function deletePartner(partnerId) {
         showToast('ID partenaire invalide', 'error');
         return;
     }
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce partenaire ?')) {
-        return;
-    }
+    const confirmed = await adminConfirm({
+        title: 'Supprimer ce partenaire ?',
+        message: 'Il sera retiré de la section références du site.',
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!confirmed) return;
     try {
         const response = await fetch(`${API_BASE}/partners/${partnerId}`, {
             method: 'DELETE',
@@ -1457,32 +1482,34 @@ window.closeProjectDetailModal = function closeProjectDetailModal() {
     }
 };
 
-function deleteProject(projectId, projectTitle) {
+async function deleteProject(projectId, projectTitle) {
     const title = projectTitle || 'ce projet';
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${title}" ?\n\nCette action est irréversible.`)) {
-        return;
-    }
-    
-    fetch(`${API_BASE}/projects/${projectId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-    })
-    .then(response => response.json())
-    .then(data => {
+    const confirmed = await adminConfirm({
+        title: 'Supprimer ce projet ?',
+        message: `« ${title} » sera retiré du portfolio.\nCette action est irréversible.`,
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+            credentials: 'include',
+        });
+        const data = await response.json().catch(() => ({}));
         if (data.success) {
             showToast('Projet supprimé avec succès', 'success');
-            
-            // Retirer de la liste localement
             allProjectsData = allProjectsData.filter(p => p._id !== projectId);
-            displayProjects(allProjectsData); // Réafficher immédiatement
+            displayProjects(allProjectsData);
         } else {
             showToast(data.error || 'Erreur lors de la suppression', 'error');
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('❌ Erreur:', error);
         showToast('Erreur lors de la suppression', 'error');
-    });
+    }
 }
 
 // ========== Services Management ==========
@@ -1780,32 +1807,34 @@ async function handleServiceSubmit(event) {
     }
 }
 
-function deleteService(serviceId, serviceTitle) {
+async function deleteService(serviceId, serviceTitle) {
     const title = serviceTitle || 'ce service';
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le service "${title}" ?\n\nCette action est irréversible.`)) {
-        return;
-    }
-    
-    fetch(`${API_BASE}/services/${serviceId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-    })
-    .then(response => response.json())
-    .then(data => {
+    const confirmed = await adminConfirm({
+        title: 'Supprimer ce service ?',
+        message: `« ${title} » sera retiré de la page services.\nCette action est irréversible.`,
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/services/${serviceId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+            credentials: 'include',
+        });
+        const data = await response.json().catch(() => ({}));
         if (data.success) {
             showToast('Service supprimé avec succès', 'success');
-            
-            // Retirer de la liste localement
             allServicesData = allServicesData.filter(s => s._id !== serviceId);
-            displayServices(allServicesData); // Réafficher immédiatement
+            displayServices(allServicesData);
         } else {
             showToast(data.error || 'Erreur lors de la suppression', 'error');
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('❌ Erreur:', error);
         showToast('Erreur lors de la suppression', 'error');
-    });
+    }
 }
 
 // ========== Contacts Management ==========
@@ -2036,25 +2065,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function deleteContact(contactId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
-        fetch(`${API_BASE}/contacts/${contactId}`, {
+async function deleteContact(contactId) {
+    const confirmed = await adminConfirm({
+        title: 'Supprimer ce message ?',
+        message: 'Le message sera retiré de la boîte de réception.',
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!confirmed) return;
+    try {
+        const response = await fetch(`${API_BASE}/contacts/${contactId}`, {
             method: 'DELETE',
-            headers: getHeaders()
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Message supprimé', 'success');
-                loadContacts();
-            } else {
-                showToast(data.error || 'Erreur lors de la suppression', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            showToast('Erreur lors de la suppression', 'error');
+            headers: getHeaders(),
+            credentials: 'include',
         });
+        const data = await response.json().catch(() => ({}));
+        if (data.success) {
+            showToast('Message supprimé', 'success');
+            loadContacts();
+        } else {
+            showToast(data.error || 'Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la suppression', 'error');
     }
 }
 
@@ -2640,31 +2674,33 @@ async function updateAdmin(adminId, updateData) {
     }
 }
 
-function deleteAdmin(adminId, username) {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'administrateur "${username}" ?\n\nCette action est irréversible.`)) {
-        return;
-    }
-    
-    fetch(`${API_BASE}/admin/users/${adminId}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-    })
-    .then(response => response.json())
-    .then(data => {
+async function deleteAdmin(adminId, username) {
+    const confirmed = await adminConfirm({
+        title: 'Supprimer cet administrateur ?',
+        message: `Le compte « ${username} » sera définitivement supprimé.\nCette action est irréversible.`,
+        confirmLabel: 'Supprimer',
+        danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/admin/users/${adminId}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+            credentials: 'include',
+        });
+        const data = await response.json().catch(() => ({}));
         if (data.success) {
             showToast('Administrateur supprimé avec succès', 'success');
-            
-            // Retirer de la liste localement
             allAdminsData = allAdminsData.filter(a => a._id !== adminId);
-            displayAdminUsers(allAdminsData); // Réafficher immédiatement
+            displayAdminUsers(allAdminsData);
         } else {
             showToast(data.error || 'Erreur lors de la suppression', 'error');
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Erreur:', error);
         showToast('Erreur lors de la suppression', 'error');
-    });
+    }
 }
 
 // Exposer toutes les fonctions utilisées par les onclick inline de l'admin

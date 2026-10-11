@@ -846,6 +846,21 @@
 
         <!-- Toast Notifications -->
         <div id="toast-container" class="toast-container"></div>
+
+        <!-- Confirmation admin (remplace window.confirm) -->
+        <div id="adminConfirmModal" class="modal admin-confirm-modal" style="display: none;" aria-hidden="true">
+            <div class="modal-content admin-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="admin-confirm-title" aria-describedby="admin-confirm-message">
+                <div class="admin-confirm-icon" id="admin-confirm-icon" aria-hidden="true">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 id="admin-confirm-title">Confirmer</h3>
+                <p id="admin-confirm-message">Voulez-vous continuer ?</p>
+                <div class="admin-confirm-actions">
+                    <button type="button" class="btn btn-secondary" id="admin-confirm-cancel">Annuler</button>
+                    <button type="button" class="btn btn-primary admin-confirm-ok" id="admin-confirm-ok">Confirmer</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Support -->
@@ -880,6 +895,76 @@
             <div class="modal-actions">
                 <button type="button" class="btn btn-primary" onclick="closeSupportModal()">Fermer</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Parcours -->
+    <div id="careerModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="careerModalTitle">Nouvelle entrée</h3>
+                <button type="button" class="modal-close" onclick="closeCareerModal()" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="career-form" class="admin-form">
+                <input type="hidden" id="career-id">
+                <div class="form-group">
+                    <label for="career-title">Titre du poste *</label>
+                    <input type="text" id="career-title" required maxlength="200" placeholder="Développeur Full Stack">
+                </div>
+                <div class="admin-field-grid">
+                    <div class="form-group">
+                        <label for="career-org">Organisation</label>
+                        <input type="text" id="career-org" maxlength="200" placeholder="Entreprise ou organisme">
+                    </div>
+                    <div class="form-group">
+                        <label for="career-location">Lieu</label>
+                        <input type="text" id="career-location" maxlength="120" placeholder="Québec, Abidjan…">
+                    </div>
+                </div>
+                <div class="admin-field-grid">
+                    <div class="form-group">
+                        <label for="career-start">Début</label>
+                        <input type="text" id="career-start" maxlength="40" placeholder="2026-01 ou 2019">
+                    </div>
+                    <div class="form-group">
+                        <label for="career-end">Fin</label>
+                        <input type="text" id="career-end" maxlength="40" placeholder="laisser vide si en cours">
+                    </div>
+                </div>
+                <div class="admin-field-grid">
+                    <div class="form-group">
+                        <label for="career-kind">Type</label>
+                        <select id="career-kind">
+                            <option value="emploi">Emploi</option>
+                            <option value="stage">Stage</option>
+                            <option value="benevolat">Bénévolat</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="career-status">Statut</label>
+                        <select id="career-status">
+                            <option value="published">Publié</option>
+                            <option value="draft">Brouillon</option>
+                            <option value="archived">Archivé</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="career-order">Ordre d'affichage</label>
+                    <input type="number" id="career-order" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="career-bullets">Description</label>
+                    <textarea id="career-bullets" rows="4" maxlength="2000" placeholder="Résumé de l'expérience…"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCareerModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
         </div>
     </div>
 

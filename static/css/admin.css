@@ -1807,13 +1807,15 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 2000;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.24s ease;
+    padding: 1.25rem;
 }
 
 .modal[style*="display: flex"],
@@ -1823,17 +1825,23 @@ body {
     opacity: 1 !important;
 }
 
+.modal.is-closing {
+    opacity: 0 !important;
+}
+
 .modal-content {
-    background: #2a2b2f;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%),
+        #2a2b2f;
     border-radius: var(--radius-lg);
     width: 90%;
     max-width: 600px;
     max-height: 90vh;
     overflow-y: auto;
     overflow-x: hidden;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
-    transform: scale(0.96) translateY(-12px);
-    transition: transform 0.28s ease, opacity 0.28s ease;
+    box-shadow: 0 28px 72px rgba(0, 0, 0, 0.55);
+    transform: scale(0.94) translateY(14px);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
     opacity: 0;
     border: 1px solid var(--admin-border);
     position: relative;
@@ -1846,6 +1854,101 @@ body {
 .modal.open .modal-content {
     transform: scale(1) translateY(0);
     opacity: 1;
+}
+
+.modal.is-closing .modal-content {
+    transform: scale(0.96) translateY(10px);
+    opacity: 0;
+}
+
+/* Confirmation dialog (au-dessus des autres modals) */
+.admin-confirm-modal {
+    z-index: 3200;
+}
+
+.admin-confirm-dialog {
+    max-width: 420px;
+    width: min(92vw, 420px);
+    padding: 1.75rem 1.65rem 1.45rem;
+    text-align: center;
+    gap: 0;
+    overflow: hidden;
+}
+
+.admin-confirm-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: 0 auto 1rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 1.15rem;
+    color: #ffb4b4;
+    background: rgba(220, 53, 69, 0.14);
+    border: 1px solid rgba(220, 53, 69, 0.28);
+    animation: adminConfirmPulse 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-confirm-modal:not(.is-danger) .admin-confirm-icon {
+    color: var(--green);
+    background: rgba(77, 186, 135, 0.12);
+    border-color: rgba(77, 186, 135, 0.3);
+}
+
+.admin-confirm-dialog h3 {
+    margin: 0 0 0.55rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--white);
+}
+
+.admin-confirm-dialog p {
+    margin: 0 0 1.45rem;
+    color: var(--gray);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    white-space: pre-line;
+}
+
+.admin-confirm-actions {
+    display: flex;
+    gap: 0.65rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.admin-confirm-actions .btn {
+    min-width: 7.5rem;
+    justify-content: center;
+}
+
+.admin-confirm-ok.btn-danger,
+.admin-confirm-modal.is-danger .admin-confirm-ok {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.admin-confirm-ok.btn-danger:hover,
+.admin-confirm-modal.is-danger .admin-confirm-ok:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+@keyframes adminConfirmPulse {
+    0% { transform: scale(0.7); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal,
+    .modal-content,
+    .admin-confirm-icon {
+        animation: none !important;
+        transition: none !important;
+    }
 }
 
 /* Scrollbar personnalisée pour modal-content */
@@ -1972,6 +2075,23 @@ body {
     background: var(--dark-bg);
     border-bottom-left-radius: var(--radius-lg);
     border-bottom-right-radius: var(--radius-lg);
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+}
+
+.modal-actions .btn {
+    min-width: 6.5rem;
+    justify-content: center;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.modal-actions .btn:hover {
+    transform: translateY(-1px);
+}
+
+.modal-actions .btn:active {
+    transform: translateY(0);
 }
 
 .btn {
