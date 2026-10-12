@@ -24,6 +24,7 @@ from werkzeug.exceptions import BadRequest, InternalServerError
 from utils.hardening import configure_session_security, register_security_headers
 from utils.privacy import client_ip_from_request, hash_ip
 from utils.security_log import log_security_event, log_error_event
+from utils.ordering import claim_unique_order
 
 # Flask-Mail sera importé après la création de l'app Flask
 FLASK_MAIL_AVAILABLE = False
@@ -1571,7 +1572,7 @@ def get_projects_api():
                 '''
                 SELECT * FROM projects
                 WHERE deleted_at IS NULL OR deleted_at = ''
-                ORDER BY created_at DESC
+                ORDER BY order_index ASC, created_at DESC
                 '''
             )
             rows = cursor.fetchall()
@@ -1650,6 +1651,10 @@ def create_project_api():
                 return jsonify({'error': 'Base de données non disponible'}), 503
             
             cursor = conn.cursor()
+            desired_order = cleaned_data.get('order', 0)
+            final_order, order_shifts = claim_unique_order(
+                cursor, 'projects', desired_order, exclude_id=None
+            )
             cursor.execute('''
                 INSERT INTO projects (title, description, technologies, image, additional_images, link, github_link,
                                      status, order_index, featured, views, created_at, updated_at)
@@ -1663,7 +1668,7 @@ def create_project_api():
                 cleaned_data.get('link', ''),
                 cleaned_data.get('github_link', ''),
                 cleaned_data['status'],
-                cleaned_data.get('order', 0),
+                final_order,
                 1 if cleaned_data.get('featured', False) else 0,
                 0,  # views
                 datetime.now(),
@@ -1671,7 +1676,13 @@ def create_project_api():
             ))
             project_id = cursor.lastrowid
             conn.commit()
-            return jsonify({'success': True, 'id': str(project_id), 'message': 'Projet créé'})
+            return jsonify({
+                'success': True,
+                'id': str(project_id),
+                'message': 'Projet créé',
+                'order': final_order,
+                'order_shifts': order_shifts,
+            })
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:
@@ -1692,8 +1703,20 @@ def update_project_api(project_id):
                 return jsonify({'error': 'Base de données non disponible'}), 503
             
             cursor = conn.cursor()
+            cursor.execute(
+                '''
+                SELECT id FROM projects
+                WHERE id = ? AND (deleted_at IS NULL OR deleted_at = '')
+                ''',
+                (int(project_id),),
+            )
+            if not cursor.fetchone():
+                return jsonify({'error': 'Projet non trouvé'}), 404
+
             updates = []
             values = []
+            order_shifts = []
+            final_order = None
             
             max_lengths = {
                 'title': 200, 'description': 1000, 'technologies': 200,
@@ -1709,8 +1732,12 @@ def update_project_api(project_id):
                         updates.append(f'{key} = ?')
                         values.append(value)
                 elif key == 'order':
+                    desired = int(value) if str(value).isdigit() else 0
+                    final_order, order_shifts = claim_unique_order(
+                        cursor, 'projects', desired, exclude_id=int(project_id)
+                    )
                     updates.append('order_index = ?')
-                    values.append(int(value) if str(value).isdigit() else 0)
+                    values.append(final_order)
                 elif key == 'featured':
                     updates.append('featured = ?')
                     values.append(1 if bool(value) else 0)
@@ -1750,9 +1777,14 @@ def update_project_api(project_id):
             ''', values)
             conn.commit()
             
-            if cursor.rowcount > 0:
-                return jsonify({'success': True, 'message': 'Projet mis à jour'})
-            return jsonify({'error': 'Projet non trouvé'}), 404
+            payload = {
+                'success': True,
+                'message': 'Projet mis à jour',
+                'order_shifts': order_shifts,
+            }
+            if final_order is not None:
+                payload['order'] = final_order
+            return jsonify(payload)
     except ValueError as e:
         return jsonify({'error': f'Erreur de validation: {str(e)}'}), 400
     except Exception as e:

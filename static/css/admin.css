@@ -1822,11 +1822,15 @@ body {
 .modal[style*="display:block"],
 .modal.open {
     display: flex !important;
+}
+
+.modal.open:not(.is-closing) {
     opacity: 1 !important;
 }
 
 .modal.is-closing {
     opacity: 0 !important;
+    pointer-events: none;
 }
 
 .modal-content {

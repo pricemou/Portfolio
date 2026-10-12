@@ -1170,11 +1170,17 @@ window.closeProjectModal = function closeProjectModal() {
         modal.style.display = 'none';
         modal.style.opacity = '0';
         modal.classList.remove('open');
+        modal.classList.remove('is-closing');
         const form = document.getElementById('project-form');
         if (form) {
             form.reset();
             const projectIdInput = document.getElementById('project-id');
             if (projectIdInput) projectIdInput.value = '';
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Enregistrer';
+            }
         }
         resetProjectImageFields();
     }
@@ -1348,67 +1354,35 @@ async function handleProjectSubmit(event) {
         
         const data = await response.json().catch(() => ({}));
         
-        if (!response.ok) {
+            if (!response.ok) {
             const errMsg = data.error || data.message || (projectId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création');
             console.error('Projet API', response.status, errMsg, requestData);
             showToast(errMsg, 'error');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-            }
             return;
         }
         
-        showToast(projectId ? 'Projet mis à jour avec succès' : 'Projet créé avec succès', 'success');
-        closeProjectModal();
-        
-        if (projectId) {
-            const projectIndex = allProjectsData.findIndex(p => p._id === projectId);
-            if (projectIndex !== -1) {
-            allProjectsData[projectIndex] = {
-                ...allProjectsData[projectIndex],
-                title: title,
-                technologies: technologies,
-                description: description,
-                link: link,
-                github_link: github,
-                image: image,
-                additional_images: additionalImages,
-                status: status,
-                order: order,
-                featured: featured
-            };
-            }
+        const shifts = Array.isArray(data.order_shifts) ? data.order_shifts : [];
+        if (shifts.length) {
+            showToast(
+                projectId
+                    ? `Projet mis à jour — ordre ${data.order ?? order} unique (conflit redistribué)`
+                    : `Projet créé — ordre ${data.order ?? order} unique (conflit redistribué)`,
+                'success'
+            );
         } else {
-            const newProject = {
-                _id: data.id,
-                title: title,
-                technologies: technologies,
-                description: description,
-                link: link,
-                github_link: github,
-                image: image,
-                additional_images: additionalImages,
-                status: status,
-                order: order,
-                featured: featured,
-                views: 0,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            allProjectsData.push(newProject);
-            allProjectsData.sort((a, b) => (a.order || 0) - (b.order || 0));
+            showToast(projectId ? 'Projet mis à jour avec succès' : 'Projet créé avec succès', 'success');
         }
-        
-        // Réafficher immédiatement
-        displayProjects(allProjectsData);
+        closeProjectModal();
+        // Recharger depuis la DB pour refléter les échanges d'ordre
+        await loadProjects();
         
     } catch (error) {
         console.error('❌ Erreur:', error);
-        showToast(projectId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création', 'error');
+        showToast(error.message || (projectId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création'), 'error');
+    } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = originalBtnText;
+            submitBtn.textContent = originalBtnText || 'Enregistrer';
         }
     }
 }
@@ -1750,11 +1724,17 @@ window.closeServiceModal = function closeServiceModal() {
         modal.style.display = 'none';
         modal.style.opacity = '0';
         modal.classList.remove('open');
+        modal.classList.remove('is-closing');
         const form = document.getElementById('service-form');
         if (form) {
             form.reset();
             const serviceIdInput = document.getElementById('service-id');
             if (serviceIdInput) serviceIdInput.value = '';
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Enregistrer';
+            }
         }
     }
 };
@@ -1855,10 +1835,6 @@ async function handleServiceSubmit(event) {
         
         if (!response.ok) {
             showToast(data.error || (serviceId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création'), 'error');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-            }
             return;
         }
         
@@ -1900,9 +1876,10 @@ async function handleServiceSubmit(event) {
     } catch (error) {
         console.error('❌ Erreur:', error);
         showToast(serviceId ? 'Erreur lors de la mise à jour' : 'Erreur lors de la création', 'error');
+    } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = originalBtnText;
+            submitBtn.textContent = originalBtnText || 'Enregistrer';
         }
     }
 }
@@ -2415,8 +2392,11 @@ async function changePassword(event) {
     } catch (error) {
         console.error('❌ Erreur lors du changement de mot de passe:', error);
         showToast('Erreur lors du changement de mot de passe', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalBtnText;
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText || 'Changer le mot de passe';
+        }
     }
 }
 
@@ -2680,8 +2660,11 @@ async function createAdmin(event) {
     } catch (error) {
         console.error('❌ Erreur lors de la création:', error);
         showToast('Erreur lors de la création de l\'administrateur', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalBtnText;
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText || 'Créer';
+        }
     }
 }
 
@@ -2699,7 +2682,15 @@ function closeCreateAdminModal() {
     const modal = document.getElementById('create-admin-modal');
     if (modal) {
         modal.style.display = 'none';
-        document.getElementById('create-admin-form').reset();
+        const form = document.getElementById('create-admin-form');
+        if (form) {
+            form.reset();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Créer';
+            }
+        }
     }
 }
 
