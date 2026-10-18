@@ -184,6 +184,7 @@
                             <div class="admin-card dashboard-panel">
                                 <h3 class="dashboard-panel-title">Top 5 Projets les plus vus</h3>
                                 <div id="top-projects-list" class="admin-list dashboard-list"></div>
+                                <div id="top-projects-pagination" class="admin-list-pagination dashboard-pagination"></div>
                             </div>
                         </section>
 
@@ -222,10 +223,12 @@
                                 <div class="admin-card dashboard-panel">
                                     <h3 class="dashboard-panel-title">Événements de sécurité récents</h3>
                                     <div id="security-events-list" class="admin-list dashboard-list"></div>
+                                    <div id="security-events-pagination" class="admin-list-pagination dashboard-pagination"></div>
                                 </div>
                                 <div class="admin-card dashboard-panel">
                                     <h3 class="dashboard-panel-title">Erreurs récentes</h3>
                                     <div id="error-logs-list" class="admin-list dashboard-list"></div>
+                                    <div id="error-logs-pagination" class="admin-list-pagination dashboard-pagination"></div>
                                 </div>
                             </div>
                         </section>
@@ -396,9 +399,13 @@
                                 <p class="admin-section-subtitle">Historique des actions sensibles réalisées dans l’admin.</p>
                             </div>
                         </header>
+                        <div class="admin-view-toolbar">
+                            <p class="admin-view-count" id="audit-count-label">0 événement</p>
+                        </div>
                         <div class="admin-panel admin-list-shell">
                             <div id="audit-list" class="admin-list"></div>
                         </div>
+                        <div id="audit-pagination" class="admin-list-pagination"></div>
                     </div>
 
                     <!-- Section Homepage -->
@@ -721,7 +728,9 @@
                                     <i class="fas fa-sync-alt"></i> Actualiser
                                 </button>
                             </div>
+                            <p class="admin-view-count" id="login-history-count-label">0 connexion</p>
                             <div id="login-history-list" class="admin-list"></div>
+                            <div id="login-history-pagination" class="admin-list-pagination"></div>
                         </div>
                     </div>
 

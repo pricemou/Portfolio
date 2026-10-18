@@ -2432,48 +2432,47 @@ async function loadLoginHistory() {
 
 function displayLoginHistory(history) {
     const historyList = document.getElementById('login-history-list');
-    if (!historyList) return;
-    
-    if (history.length === 0) {
-        historyList.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 2rem;">Aucun historique disponible.</p>';
-        return;
-    }
-    
-    historyList.innerHTML = '';
-    
-    history.forEach(entry => {
-        const item = document.createElement('div');
-        item.className = 'admin-list-item';
-        item.style.cssText = 'padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;';
-        
-        const successIcon = entry.success ? '✅' : '❌';
+    if (!historyList || typeof setAdminListItems !== 'function') return;
+
+    const renderItem = (entry) => {
         const successText = entry.success ? 'Succès' : 'Échec';
         const successColor = entry.success ? 'var(--green)' : 'var(--red)';
-        
         const date = new Date(entry.login_time);
-        const formattedDate = date.toLocaleString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        item.innerHTML = `
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <span style="font-size: 1.2rem;">${successIcon}</span>
-                    <strong style="color: ${successColor};">${successText}</strong>
-                    <span style="color: var(--gray); font-size: 0.9rem;">${formattedDate}</span>
+        const formattedDate = Number.isNaN(date.getTime())
+            ? ''
+            : date.toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        const agent = entry.user_agent || 'N/A';
+        const agentShort = agent.length > 80 ? `${agent.substring(0, 80)}…` : agent;
+
+        return `
+            <div class="admin-card">
+                <div class="admin-card-title-row">
+                    <h3 style="color: ${successColor};">${successText}</h3>
+                    <span class="admin-card-meta">${escapeHtml(formattedDate)}</span>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--gray);">
-                    <div><strong>IP:</strong> ${entry.ip_address || 'N/A'}</div>
-                    <div style="margin-top: 0.25rem;"><strong>User-Agent:</strong> ${(entry.user_agent || 'N/A').substring(0, 80)}${entry.user_agent && entry.user_agent.length > 80 ? '...' : ''}</div>
+                <div class="admin-card-meta">
+                    <span><strong>IP:</strong> ${escapeHtml(entry.ip_address || 'N/A')}</span>
+                    <span><strong>User-Agent:</strong> ${escapeHtml(agentShort)}</span>
                 </div>
             </div>
         `;
-        
-        historyList.appendChild(item);
+    };
+
+    setAdminListItems('login-history', history || [], {
+        perPage: 8,
+        listId: 'login-history-list',
+        paginationId: 'login-history-pagination',
+        countId: 'login-history-count-label',
+        countLabel: (n) => (n === 1 ? '1 connexion' : `${n} connexions`),
+        emptyHtml: '<p class="admin-empty">Aucun historique disponible.</p>',
+        renderList: renderItem,
+        renderGrid: renderItem,
     });
 }
 

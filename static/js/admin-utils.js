@@ -305,7 +305,7 @@ function goToAdminListPage(key, page) {
     renderAdminList(key);
     const list = document.getElementById(ctrl.listId);
     if (list) {
-        const shell = list.closest('.admin-panel, .admin-list-shell, .certs-shell, .contacts-inbox, .media-library-panel') || list;
+        const shell = list.closest('.dashboard-panel, .admin-panel, .admin-list-shell, .certs-shell, .contacts-inbox, .media-library-panel') || list;
         shell.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }

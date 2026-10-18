@@ -359,25 +359,39 @@ async function loadDashboardStats() {
     }
 }
 
+function renderDashboardList(key, items, options) {
+    if (typeof setAdminListItems !== 'function') return;
+    const renderItem = options.renderItem;
+    setAdminListItems(key, items || [], {
+        perPage: 5,
+        listId: options.listId,
+        paginationId: options.paginationId,
+        listClass: 'admin-list dashboard-list',
+        gridClass: 'admin-list dashboard-list',
+        emptyHtml: options.emptyHtml,
+        renderList: renderItem,
+        renderGrid: renderItem,
+    });
+}
+
 async function loadMonitoringLists() {
     try {
         const response = await fetch('/api/monitoring/overview', { credentials: 'include' });
         if (!response.ok) return;
         const data = await response.json();
-        const sec = document.getElementById('security-events-list');
-        if (sec) {
-            const items = data.recent_security || [];
-            sec.innerHTML = items.length
-                ? items.map((e) => `<div class="admin-card dashboard-list-item"><strong>${e.type || ''}</strong> · ${e.severity || ''} · <span class="dashboard-meta">${e.path || ''}</span><br><small class="dashboard-meta">${e.created_at || ''}</small></div>`).join('')
-                : '<p class="dashboard-empty">Aucun événement récent.</p>';
-        }
-        const err = document.getElementById('error-logs-list');
-        if (err) {
-            const items = data.recent_errors || [];
-            err.innerHTML = items.length
-                ? items.map((e) => `<div class="admin-card dashboard-list-item"><strong>${e.level || 'error'}</strong> — ${e.message || ''}<br><small class="dashboard-meta">${e.created_at || ''} · ${e.path || ''}</small></div>`).join('')
-                : '<p class="dashboard-empty">Aucune erreur récente.</p>';
-        }
+        const esc = escapeCareerHtml;
+        renderDashboardList('security-events', data.recent_security || [], {
+            listId: 'security-events-list',
+            paginationId: 'security-events-pagination',
+            emptyHtml: '<p class="dashboard-empty">Aucun événement récent.</p>',
+            renderItem: (e) => `<div class="admin-card dashboard-list-item"><strong>${esc(e.type || '')}</strong> · ${esc(e.severity || '')} · <span class="dashboard-meta">${esc(e.path || '')}</span><br><small class="dashboard-meta">${esc(e.created_at || '')}</small></div>`,
+        });
+        renderDashboardList('error-logs', data.recent_errors || [], {
+            listId: 'error-logs-list',
+            paginationId: 'error-logs-pagination',
+            emptyHtml: '<p class="dashboard-empty">Aucune erreur récente.</p>',
+            renderItem: (e) => `<div class="admin-card dashboard-list-item"><strong>${esc(e.level || 'error')}</strong> — ${esc(e.message || '')}<br><small class="dashboard-meta">${esc(e.created_at || '')} · ${esc(e.path || '')}</small></div>`,
+        });
     } catch (e) {
         console.debug(e);
     }
@@ -1318,16 +1332,27 @@ async function purgeTrash(entity, id) {
 
 async function loadAuditAdmin() {
     const list = document.getElementById('audit-list');
-    if (!list) return;
+    if (!list || typeof setAdminListItems !== 'function') return;
     const res = await fetch('/api/audit', { credentials: 'include' });
     if (!res.ok) return;
     const items = await res.json();
-    list.innerHTML = (items || []).map((a) => `
+    const esc = escapeCareerHtml;
+    const renderItem = (a) => `
         <div class="admin-card">
-            <strong>${a.action}</strong> · ${a.entity || ''} #${a.entity_id || ''}
-            <p style="color:var(--gray);margin:0.35rem 0;">admin ${a.admin_id || ''} · ${a.created_at || ''}</p>
+            <strong>${esc(a.action)}</strong> · ${esc(a.entity || '')} #${esc(a.entity_id || '')}
+            <p style="color:var(--gray);margin:0.35rem 0;">admin ${esc(a.admin_id || '')} · ${esc(a.created_at || '')}</p>
         </div>
-    `).join('') || '<p style="color:var(--gray)">Aucun événement.</p>';
+    `;
+    setAdminListItems('audit', items || [], {
+        perPage: 10,
+        listId: 'audit-list',
+        paginationId: 'audit-pagination',
+        countId: 'audit-count-label',
+        countLabel: (n) => (n === 1 ? '1 événement' : `${n} événements`),
+        emptyHtml: '<p class="admin-empty">Aucun événement.</p>',
+        renderList: renderItem,
+        renderGrid: renderItem,
+    });
 }
 
 async function load2FAStatus() {
@@ -1404,29 +1429,25 @@ async function disable2FA() {
 function loadTopProjects(projects) {
     const topProjectsList = document.getElementById('top-projects-list');
     if (!topProjectsList) return;
-    
-    if (!projects || projects.length === 0) {
-        topProjectsList.innerHTML = '<p class="dashboard-empty">Aucun projet avec des vues pour le moment.</p>';
-        return;
-    }
-    
-    topProjectsList.innerHTML = '';
-    
-    projects.forEach((project, index) => {
-        const card = document.createElement('div');
-        card.className = 'admin-card dashboard-list-item dashboard-list-row';
-        
-        card.innerHTML = `
-            <div class="dashboard-list-row-main">
-                <span class="dashboard-rank">${index + 1}</span>
-                <div>
-                    <strong>${project.title || 'Projet sans titre'}</strong>
-                    <p class="dashboard-meta" style="margin: 0.25rem 0 0 0;">${project.views || 0} vue${(project.views || 0) > 1 ? 's' : ''}</p>
+    const esc = escapeCareerHtml;
+    const ranked = (projects || []).map((project, index) => ({ ...project, rank: index + 1 }));
+    renderDashboardList('top-projects', ranked, {
+        listId: 'top-projects-list',
+        paginationId: 'top-projects-pagination',
+        emptyHtml: '<p class="dashboard-empty">Aucun projet avec des vues pour le moment.</p>',
+        renderItem: (project) => {
+            const views = project.views || 0;
+            return `
+            <div class="admin-card dashboard-list-item dashboard-list-row">
+                <div class="dashboard-list-row-main">
+                    <span class="dashboard-rank">${project.rank}</span>
+                    <div>
+                        <strong>${esc(project.title || 'Projet sans titre')}</strong>
+                        <p class="dashboard-meta" style="margin: 0.25rem 0 0 0;">${views} vue${views > 1 ? 's' : ''}</p>
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        topProjectsList.appendChild(card);
+            </div>`;
+        },
     });
 }
 

@@ -60,6 +60,7 @@
                         <textarea id="message" name="message" required rows="6" maxlength="2000"></textarea>
                     </div>
                     <div id="form-message" hidden></div>
+                    {% include 'components/recaptcha.html' %}
                     <button type="submit" id="submit-btn">{{ t('form_send') }}</button>
                 </form>
             </div>
@@ -67,6 +68,9 @@
     </main>
     {% set year = current_year %}
     {% include 'components/footer.html' %}
+    {% if recaptcha_site_key %}
+    <script src="https://www.google.com/recaptcha/api.js?hl={{ lang|default('fr') }}" async defer></script>
+    {% endif %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var form = document.getElementById('contact-form');
@@ -75,6 +79,13 @@
                 e.preventDefault();
                 var btn = document.getElementById('submit-btn');
                 var box = document.getElementById('form-message');
+                var captchaOn = {{ (recaptcha_site_key or '')|tojson }};
+                if (captchaOn && (!window.grecaptcha || !grecaptcha.getResponse())) {
+                    box.hidden = false;
+                    box.textContent = {{ t('form_captcha')|tojson }};
+                    box.className = 'form-err';
+                    return;
+                }
                 btn.disabled = true;
                 btn.textContent = {{ t('form_sending')|tojson }};
                 box.hidden = false;
@@ -84,9 +95,11 @@
                     box.textContent = result.success ? (result.message || {{ t('form_success')|tojson }}) : (result.error || 'Erreur');
                     box.className = result.success ? 'form-ok' : 'form-err';
                     if (result.success) form.reset();
+                    if (window.grecaptcha) grecaptcha.reset();
                 } catch (err) {
                     box.textContent = 'Erreur de connexion.';
                     box.className = 'form-err';
+                    if (window.grecaptcha) grecaptcha.reset();
                 } finally {
                     btn.disabled = false;
                     btn.textContent = {{ t('form_send')|tojson }};
