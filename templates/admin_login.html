@@ -76,11 +76,6 @@
         .login-form .form-group {
             margin-bottom: 0.9rem;
         }
-
-        .login-form .recaptcha-wrap {
-            align-items: center;
-            margin: 0.35rem 0 0.9rem;
-        }
         
         .login-form label {
             display: block;
@@ -173,7 +168,7 @@
                 {% endif %}
             {% endwith %}
             
-            <form method="POST" action="{{ url_for('admin_login') }}" class="login-form" data-recaptcha="required">
+            <form method="POST" action="{{ url_for('admin_login') }}" class="login-form">
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" required autofocus
@@ -186,8 +181,6 @@
                     <input type="password" id="password" name="password" required
                            autocomplete="current-password" placeholder="••••••••">
                 </div>
-
-                {% include 'components/recaptcha.html' %}
                 
                 <button type="submit" class="login-btn">Se connecter</button>
             </form>
@@ -197,8 +190,6 @@
             </div>
         </div>
     </div>
-    <script src="https://www.google.com/recaptcha/enterprise.js?hl={{ lang|default('fr') }}" async defer></script>
-    <script src="{{ url_for('static', filename='js/recaptcha-guard.js') }}" defer></script>
 </body>
 </html>
 

@@ -30,7 +30,6 @@ from utils.hardening import configure_session_security, register_security_header
 from utils.privacy import client_ip_from_request, hash_ip
 from utils.security_log import log_security_event, log_error_event
 from utils.ordering import claim_unique_order
-from utils.recaptcha import recaptcha_site_key, verify_recaptcha
 
 # Flask-Mail sera importé après la création de l'app Flask
 FLASK_MAIL_AVAILABLE = False
@@ -241,7 +240,6 @@ def inject_i18n():
     return {
         'lang': lang,
         't': lambda key: translate(key, lang),
-        'recaptcha_site_key': recaptcha_site_key(),
     }
 
 @app.route('/lang/<lang>')
@@ -594,15 +592,6 @@ def contact_submit():
                 'error': 'Format d\'email invalide'
             }), 400
 
-        captcha_token = ''
-        if request.is_json:
-            captcha_token = (data.get('g-recaptcha-response') or data.get('recaptcha') or '')
-        else:
-            captcha_token = request.form.get('g-recaptcha-response') or ''
-        captcha_ok, captcha_error = verify_recaptcha(captcha_token, request.remote_addr)
-        if not captcha_ok:
-            return jsonify({'success': False, 'error': captcha_error}), 400
-        
         # Nettoyer et valider les données
         cleaned_data = {
             'name': sanitize_input(name, max_length=100),
@@ -797,13 +786,6 @@ def admin_login():
             flash('Veuillez remplir tous les champs', 'error')
             return render_template('admin_login.html', email_value=email)
 
-        captcha_ok, captcha_error = verify_recaptcha(
-            request.form.get('g-recaptcha-response'), ip_addr,
-        )
-        if not captcha_ok:
-            flash(captcha_error, 'error')
-            return render_template('admin_login.html', email_value=email)
-        
         email = sanitize_input(email, max_length=100).lower()
         password = password.strip() if password else ''
         
@@ -920,12 +902,6 @@ def admin_2fa_challenge():
     ip_addr = client_ip_from_request(request)
     if not code:
         flash('Saisissez le code de vérification', 'error')
-        return render_template('admin_2fa.html', username=pending_user)
-    captcha_ok, captcha_error = verify_recaptcha(
-        request.form.get('g-recaptcha-response'), ip_addr,
-    )
-    if not captcha_ok:
-        flash(captcha_error, 'error')
         return render_template('admin_2fa.html', username=pending_user)
     try:
         from utils.totp_2fa import unseal_secret, verify_totp, consume_backup_code

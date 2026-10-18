@@ -19,18 +19,15 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
-            <form method="post" class="login-form" data-recaptcha="required">
+            <form method="post" class="login-form">
                 <div class="form-group">
                     <label for="code" style="display:block;margin-bottom:0.5rem;color:#fff;">Code TOTP ou code de secours</label>
                     <input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="20" autofocus style="width:100%;padding:0.75rem 1rem;border-radius:0.4rem;border:1px solid rgba(255,255,255,0.12);background:#25262A;color:#fff;">
                 </div>
-                {% include 'components/recaptcha.html' %}
                 <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.35rem;">Valider</button>
             </form>
             <p style="margin-top:1.5rem;"><a href="{{ url_for('admin_login') }}" style="color:#4dba87;">Retour à la connexion</a></p>
         </div>
     </div>
-    <script src="https://www.google.com/recaptcha/enterprise.js?hl={{ lang|default('fr') }}" async defer></script>
-    <script src="{{ url_for('static', filename='js/recaptcha-guard.js') }}" defer></script>
 </body>
 </html>

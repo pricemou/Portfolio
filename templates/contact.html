@@ -31,7 +31,7 @@
                     </article>
                 </div>
 
-                <form id="contact-form" class="contact-form-container" method="POST" action="{{ url_for('contact_submit') }}" data-recaptcha="required">
+                <form id="contact-form" class="contact-form-container" method="POST" action="{{ url_for('contact_submit') }}">
                     <div class="contact-form-head">
                         <h3>{{ t('contact_title') }}</h3>
                         <p>{{ t('contact_intro') }}</p>
@@ -60,7 +60,6 @@
                         <textarea id="message" name="message" required rows="6" maxlength="2000"></textarea>
                     </div>
                     <div id="form-message" hidden></div>
-                    {% include 'components/recaptcha.html' %}
                     <button type="submit" id="submit-btn">{{ t('form_send') }}</button>
                 </form>
             </div>
@@ -68,8 +67,6 @@
     </main>
     {% set year = current_year %}
     {% include 'components/footer.html' %}
-    <script src="https://www.google.com/recaptcha/enterprise.js?hl={{ lang|default('fr') }}" async defer></script>
-    <script src="{{ url_for('static', filename='js/recaptcha-guard.js') }}" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var form = document.getElementById('contact-form');
@@ -78,12 +75,6 @@
                 e.preventDefault();
                 var btn = document.getElementById('submit-btn');
                 var box = document.getElementById('form-message');
-                if (typeof recaptchaResponse !== 'function' || !recaptchaResponse()) {
-                    box.hidden = false;
-                    box.textContent = {{ t('form_captcha')|tojson }};
-                    box.className = 'form-err';
-                    return;
-                }
                 btn.disabled = true;
                 btn.textContent = {{ t('form_sending')|tojson }};
                 box.hidden = false;
@@ -93,11 +84,9 @@
                     box.textContent = result.success ? (result.message || {{ t('form_success')|tojson }}) : (result.error || 'Erreur');
                     box.className = result.success ? 'form-ok' : 'form-err';
                     if (result.success) form.reset();
-                    if (typeof recaptchaReset === 'function') recaptchaReset();
                 } catch (err) {
                     box.textContent = 'Erreur de connexion.';
                     box.className = 'form-err';
-                    if (typeof recaptchaReset === 'function') recaptchaReset();
                 } finally {
                     btn.disabled = false;
                     btn.textContent = {{ t('form_send')|tojson }};
