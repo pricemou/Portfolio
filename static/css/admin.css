@@ -3725,7 +3725,6 @@ small {
 
 .recaptcha-wrap .g-recaptcha {
     border-radius: 3px;
-    overflow: hidden;
     line-height: 0;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
     transform-origin: center top;

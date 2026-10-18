@@ -31,7 +31,7 @@
                     </article>
                 </div>
 
-                <form id="contact-form" class="contact-form-container" method="POST" action="{{ url_for('contact_submit') }}">
+                <form id="contact-form" class="contact-form-container" method="POST" action="{{ url_for('contact_submit') }}" data-recaptcha="required">
                     <div class="contact-form-head">
                         <h3>{{ t('contact_title') }}</h3>
                         <p>{{ t('contact_intro') }}</p>
@@ -70,6 +70,7 @@
     {% include 'components/footer.html' %}
     {% if recaptcha_site_key %}
     <script src="https://www.google.com/recaptcha/api.js?hl={{ lang|default('fr') }}" async defer></script>
+    <script src="{{ url_for('static', filename='js/recaptcha-guard.js') }}" defer></script>
     {% endif %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
