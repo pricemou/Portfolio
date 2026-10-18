@@ -15,13 +15,18 @@ MSG_REQUIRED = "Cochez « Je ne suis pas un robot » pour continuer."
 MSG_EXPIRED = "La vérification a expiré. Cochez à nouveau la case."
 MSG_UNAVAILABLE = "La vérification anti-robot est momentanément indisponible. Réessayez."
 
+# Clés du domaine claude225.pythonanywhere.com.
+# La clé de site est publique (elle est dans le HTML). La clé secrète sert à la vérification.
+_SITE_KEY = "6Lcfq_UtAAAAAIuZHZ5omo790G4XpB47eWjd7MHW"
+_SECRET_KEY = "6Lcfq_UtAAAAAC2ce1A0cUYzfCauKaNEROqkixr"
+
 
 def recaptcha_site_key() -> str:
-    return (os.getenv("RECAPTCHA_SITE_KEY") or "").strip()
+    return (os.getenv("RECAPTCHA_SITE_KEY") or _SITE_KEY).strip()
 
 
 def recaptcha_secret_key() -> str:
-    return (os.getenv("RECAPTCHA_SECRET_KEY") or "").strip()
+    return (os.getenv("RECAPTCHA_SECRET_KEY") or _SECRET_KEY).strip()
 
 
 def recaptcha_enabled() -> bool:

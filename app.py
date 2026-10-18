@@ -14,6 +14,11 @@ if sys.platform == 'win32':
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+
+# Toujours le .env à côté de ce fichier, même si PythonAnywhere démarre ailleurs.
+_ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(_ENV_PATH, override=True)
+
 from database import get_db, init_database, row_to_dict, rows_to_list
 from functools import wraps
 # ObjectId n'est plus nécessaire avec SQLite
@@ -87,9 +92,6 @@ except ImportError:
         if max_length and len(text) > max_length:
             text = text[:max_length]
         return text
-
-# Charger les variables d'environnement depuis le fichier .env
-load_dotenv()
 
 app = Flask(__name__)
 

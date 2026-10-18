@@ -68,10 +68,8 @@
     </main>
     {% set year = current_year %}
     {% include 'components/footer.html' %}
-    {% if recaptcha_site_key %}
     <script src="https://www.google.com/recaptcha/api.js?hl={{ lang|default('fr') }}" async defer></script>
     <script src="{{ url_for('static', filename='js/recaptcha-guard.js') }}" defer></script>
-    {% endif %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var form = document.getElementById('contact-form');
@@ -80,8 +78,7 @@
                 e.preventDefault();
                 var btn = document.getElementById('submit-btn');
                 var box = document.getElementById('form-message');
-                var captchaOn = {{ (recaptcha_site_key or '')|tojson }};
-                if (captchaOn && (!window.grecaptcha || !grecaptcha.getResponse())) {
+                if (!window.grecaptcha || !grecaptcha.getResponse()) {
                     box.hidden = false;
                     box.textContent = {{ t('form_captcha')|tojson }};
                     box.className = 'form-err';
