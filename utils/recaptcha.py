@@ -18,7 +18,7 @@ MSG_UNAVAILABLE = "La vérification anti-robot est momentanément indisponible. 
 # Clés du domaine claude225.pythonanywhere.com.
 # La clé de site est publique (elle est dans le HTML). La clé secrète sert à la vérification.
 _SITE_KEY = "6Lcfq_UtAAAAAIuZHZ5omo790G4XpB47eWjd7MHW"
-_SECRET_KEY = "6Lcfq_UtAAAAAC2ce1A0cUYzfCauKaNEROqkixr"
+_SECRET_KEY = "6Lcfq_UtAAAAAAC2celAOcUYzfCauKaNEROqkixr"
 
 
 def recaptcha_site_key() -> str:
